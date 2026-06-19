@@ -9,7 +9,7 @@
 <style>
   :root {
     --bg: #f4f5fb; --card: #ffffff; --ink: #1f2238; --muted: #6b7088; --line: #e7e8f2;
-    --mia: #c45fd6; --mia-soft: #f4e3ff; --tia: #2f93ec; --tia-soft: #dcedff;
+    --mia: #c45fd6; --mia-soft: #f4e3ff; --tia: #2f93ec; --tia-soft: #dcedff; --self: #e0930f; --self-soft: #fff0d6;
     --good: #18a957; --bad: #e23b54; --brand: #7c5cff; --warn: #ff8f1f;
     --radius: 16px; --shadow: 0 6px 22px rgba(40, 40, 90, 0.08);
   }
@@ -127,6 +127,11 @@
   .tag { font-weight: 700; padding: 2px 8px; border-radius: 999px; font-size: .8rem; }
   .tag.mia { background: var(--mia-soft); color: var(--mia); }
   .tag.tia { background: var(--tia-soft); color: var(--tia); }
+  .tag.self { background: var(--self-soft); color: var(--self); }
+  .card.self { border-top-color: var(--self); }
+  .card.self .who { color: var(--self); }
+  .petsw.on.self { border-color: var(--self); color: var(--self); background: var(--self-soft); }
+  .petbox.self { border-top: 5px solid var(--self); }
 
   details.block { background: var(--card); border-radius: var(--radius); box-shadow: var(--shadow); margin-top: 16px; padding: 4px 16px; }
   details.block > summary { cursor: pointer; list-style: none; padding: 12px 0; font-weight: 700; font-size: .98rem; display: flex; align-items: center; gap: 7px; }
@@ -231,6 +236,7 @@
       <option value="both">共用（家長）</option>
       <option value="mia">🌸 Mia 專屬</option>
       <option value="tia">🐬 Tia 專屬</option>
+      <option value="self">👑 速隨（無限）</option>
     </select>
     <span class="mb-hint" id="modeHint"></span>
   </div>
@@ -270,6 +276,7 @@
               <option value="mia">🌸 Mia</option>
               <option value="tia">🐬 Tia</option>
               <option value="both">👭 兩人都記</option>
+              <option value="self">👑 速隨</option>
             </select>
           </div>
           <div class="field">
@@ -308,7 +315,7 @@
           <div class="grid row3">
             <div class="field">
               <label for="useChild">是誰</label>
-              <select id="useChild"><option value="mia">🌸 Mia</option><option value="tia">🐬 Tia</option></select>
+              <select id="useChild"><option value="mia">🌸 Mia</option><option value="tia">🐬 Tia</option><option value="self">👑 速隨</option></select>
             </div>
             <div class="field"><label for="useDate">日期</label><input type="date" id="useDate" /></div>
             <div class="field"><label for="useMin">使用分鐘數</label><input type="number" id="useMin" min="1" step="5" inputmode="numeric" placeholder="例如 30" /></div>
@@ -346,6 +353,8 @@
           <input type="file" id="importFile" accept="application/json,.json" hidden />
           <button type="button" class="btn danger" id="clearBtn">清除所有資料</button>
         </div>
+        <div class="hint" style="font-weight:700;color:var(--ink);margin-top:16px">🕘 自動備份（每次變更自動存檔，保留最近 30 筆，超過就循環覆蓋最舊的）</div>
+        <div id="history"></div>
       </div>
     </details>
 
@@ -387,14 +396,18 @@
   "use strict";
 
   var STORAGE_KEY = "mt-3c-panel-v1";
+  var HISTORY_KEY = "mt-3c-history-v1";
+  var HISTORY_MAX = 30;
   var DEFAULTS = { baseline: 480, step: 30, reward: 15 };
   var CHILDREN = [
     { key: "mia", name: "Mia", emoji: "🌸", cls: "mia" },
-    { key: "tia", name: "Tia", emoji: "🐬", cls: "tia" }
+    { key: "tia", name: "Tia", emoji: "🐬", cls: "tia" },
+    { key: "self", name: "速隨", emoji: "👑", cls: "self" }
   ];
   var PALETTE = {
     mia: { fur: "#c98bff", dark: "#9a5fd0", inner: "#ecd8ff", belly: "#faf3ff", cheek: "#ff6fbe" },
-    tia: { fur: "#5fb0ff", dark: "#2f86d8", inner: "#d6eaff", belly: "#f2f8ff", cheek: "#3a93ec" }
+    tia: { fur: "#5fb0ff", dark: "#2f86d8", inner: "#d6eaff", belly: "#f2f8ff", cheek: "#3a93ec" },
+    self: { fur: "#ffd24a", dark: "#d99a1f", inner: "#fff0c4", belly: "#fffbe9", cheek: "#ffae3a" }
   };
 
   // ---------- helpers ----------
@@ -406,7 +419,7 @@
   function currentMonthKey() { return todayStr().slice(0, 7); }
   function monthKey(s) { return (s || "").slice(0, 7); }
   function childOf(key) { for (var i = 0; i < CHILDREN.length; i++) if (CHILDREN[i].key === key) return CHILDREN[i]; return CHILDREN[0]; }
-  function lockedChild() { return (state.profile === "mia" || state.profile === "tia") ? state.profile : null; }
+  function lockedChild() { return (state.profile === "mia" || state.profile === "tia" || state.profile === "self") ? state.profile : null; }
   function activeChildren() { var l = lockedChild(); return l ? [l] : ["mia", "tia"]; }
   function shiftMonth(mk, delta) { var p = mk.split("-"), y = +p[0], m = +p[1] + delta; while (m < 1) { m += 12; y--; } while (m > 12) { m -= 12; y++; } return y + "-" + pad2(m); }
   function monthLabel(mk) { var p = mk.split("-"); return p[0] + " 年 " + (+p[1]) + " 月"; }
@@ -443,7 +456,7 @@
     return dp;
   }
   function buildPetsFromStyles(styles) {
-    var pets = { mia: defaultPet(), tia: defaultPet() }, inv = { mia: {}, tia: {} };
+    var pets = { mia: defaultPet(), tia: defaultPet(), self: defaultPet() }, inv = { mia: {}, tia: {}, self: {} };
     ["mia", "tia"].forEach(function (c) {
       var st = styles && styles[c]; if (!st) return;
       if (st === "rainbow") { pets[c].color = "rainbow"; inv[c].rainbow = true; }
@@ -455,17 +468,17 @@
   }
   function normPetsBlock(d) {
     if (d.pets && typeof d.pets === "object") {
-      var pets = { mia: normPet(d.pets.mia), tia: normPet(d.pets.tia) };
-      var inv = { mia: {}, tia: {} };
+      var pets = { mia: normPet(d.pets.mia), tia: normPet(d.pets.tia), self: normPet(d.pets.self) };
+      var inv = { mia: {}, tia: {}, self: {} };
       if (d.inventory && typeof d.inventory === "object")
-        ["mia", "tia"].forEach(function (c) { if (d.inventory[c] && typeof d.inventory[c] === "object") inv[c] = Object.assign({}, d.inventory[c]); });
+        ["mia", "tia", "self"].forEach(function (c) { if (d.inventory[c] && typeof d.inventory[c] === "object") inv[c] = Object.assign({}, d.inventory[c]); });
       return { pets: pets, inventory: inv };
     }
     return buildPetsFromStyles(d.styles);
   }
   function blank() {
     return { settings: Object.assign({}, DEFAULTS), records: [], usages: [],
-      pets: { mia: defaultPet(), tia: defaultPet() }, inventory: { mia: {}, tia: {} }, profile: "both",
+      pets: { mia: defaultPet(), tia: defaultPet(), self: defaultPet() }, inventory: { mia: {}, tia: {}, self: {} }, profile: "both",
       lock: { on: false, hash: "" } };
   }
   function fromData(d) {
@@ -475,7 +488,7 @@
       records: Array.isArray(d.records) ? d.records : [],
       usages: Array.isArray(d.usages) ? d.usages : [],
       pets: pb.pets, inventory: pb.inventory,
-      profile: (d.profile === "mia" || d.profile === "tia") ? d.profile : "both",
+      profile: (d.profile === "mia" || d.profile === "tia" || d.profile === "self") ? d.profile : "both",
       lock: (d.lock && typeof d.lock === "object") ? { on: !!d.lock.on, hash: typeof d.lock.hash === "string" ? d.lock.hash : "" } : { on: false, hash: "" }
     };
   }
@@ -486,6 +499,25 @@
   function save() {
     try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); }
     catch (e) { alert("無法儲存資料，瀏覽器可能停用了本機儲存空間。"); }
+    snapshot();
+  }
+  function loadHistory() { try { var r = localStorage.getItem(HISTORY_KEY); var a = r ? JSON.parse(r) : []; return Array.isArray(a) ? a : []; } catch (e) { return []; } }
+  function saveHistory(h) { try { localStorage.setItem(HISTORY_KEY, JSON.stringify(h)); } catch (e) { } }
+  function snapSig(st) {
+    var pets = {};
+    Object.keys(st.pets || {}).forEach(function (k) { var p = st.pets[k] || {}; pets[k] = { name: p.name, species: p.species, color: p.color, wear: p.wear }; });
+    return JSON.stringify({ s: st.settings, r: st.records, u: st.usages, p: pets, i: st.inventory, pr: st.profile, l: st.lock });
+  }
+  var lastSig = null;
+  function snapshot() {
+    var sig = snapSig(state);
+    if (sig === lastSig) return;          // 只在「實際資料」有變更時存（寵物心情等不算）
+    lastSig = sig;
+    var h = loadHistory();
+    h.push({ t: Date.now(), data: JSON.stringify(state) });
+    while (h.length > HISTORY_MAX) h.shift();
+    saveHistory(h);
+    if (typeof renderHistory === "function") renderHistory();
   }
 
   var state = load();
@@ -501,7 +533,7 @@
     var sum = 0; Object.keys(byDate).forEach(function (k) { sum += earnedForDuration(byDate[k]); }); return sum;
   }
   function monthlyUsed(childKey, mk) { var s = 0; state.usages.forEach(function (u) { if (u.child === childKey && monthKey(u.date) === mk) s += (u.minutes || 0); }); return s; }
-  function balanceOf(childKey) { return monthlyEarned(childKey, currentMonthKey()) - monthlyUsed(childKey, currentMonthKey()); }
+  function balanceOf(childKey) { if (childKey === "self") return 9999999999999; return monthlyEarned(childKey, currentMonthKey()) - monthlyUsed(childKey, currentMonthKey()); }
   function sleepStreak(childKey) {
     var have = {};
     state.records.forEach(function (r) { if (r.child === childKey && r.wake && sessionDuration(r) >= state.settings.baseline) have[r.date] = true; });
@@ -655,7 +687,7 @@
     return "";
   }
   function drawOutfitBehind(id) {
-    if (id === "cape") return '<path d="M34 50 Q50 60 66 50 L80 94 Q50 86 20 94 Z" fill="#ff5277" stroke="#d83a5c" stroke-width="1.5" stroke-linejoin="round"/>';
+    if (id === "cape") return '<path d="M32 49 Q50 60 68 49 L86 97 Q50 87 14 97 Z" fill="#ff5277" stroke="#d83a5c" stroke-width="1.7" stroke-linejoin="round"/><path d="M32 49 Q50 60 68 49 L60 74 Q50 70 40 74 Z" fill="#d8324d" opacity=".35"/>';
     return "";
   }
   function drawOutfit(id, R) {
@@ -690,29 +722,38 @@
   }
   function drawEyes(id) {
     if (id === "glasses") return '<g fill="#cdeeff" fill-opacity=".55" stroke="#6b5a48" stroke-width="2"><circle cx="40" cy="56" r="7.5"/><circle cx="60" cy="56" r="7.5"/></g><path d="M47.5 55 H52.5 M32.5 54 L27 50 M67.5 54 L73 50" fill="none" stroke="#6b5a48" stroke-width="2" stroke-linecap="round"/>';
-    if (id === "heart") return '<g fill="#2b2b3d"><path d="M40 53 C37.5 50,33.5 51.5,33.5 55 C33.5 58,38 60.5,40 62.5 C42 60.5,46.5 58,46.5 55 C46.5 51.5,42.5 50,40 53 Z"/><path d="M60 53 C57.5 50,53.5 51.5,53.5 55 C53.5 58,58 60.5,60 62.5 C62 60.5,66.5 58,66.5 55 C66.5 51.5,62.5 50,60 53 Z"/></g><path d="M47 54.5 H53" stroke="#2b2b3d" stroke-width="2"/>';
+    if (id === "heart") return '<g fill="#2b2b3d" stroke="#1a1a26" stroke-width="0.8" stroke-linejoin="round"><path d="M40 51 C36.5 46.5,30.5 48.5,30.5 53.5 C30.5 57.5,36 60.5,40 64 C44 60.5,49.5 57.5,49.5 53.5 C49.5 48.5,43.5 46.5,40 51 Z"/><path d="M60 51 C56.5 46.5,50.5 48.5,50.5 53.5 C50.5 57.5,56 60.5,60 64 C64 60.5,69.5 57.5,69.5 53.5 C69.5 48.5,63.5 46.5,60 51 Z"/></g><path d="M49.5 53 H50.5" stroke="#2b2b3d" stroke-width="2.6"/><path d="M35 52.5 q2.5 -1.5 5 -0.3 M55 52.5 q2.5 -1.5 5 -0.3" stroke="#ff9ad6" stroke-width="1.5" fill="none" stroke-linecap="round" opacity=".85"/>';
     if (id === "star") return star5(40, 56, 7.5, "#cdeeff", "#5a9fd0") + star5(60, 56, 7.5, "#cdeeff", "#5a9fd0") + '<path d="M47.5 56 H52.5" stroke="#5a9fd0" stroke-width="2"/>';
     if (id === "shades") return '<g fill="#2b2b3d" stroke="#1a1a26" stroke-width="1"><path d="M31 51 H46 Q47 60 38.5 60 Q31 60 31 51 Z"/><path d="M69 51 H54 Q53 60 61.5 60 Q69 60 69 51 Z"/><rect x="46" y="52.5" width="8" height="2.2"/></g>';
     return "";
   }
   function drawHat(id, R) {
-    if (id === "crown") return '<polygon points="' + pts([[41, 21], [44, 13], [47, 19], [50, 11], [53, 19], [56, 13], [59, 21]]) + '" fill="#ffcf3f" stroke="#e0a500" stroke-width="2" stroke-linejoin="round"/><circle cx="50" cy="12" r="1.6" fill="#ff5277"/>';
-    if (id === "bow") return '<g fill="#ff5277" stroke="#d83a5c" stroke-width="2" stroke-linejoin="round"><polygon points="' + pts([[50, 9], [42, 4], [42, 15]]) + '"/><polygon points="' + pts([[50, 9], [58, 4], [58, 15]]) + '"/><circle cx="50" cy="9" r="3.2"/></g>';
-    if (id === "party") return '<g stroke="#5a3fd6" stroke-width="2" stroke-linejoin="round"><polygon points="' + pts([[50, 2], [41, 18], [59, 18]]) + '" fill="#7c5cff"/><polygon points="' + pts([[50, 8], [46, 18], [54, 18]]) + '" fill="#ffd23f" stroke="none"/></g><circle cx="50" cy="3" r="2.8" fill="#ff5fa2" stroke="#d83a5c" stroke-width="1.5"/>';
-    if (id === "flower") return '<g stroke="#e6a700" stroke-width="1.2"><circle cx="61" cy="9" r="3" fill="#ff8fc2"/><circle cx="73" cy="9" r="3" fill="#ff8fc2"/><circle cx="64" cy="14" r="3" fill="#ff8fc2"/><circle cx="70" cy="14" r="3" fill="#ff8fc2"/><circle cx="67" cy="6" r="3" fill="#ff8fc2"/><circle cx="67" cy="10.5" r="2.6" fill="#ffd23f"/></g>';
-    if (id === "beanie") return '<path d="M32 30 Q33 12 50 11 Q67 12 68 30 Z" fill="' + R.cheek + '" stroke="' + R.strokeC + '" stroke-width="1.4" stroke-linejoin="round"/><path d="M30 28 Q50 33 70 28 L70 32 Q50 37 30 32 Z" fill="' + R.strokeC + '" stroke="' + R.strokeC + '" stroke-width="1" stroke-linejoin="round"/><circle cx="50" cy="10" r="3.2" fill="#fff" stroke="' + R.strokeC + '" stroke-width="1"/>';
-    if (id === "tophat") return '<rect x="38" y="4" width="24" height="17" rx="2" fill="#3a3550" stroke="#262138" stroke-width="1.2"/><rect x="31" y="20" width="38" height="4.5" rx="2.2" fill="#3a3550" stroke="#262138" stroke-width="1.2"/><rect x="38" y="16" width="24" height="4" fill="#ff5277"/>';
-    if (id === "cap") return '<path d="M32 23 Q50 6 68 22 Q50 17 32 23 Z" fill="' + R.cheek + '" stroke="' + R.strokeC + '" stroke-width="1.3" stroke-linejoin="round"/><path d="M64 21 Q80 21 82 26 Q72 25 63 24 Z" fill="' + R.cheek + '" stroke="' + R.strokeC + '" stroke-width="1.3" stroke-linejoin="round"/><circle cx="50" cy="11" r="2" fill="' + R.strokeC + '"/>';
-    if (id === "halo") return '<ellipse cx="50" cy="8" rx="13" ry="4.5" fill="none" stroke="#ffe066" stroke-width="3.2"/><ellipse cx="50" cy="8" rx="13" ry="4.5" fill="none" stroke="#fff6c0" stroke-width="1"/>';
+    if (id === "crown") return '<path d="M38 23 L40 11 L46 18 L50 8 L54 18 L60 11 L62 23 Z" fill="#ffd24a" stroke="#e0a500" stroke-width="2" stroke-linejoin="round"/>' +
+      '<rect x="37" y="22" width="26" height="4.6" rx="1.6" fill="#ffd24a" stroke="#e0a500" stroke-width="1.6"/>' +
+      '<circle cx="40" cy="11" r="2" fill="#ff5277" stroke="#e0a500" stroke-width="0.7"/><circle cx="50" cy="8" r="2.5" fill="#5fd0ff" stroke="#e0a500" stroke-width="0.7"/><circle cx="60" cy="11" r="2" fill="#ff5277" stroke="#e0a500" stroke-width="0.7"/>' +
+      '<circle cx="44" cy="24.3" r="1.5" fill="#ff5277"/><circle cx="50" cy="24.3" r="1.5" fill="#5fd0ff"/><circle cx="56" cy="24.3" r="1.5" fill="#ff5277"/>';
+    if (id === "bow") return '<path d="M50 13 L39 6 Q34 9 36 15 Q41 18 50 13 Z" fill="#ff5277" stroke="#d83a5c" stroke-width="1.7" stroke-linejoin="round"/>' +
+      '<path d="M50 13 L61 6 Q66 9 64 15 Q59 18 50 13 Z" fill="#ff5277" stroke="#d83a5c" stroke-width="1.7" stroke-linejoin="round"/>' +
+      '<path d="M47.5 14 L45 23 L49.5 20 Z" fill="#ff5277" stroke="#d83a5c" stroke-width="1.4" stroke-linejoin="round"/><path d="M52.5 14 L55 23 L50.5 20 Z" fill="#ff5277" stroke="#d83a5c" stroke-width="1.4" stroke-linejoin="round"/>' +
+      '<circle cx="50" cy="13" r="3.2" fill="#ff89a5" stroke="#d83a5c" stroke-width="1.4"/>';
+    if (id === "party") return '<polygon points="' + pts([[50, 1], [40, 19], [60, 19]]) + '" fill="#7c5cff" stroke="#5a3fd6" stroke-width="2" stroke-linejoin="round"/>' +
+      '<path d="M43 13 Q50 16 57 13 M41.5 17.5 Q50 21 58.5 17.5" fill="none" stroke="#ffd23f" stroke-width="2"/>' +
+      '<circle cx="46" cy="9" r="1.4" fill="#ff5fa2"/><circle cx="54" cy="11" r="1.4" fill="#5fd0ff"/>' +
+      '<circle cx="50" cy="1.5" r="3.2" fill="#ff5fa2" stroke="#d83a5c" stroke-width="1.5"/>';
+    if (id === "flower") return '<g stroke="#e0699a" stroke-width="1.3"><circle cx="62" cy="11" r="3.9" fill="#ff8fc2"/><circle cx="72" cy="11" r="3.9" fill="#ff8fc2"/><circle cx="64" cy="5" r="3.9" fill="#ff8fc2"/><circle cx="70" cy="5" r="3.9" fill="#ff8fc2"/><circle cx="67" cy="14" r="3.9" fill="#ff8fc2"/></g><circle cx="67" cy="9" r="3.4" fill="#ffd23f" stroke="#e0a500" stroke-width="1.2"/>';
+    if (id === "beanie") return '<path d="M32 30 Q33 12 50 11 Q67 12 68 30 Z" fill="' + R.cheek + '" stroke="' + R.strokeC + '" stroke-width="1.4" stroke-linejoin="round"/><path d="M30 28 Q50 33 70 28 L70 32 Q50 37 30 32 Z" fill="' + R.strokeC + '" stroke="' + R.strokeC + '" stroke-width="1" stroke-linejoin="round"/><circle cx="50" cy="10" r="3.4" fill="#fff" stroke="' + R.strokeC + '" stroke-width="1"/>';
+    if (id === "tophat") return '<rect x="38" y="2" width="24" height="19" rx="2.5" fill="#3a3550" stroke="#262138" stroke-width="1.5"/><rect x="30" y="20" width="40" height="5" rx="2.5" fill="#3a3550" stroke="#262138" stroke-width="1.5"/><rect x="38" y="15" width="24" height="5" fill="#ff5277"/><rect x="41" y="5" width="3" height="11" rx="1.5" fill="#fff" opacity=".2"/>';
+    if (id === "cap") return '<path d="M31 24 Q50 4 69 22 Q50 16 31 24 Z" fill="' + R.cheek + '" stroke="' + R.strokeC + '" stroke-width="1.4" stroke-linejoin="round"/><path d="M64 21 Q82 21 85 28 Q73 26 62 24 Z" fill="' + R.cheek + '" stroke="' + R.strokeC + '" stroke-width="1.4" stroke-linejoin="round"/><circle cx="50" cy="9" r="2.6" fill="' + R.strokeC + '"/>';
+    if (id === "halo") return '<ellipse cx="50" cy="7" rx="17" ry="6.4" fill="none" stroke="#ffe066" stroke-width="1" opacity=".4"/><ellipse cx="50" cy="7" rx="14" ry="5" fill="none" stroke="#ffd23f" stroke-width="4"/><ellipse cx="50" cy="7" rx="14" ry="5" fill="none" stroke="#fff6c0" stroke-width="1.4"/>';
     return "";
   }
   function drawHand(id, R) {
-    if (id === "balloon") return '<path d="M76 72 Q83 58 85 46" fill="none" stroke="#c9c9d6" stroke-width="1.2"/><ellipse cx="85" cy="40" rx="7.5" ry="9" fill="#ff5277" stroke="#d83a5c" stroke-width="1.5"/><polygon points="' + pts([[83.5, 48], [86.5, 48], [85, 51]]) + '" fill="#ff5277" stroke="#d83a5c" stroke-width="1"/><ellipse cx="82" cy="37" rx="2" ry="3" fill="#fff" opacity=".6"/>';
-    if (id === "icecream") return '<polygon points="' + pts([[80, 90], [74, 74], [86, 74]]) + '" fill="#e6b15c" stroke="#c8923a" stroke-width="1.5" stroke-linejoin="round"/><circle cx="80" cy="72" r="5.5" fill="#ffb3d9" stroke="#e58cc0" stroke-width="1"/><circle cx="80" cy="66" r="5" fill="#bfe9ff" stroke="#8fd0f0" stroke-width="1"/><circle cx="80" cy="61" r="2" fill="#ff5277"/>';
-    if (id === "wand") return '<line x1="76" y1="80" x2="87" y2="61" stroke="#caa15a" stroke-width="2.4" stroke-linecap="round"/>' + star5(88, 58, 5.5, "#ffd23f", "#e0a500");
-    if (id === "lollipop") return '<line x1="76" y1="80" x2="84" y2="58" stroke="#e8d6b0" stroke-width="2.2" stroke-linecap="round"/><circle cx="85" cy="53" r="7.5" fill="#ff8fc2" stroke="#e25f9b" stroke-width="1.4"/><path d="M85 53 m-4.6 0 a4.6 4.6 0 1 1 9.2 0 a2.6 2.6 0 1 1 -5.2 0" fill="none" stroke="#fff" stroke-width="1.3"/>';
-    if (id === "bouquet") return '<path d="M78 82 L84 64 M81 80 L87 66" stroke="#5fa83f" stroke-width="1.6"/><g stroke="#e0a500" stroke-width="1"><circle cx="84" cy="60" r="3.3" fill="#ff8fc2"/><circle cx="89" cy="62" r="3.3" fill="#ffd36e"/><circle cx="86" cy="56" r="3.3" fill="#b08fff"/><circle cx="86.3" cy="59.3" r="1.6" fill="#fff7d0"/></g>';
-    if (id === "sword") return '<line x1="74" y1="84" x2="90" y2="58" stroke="#cfd6e0" stroke-width="3.4" stroke-linecap="round"/><line x1="69" y1="80" x2="80" y2="73" stroke="#caa15a" stroke-width="3" stroke-linecap="round"/><circle cx="72" cy="82" r="2.3" fill="#ffd23f" stroke="#e0a500" stroke-width="0.8"/>';
+    if (id === "balloon") return '<path d="M76 74 Q84 58 86 44" fill="none" stroke="#c9c9d6" stroke-width="1.3"/><ellipse cx="86" cy="38" rx="9" ry="11" fill="#ff5277" stroke="#d83a5c" stroke-width="1.6"/><polygon points="' + pts([[84, 48], [88, 48], [86, 51]]) + '" fill="#ff5277" stroke="#d83a5c" stroke-width="1"/><ellipse cx="82.5" cy="34" rx="2.4" ry="3.4" fill="#fff" opacity=".55"/>';
+    if (id === "icecream") return '<polygon points="' + pts([[80, 95], [72, 74], [88, 74]]) + '" fill="#e6b15c" stroke="#c8923a" stroke-width="1.6" stroke-linejoin="round"/><path d="M75 77 L78 82 M80 76 L81 82 M85 77 L83 82" stroke="#c8923a" stroke-width="0.8"/><circle cx="80" cy="71" r="7.5" fill="#ffb3d9" stroke="#e58cc0" stroke-width="1.5"/><circle cx="80" cy="62" r="6.5" fill="#bfe9ff" stroke="#8fd0f0" stroke-width="1.5"/><circle cx="80" cy="54.5" r="2.6" fill="#ff5277"/><circle cx="77.5" cy="60" r="1.6" fill="#fff" opacity=".6"/>';
+    if (id === "wand") return '<line x1="73" y1="86" x2="89" y2="56" stroke="#caa15a" stroke-width="3" stroke-linecap="round"/>' + star5(90, 52, 8.5, "#ffd23f", "#e0a500") + '<circle cx="90" cy="52" r="2.2" fill="#fff7c0"/>' + sparkle(79, 64, 2.6) + sparkle(96, 60, 2.2) + sparkle(84, 49, 2);
+    if (id === "lollipop") return '<line x1="74" y1="86" x2="86" y2="54" stroke="#e8d6b0" stroke-width="2.8" stroke-linecap="round"/><circle cx="87" cy="48" r="9.5" fill="#ff8fc2" stroke="#e25f9b" stroke-width="1.7"/><path d="M87 48 m-6.5 0 a6.5 6.5 0 1 1 13 0 a3.8 3.8 0 1 1 -7.6 0" fill="none" stroke="#fff" stroke-width="1.7"/>';
+    if (id === "bouquet") return '<path d="M78 86 L85 60 M82 84 L89 62 M80 85 L86 61" stroke="#5fa83f" stroke-width="2"/><g stroke="#e0699a" stroke-width="1.3"><circle cx="84" cy="56" r="4.4" fill="#ff8fc2"/><circle cx="92" cy="58" r="4.4" fill="#ffd36e"/><circle cx="88" cy="50" r="4.4" fill="#b08fff"/></g><circle cx="84" cy="56" r="1.8" fill="#fff7d0"/><circle cx="92" cy="58" r="1.8" fill="#fff"/><circle cx="88" cy="50" r="1.8" fill="#fff"/>';
+    if (id === "sword") return '<line x1="72" y1="88" x2="92" y2="52" stroke="#dfe6ef" stroke-width="4.4" stroke-linecap="round"/><line x1="92" y1="52" x2="94" y2="48" stroke="#fff" stroke-width="2.2"/><line x1="66" y1="82" x2="80" y2="74" stroke="#caa15a" stroke-width="3.6" stroke-linecap="round"/><circle cx="70" cy="84" r="2.8" fill="#ffd23f" stroke="#e0a500" stroke-width="1"/>';
     return "";
   }
   function avgStat(p) { var s = p.stats; return (s.happy + s.full + s.clean + s.energy) / 4; }
@@ -813,6 +854,7 @@
   };
   function findItem(slot, id) { var l = ITEMS[slot] || []; for (var i = 0; i < l.length; i++) if (l[i].id === id) return l[i]; return null; }
   function isOwned(childKey, it) {
+    if (childKey === "self") return true;
     if (!it || it.price === 0) return true;
     if (state.inventory[childKey] && state.inventory[childKey][it.id]) return true;
     if (it.unlockStreak && sleepStreak(childKey) >= it.unlockStreak) return true;
@@ -880,6 +922,7 @@
     cardsEl.className = "cards" + (act.length === 1 ? " one" : "");
     cardsEl.innerHTML = act.map(function (ck) {
       var ch = childOf(ck);
+      if (ch.key === "self") return '<div class="card self"><div class="card-top"><div class="mascot">' + petSVG("self", { size: 78, showBg: false }) + '</div><div class="card-info"><div class="who">' + ch.emoji + " " + ch.name + '</div><div class="bignum">♾️ <span class="unit">無限 3C</span></div></div></div><div class="sub"><span>盡情換裝，全部配件免費解鎖</span></div></div>';
       var earned = monthlyEarned(ch.key, viewMonth), used = monthlyUsed(ch.key, viewMonth), bal = earned - used;
       return '<div class="card ' + ch.cls + '"><div class="card-top">' +
         '<div class="mascot">' + petSVG(ch.key, { size: 78, showBg: false }) + "</div>" +
@@ -957,9 +1000,12 @@
     return '<div class="wardrobe">' + out + "</div>";
   }
   function renderPet() {
-    var lc = lockedChild(); if (lc) petWho = lc;
+    var lc = lockedChild();
+    if (lc) petWho = lc;
+    else if (activeChildren().indexOf(petWho) < 0) petWho = activeChildren()[0];
     var ch = childOf(petWho), p = state.pets[petWho], bal = balanceOf(petWho), nm = p.name || ch.name;
-    var swRow = lc ? "" : ('<div class="petsw-row">' + CHILDREN.map(function (c) { return '<button class="petsw ' + c.cls + (c.key === petWho ? " on" : "") + '" data-petwho="' + c.key + '">' + c.emoji + " " + (state.pets[c.key].name || c.name) + "</button>"; }).join("") + "</div>");
+    var walletStr = petWho === "self" ? "9,999,999,999,999 ♾️" : fmtMin(bal);
+    var swRow = lc ? "" : ('<div class="petsw-row">' + activeChildren().map(function (ck) { var c = childOf(ck); return '<button class="petsw ' + c.cls + (c.key === petWho ? " on" : "") + '" data-petwho="' + c.key + '">' + c.emoji + " " + (state.pets[c.key].name || c.name) + "</button>"; }).join("") + "</div>");
     var care = '<div class="carebtns">' + Object.keys(ACTIONS).map(function (k) { return '<button class="carebtn" data-act="' + k + '">' + ACTIONS[k].emoji + "<span>" + ACTIONS[k].label + "</span></button>"; }).join("") + "</div>";
     var slotTabs = '<div class="slottabs">' + SLOTS.map(function (sl) { return '<button class="slottab' + (sl.key === petSlot ? " on" : "") + '" data-slottab="' + sl.key + '">' + sl.name + "</button>"; }).join("") + "</div>";
     $("view-pet").innerHTML =
@@ -969,7 +1015,7 @@
         '<div class="petstage"><div class="petart">' + petSVG(petWho, { size: 220, expr: petExpr }) + "</div></div>" +
         statsHTML(p) + care +
       "</section>" +
-      '<section class="block"><div class="wallet ' + (bal < 0 ? "neg" : "") + '">👛 ' + ch.name + " 的 3C 錢包：<b>" + fmtMin(bal) + "</b></div>" +
+      '<section class="block"><div class="wallet ' + (bal < 0 ? "neg" : "") + '">👛 ' + ch.name + " 的 3C 錢包：<b>" + walletStr + "</b></div>" +
         '<h2 style="margin-top:12px">🛍️ 衣櫥 / 商店</h2>' + slotTabs + wardrobeHTML(petWho, petSlot) +
         '<p class="hint">基本款免費換；標價的用 3C 兌換（會記一筆扣款）；🔒 限定款連續睡飽解鎖、或用 3C 兌換。</p></section>';
   }
@@ -1205,11 +1251,44 @@
     reader.readAsText(f);
   });
   $("clearBtn").addEventListener("click", function () {
-    if (!confirm("確定要清除「所有」資料嗎？此動作無法復原（建議先匯出備份）。")) return;
-    state = blank(); localStorage.removeItem(STORAGE_KEY); exitEdit(); fillSettings(); render();
+    if (!confirm("確定要清除「所有」資料嗎？此動作無法復原（自動備份會保留，可從下方還原）。")) return;
+    state = blank(); localStorage.removeItem(STORAGE_KEY); lastSig = null; exitEdit(); fillSettings(); render(); renderHistory();
+  });
+
+  // ---------- 自動備份歷史 ----------
+  function fmtTime(t) { var d = new Date(t); return (d.getMonth() + 1) + "/" + d.getDate() + " " + pad2(d.getHours()) + ":" + pad2(d.getMinutes()); }
+  function renderHistory() {
+    var el = $("history"); if (!el) return;
+    var h = loadHistory();
+    if (!h.length) { el.innerHTML = '<p class="empty">尚無自動備份（有變更後就會自動出現）。</p>'; return; }
+    el.innerHTML = h.slice().reverse().map(function (it, idx) {
+      var realIdx = h.length - 1 - idx;
+      return '<div class="uitem"><div><b>' + fmtTime(it.t) + "</b>" + (idx === 0 ? ' <span class="tag self">最新</span>' : "") + "</div>" +
+        '<div style="display:flex;gap:6px"><button class="btn sec sm" data-hrestore="' + realIdx + '">還原</button><button class="btn ghost sm" data-hdl="' + realIdx + '">下載</button></div></div>';
+    }).join("");
+  }
+  $("history").addEventListener("click", function (e) {
+    var rb = e.target.closest("[data-hrestore]"), db = e.target.closest("[data-hdl]");
+    var h = loadHistory();
+    if (rb) {
+      var it = h[+rb.getAttribute("data-hrestore")]; if (!it) return;
+      if (!confirm("還原到「" + fmtTime(it.t) + "」這個版本？目前的資料會被取代。")) return;
+      try {
+        state = fromData(JSON.parse(it.data)); lastSig = null; save();
+        fillSettings(); $("profileSel").value = state.profile; applyProfile(); render(); renderPet(); renderHistory();
+        alert("已還原到 " + fmtTime(it.t) + " ✓");
+      } catch (er) { alert("還原失敗"); }
+    } else if (db) {
+      var it2 = h[+db.getAttribute("data-hdl")]; if (!it2) return;
+      var a = document.createElement("a"); a.href = URL.createObjectURL(new Blob([it2.data], { type: "application/json" }));
+      var d = new Date(it2.t);
+      a.download = "mia-tia-3c-auto-" + d.getFullYear() + pad2(d.getMonth() + 1) + pad2(d.getDate()) + "-" + pad2(d.getHours()) + pad2(d.getMinutes()) + ".json";
+      document.body.appendChild(a); a.click(); document.body.removeChild(a); setTimeout(function () { URL.revokeObjectURL(a.href); }, 1000);
+    }
   });
 
   // ---------- init ----------
+  (function () { var hh = loadHistory(); if (hh.length) { try { lastSig = snapSig(JSON.parse(hh[hh.length - 1].data)); } catch (e) { } } })();
   tickPet(state.pets.mia); tickPet(state.pets.tia); save();
   recDate.value = todayStr(); $("useDate").value = todayStr();
   setTime(recSleepH, recSleepM, ""); setTime(recWakeH, recWakeM, "");
@@ -1217,7 +1296,7 @@
   if (lockedChild()) petWho = lockedChild();
   applyProfile();
   fillSettings(); updateForm(); render(); showTab("sleep");
-  refreshLockSection(); applyLock();
+  refreshLockSection(); applyLock(); renderHistory();
   if (window.matchMedia) { try { window.matchMedia("(min-width:1500px)").addEventListener("change", function () { render(); }); } catch (e) {} }
 })();
 </script>
