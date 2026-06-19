@@ -83,6 +83,27 @@
   .card .unit { font-size: .85rem; color: var(--muted); font-weight: 600; }
   .card .sub { margin-top: 8px; font-size: .82rem; color: var(--muted); display: flex; gap: 12px; flex-wrap: wrap; }
   .card .sub b { color: var(--ink); font-weight: 700; }
+  .card-top { display: flex; align-items: center; gap: 10px; }
+  .card .mascot { flex: 0 0 auto; line-height: 0; }
+  .card .mascot svg { display: block; width: 78px; height: 78px; }
+  .card .card-info { min-width: 0; }
+  @media (max-width: 380px) { .card .mascot svg { width: 62px; height: 62px; } }
+
+  /* Skin picker */
+  .skinrow { margin-bottom: 12px; }
+  .skinrow .skin-who { font-weight: 800; font-size: .9rem; margin-bottom: 6px; }
+  .skinrow.mia .skin-who { color: var(--mia); }
+  .skinrow.tia .skin-who { color: var(--tia); }
+  .skins { display: flex; flex-wrap: wrap; gap: 8px; }
+  .skin {
+    border: 2px solid var(--line); background: #fff; border-radius: 14px; padding: 6px 6px 4px;
+    cursor: pointer; width: 84px; text-align: center; position: relative;
+  }
+  .skin svg { display: block; margin: 0 auto; width: 56px; height: 56px; }
+  .skin .skin-name { display: block; font-size: .72rem; color: var(--muted); margin-top: 2px; font-weight: 600; }
+  .skin.sel { border-color: var(--brand); box-shadow: 0 0 0 3px #eceaff; }
+  .skin.sel .skin-name { color: var(--brand); }
+  .skin .lim { position: absolute; top: -7px; right: -6px; background: var(--warn); color: #fff; font-size: .6rem; font-weight: 800; padding: 1px 5px; border-radius: 999px; }
 
   section.block {
     background: var(--card); border-radius: var(--radius); padding: 16px;
@@ -252,6 +273,14 @@
     <div id="records"></div>
   </section>
 
+  <details class="block" id="skinBlock" open>
+    <summary>🎨 造型（幫 Mia / Tia 換裝）</summary>
+    <div class="inner">
+      <div id="skins"></div>
+      <p class="hint">點一下就換造型，會自動記住。「✨ 星空限定」是亮晶晶的限定款 💫（皆為原創小怪獸角色）</p>
+    </div>
+  </details>
+
   <details class="block" id="usageBlock">
     <summary>📺 使用 / 兌換紀錄（扣掉已經看的時間）</summary>
     <div class="inner">
@@ -340,8 +369,12 @@
   ];
 
   // ---------- state ----------
+  var DEFAULT_STYLES = { mia: "classic", tia: "classic" };
   function blank() {
-    return { settings: Object.assign({}, DEFAULTS), records: [], usages: [] };
+    return { settings: Object.assign({}, DEFAULTS), records: [], usages: [], styles: Object.assign({}, DEFAULT_STYLES) };
+  }
+  function normStyles(s) {
+    return (s && typeof s === "object") ? Object.assign({}, DEFAULT_STYLES, s) : Object.assign({}, DEFAULT_STYLES);
   }
   function load() {
     try {
@@ -351,7 +384,8 @@
       return {
         settings: Object.assign({}, DEFAULTS, d.settings || {}),
         records: Array.isArray(d.records) ? d.records : [],
-        usages: Array.isArray(d.usages) ? d.usages : []
+        usages: Array.isArray(d.usages) ? d.usages : [],
+        styles: normStyles(d.styles)
       };
     } catch (e) { return blank(); }
   }
@@ -435,6 +469,99 @@
     hSel.value = p[0]; mSel.value = p[1];
   }
 
+  // ---------- 原創小怪獸造型（可換裝、可收集） ----------
+  var PALETTE = {
+    mia: { fur: "#ff7eb6", dark: "#e25f9b", inner: "#ffd5e8", belly: "#fff4f9", cheek: "#ff4f97" },
+    tia: { fur: "#45cfe6", dark: "#1aa7bf", inner: "#cdf2f9", belly: "#f1fdff", cheek: "#12b4cc" }
+  };
+  var STYLES = [
+    { key: "classic", name: "經典" },
+    { key: "bow", name: "蝴蝶結", acc: "bow" },
+    { key: "crown", name: "小皇冠", acc: "crown" },
+    { key: "star", name: "星星肚肚", belly: "star" },
+    { key: "rainbow", name: "彩虹", fur: "rainbow" },
+    { key: "galaxy", name: "✨星空限定", fur: "galaxy", acc: "crown", sparkle: true, limited: true }
+  ];
+  function styleDef(key) {
+    for (var i = 0; i < STYLES.length; i++) if (STYLES[i].key === key) return STYLES[i];
+    return STYLES[0];
+  }
+  function styleOf(childKey) { return (state.styles && state.styles[childKey]) || "classic"; }
+
+  var svgSeq = 0;
+  function pts(arr) { return arr.map(function (p) { return p[0].toFixed(1) + "," + p[1].toFixed(1); }).join(" "); }
+  function sparkle(x, y, r) {
+    var a = r * 0.22;
+    return '<polygon points="' + pts([[x, y - r], [x + a, y - a], [x + r, y], [x + a, y + a], [x, y + r], [x - a, y + a], [x - r, y], [x - a, y - a]]) + '" fill="#fff" opacity=".95"/>';
+  }
+  function star5(cx, cy, r, fill, stroke) {
+    var p = [];
+    for (var i = 0; i < 10; i++) {
+      var rr = (i % 2) ? r * 0.45 : r;
+      var a = -Math.PI / 2 + i * Math.PI / 5;
+      p.push([cx + rr * Math.cos(a), cy + rr * Math.sin(a)]);
+    }
+    return '<polygon points="' + pts(p) + '" fill="' + fill + '" stroke="' + stroke + '" stroke-width="1.4" stroke-linejoin="round"/>';
+  }
+  function mascotSVG(childKey, styleKey, size) {
+    size = size || 96;
+    var pal = PALETTE[childKey] || PALETTE.mia;
+    var st = styleDef(styleKey);
+    var special = (st.fur === "rainbow" || st.fur === "galaxy");
+    var gid = "mg" + (++svgSeq);
+    var defs = "", furFill = pal.fur, strokeC = pal.dark;
+    if (st.fur === "rainbow") {
+      defs = '<linearGradient id="' + gid + '" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ff9ec0"/><stop offset=".45" stop-color="#ffd98a"/><stop offset="1" stop-color="#8be3b0"/></linearGradient>';
+      furFill = "url(#" + gid + ")"; strokeC = "#ef9bb0";
+    } else if (st.fur === "galaxy") {
+      defs = '<linearGradient id="' + gid + '" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#6a5cff"/><stop offset=".5" stop-color="#b15cff"/><stop offset="1" stop-color="#ff7ad9"/></linearGradient>';
+      furFill = "url(#" + gid + ")"; strokeC = "#8a6bf0";
+    }
+    var innerFill = special ? "rgba(255,255,255,.6)" : pal.inner;
+    var bellyFill = special ? "rgba(255,255,255,.45)" : pal.belly;
+    var s = '<svg viewBox="0 0 100 100" width="' + size + '" height="' + size + '" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="小怪獸">';
+    s += "<defs>" + defs + "</defs>";
+    s += '<g stroke="' + strokeC + '" stroke-width="2" stroke-linejoin="round">';
+    // 耳朵
+    s += '<ellipse cx="35" cy="24" rx="11.5" ry="21" transform="rotate(-14 35 24)" fill="' + furFill + '"/>';
+    s += '<ellipse cx="65" cy="24" rx="11.5" ry="21" transform="rotate(14 65 24)" fill="' + furFill + '"/>';
+    s += '<ellipse cx="35" cy="27" rx="5.5" ry="12.5" transform="rotate(-14 35 27)" fill="' + innerFill + '" stroke="none"/>';
+    s += '<ellipse cx="65" cy="27" rx="5.5" ry="12.5" transform="rotate(14 65 27)" fill="' + innerFill + '" stroke="none"/>';
+    // 腳
+    s += '<ellipse cx="38" cy="91" rx="9" ry="6.5" fill="' + furFill + '"/><ellipse cx="62" cy="91" rx="9" ry="6.5" fill="' + furFill + '"/>';
+    // 身體
+    s += '<ellipse cx="50" cy="61" rx="29" ry="30" fill="' + furFill + '"/>';
+    // 肚肚
+    s += '<ellipse cx="50" cy="68" rx="18" ry="19" fill="' + bellyFill + '" stroke="none"/>';
+    if (st.belly === "star") s += star5(50, 69, 9, "#ffd23f", "#e6a700");
+    // 手
+    s += '<ellipse cx="24" cy="64" rx="6.5" ry="8.5" transform="rotate(20 24 64)" fill="' + furFill + '"/>';
+    s += '<ellipse cx="76" cy="64" rx="6.5" ry="8.5" transform="rotate(-20 76 64)" fill="' + furFill + '"/>';
+    // 腮紅
+    s += '<circle cx="31" cy="64" r="5" fill="' + pal.cheek + '" opacity=".4" stroke="none"/><circle cx="69" cy="64" r="5" fill="' + pal.cheek + '" opacity=".4" stroke="none"/>';
+    // 眼睛
+    s += '<ellipse cx="40" cy="56" rx="5.5" ry="6.5" fill="#2b2b3d" stroke="none"/><ellipse cx="60" cy="56" rx="5.5" ry="6.5" fill="#2b2b3d" stroke="none"/>';
+    s += '<circle cx="42" cy="53" r="2" fill="#fff" stroke="none"/><circle cx="62" cy="53" r="2" fill="#fff" stroke="none"/>';
+    // 愛心鼻 + 嘴 + 牙
+    s += '<path d="M50 63 C47 60,44 64,50 68 C56 64,53 60,50 63 Z" fill="' + pal.cheek + '" stroke="none"/>';
+    s += '<path d="M44 70 Q50 76 56 70" fill="none" stroke="' + strokeC + '" stroke-width="2.4" stroke-linecap="round"/>';
+    s += '<rect x="47.3" y="70.4" width="2.6" height="3.6" rx="1" fill="#fff" stroke-width="0.8"/>';
+    s += '<rect x="50.1" y="70.4" width="2.6" height="3.6" rx="1" fill="#fff" stroke-width="0.8"/>';
+    // 配件
+    if (st.acc === "bow") {
+      s += '<g fill="#ff5277" stroke="#d83a5c"><polygon points="' + pts([[61, 11], [53, 6], [53, 17]]) + '"/><polygon points="' + pts([[61, 11], [69, 6], [69, 17]]) + '"/><circle cx="61" cy="11" r="3.2"/></g>';
+    } else if (st.acc === "crown") {
+      s += '<polygon points="' + pts([[41, 21], [44, 13], [47, 19], [50, 11], [53, 19], [56, 13], [59, 21]]) + '" fill="#ffcf3f" stroke="#e0a500"/>';
+      s += '<circle cx="50" cy="12" r="1.6" fill="#ff5277" stroke="none"/>';
+    }
+    s += "</g>";
+    if (st.sparkle) {
+      s += sparkle(18, 42, 3.2) + sparkle(83, 48, 3.6) + sparkle(74, 22, 2.6) + sparkle(26, 76, 2.6) + sparkle(58, 86, 2.2) + sparkle(50, 30, 2.2);
+    }
+    s += "</svg>";
+    return s;
+  }
+
   // ---------- monthly aggregation (門檻以「每人每天總睡眠」計算；未補起床者不計) ----------
   function monthlyEarned(childKey, mk) {
     var byDate = {};
@@ -459,6 +586,7 @@
   function $(id) { return document.getElementById(id); }
   var monthLabelEl = $("monthLabel");
   var cardsEl = $("cards");
+  var skinsEl = $("skins");
   var pendingBlock = $("pendingBlock");
   var pendingEl = $("pending");
   var recordsEl = $("records");
@@ -490,12 +618,31 @@
       var used = monthlyUsed(ch.key, viewMonth);
       var bal = earned - used;
       return '<div class="card ' + ch.cls + '">' +
-        '<div class="who">' + ch.emoji + " " + ch.name + "</div>" +
-        '<div class="bignum ' + (bal < 0 ? "neg" : "") + '">' + fmtMin(bal) +
-        ' <span class="unit">可用</span></div>' +
+        '<div class="card-top">' +
+          '<div class="mascot">' + mascotSVG(ch.key, styleOf(ch.key), 78) + "</div>" +
+          '<div class="card-info">' +
+            '<div class="who">' + ch.emoji + " " + ch.name + "</div>" +
+            '<div class="bignum ' + (bal < 0 ? "neg" : "") + '">' + fmtMin(bal) +
+            ' <span class="unit">可用</span></div>' +
+          "</div>" +
+        "</div>" +
         '<div class="sub"><span>本月賺到 <b>' + fmtMin(earned) + "</b></span>" +
         "<span>已使用 <b>" + fmtMin(used) + "</b></span></div>" +
         "</div>";
+    }).join("");
+  }
+  function renderSkins() {
+    skinsEl.innerHTML = CHILDREN.map(function (ch) {
+      var cur = styleOf(ch.key);
+      var btns = STYLES.map(function (st) {
+        return '<button type="button" class="skin ' + (st.key === cur ? "sel" : "") +
+          '" data-skin-child="' + ch.key + '" data-skin-style="' + st.key + '">' +
+          (st.limited ? '<span class="lim">限定</span>' : "") +
+          mascotSVG(ch.key, st.key, 56) +
+          '<span class="skin-name">' + st.name + "</span></button>";
+      }).join("");
+      return '<div class="skinrow ' + ch.cls + '"><div class="skin-who">' + ch.emoji + " " +
+        ch.name + " 的造型</div><div class=\"skins\">" + btns + "</div></div>";
     }).join("");
   }
   function renderPending() {
@@ -577,6 +724,7 @@
     renderRules();
     renderMonth();
     renderCards();
+    renderSkins();
     renderPending();
     renderRecords();
     renderUsages();
@@ -711,6 +859,15 @@
     save(); render();
   });
 
+  // ---------- 換造型 ----------
+  skinsEl.addEventListener("click", function (e) {
+    var b = e.target.closest("[data-skin-child]");
+    if (!b) return;
+    if (!state.styles) state.styles = {};
+    state.styles[b.getAttribute("data-skin-child")] = b.getAttribute("data-skin-style");
+    save(); render();
+  });
+
   // ---------- month nav ----------
   $("prevMonth").addEventListener("click", function () { viewMonth = shiftMonth(viewMonth, -1); render(); });
   $("nextMonth").addEventListener("click", function () { viewMonth = shiftMonth(viewMonth, 1); render(); });
@@ -758,7 +915,8 @@
         state = {
           settings: Object.assign({}, DEFAULTS, d.settings || {}),
           records: Array.isArray(d.records) ? d.records : [],
-          usages: Array.isArray(d.usages) ? d.usages : []
+          usages: Array.isArray(d.usages) ? d.usages : [],
+          styles: normStyles(d.styles)
         };
         save(); fillSettings(); render(); updateForm();
         alert("匯入完成 ✓");
