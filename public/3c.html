@@ -163,6 +163,8 @@
   .petstage.fx-bath .petart { animation: bathshake .9s ease; }
   .petstage.fx-play .petart { animation: playjump .9s ease; }
   .petstage.fx-pat .petart { animation: patsquish .7s ease; }
+  .blink { transform-box: fill-box; transform-origin: center top; animation: blinkA 5.5s ease-in-out infinite; }
+  @keyframes blinkA { 0%, 90%, 100% { transform: scaleY(0); } 93.5%, 96% { transform: scaleY(1); } }
   .stats { display: grid; grid-template-columns: 1fr 1fr; gap: 8px 14px; margin: 10px 4px 2px; }
   .stat .sl { font-size: .78rem; color: var(--muted); font-weight: 700; }
   .stat .bar { height: 10px; background: #eee; border-radius: 999px; overflow: hidden; }
@@ -564,9 +566,10 @@
     if (expr === "happy" || expr === "eat") {
       s += '<path d="M34 57 Q40 50 46 57" fill="none" stroke="#2b2b3d" stroke-width="2.6" stroke-linecap="round"/><path d="M54 57 Q60 50 66 57" fill="none" stroke="#2b2b3d" stroke-width="2.6" stroke-linecap="round"/>';
     } else {
-      s += '<ellipse cx="40" cy="56" rx="6" ry="7.3" fill="#2b2b3d" stroke="none"/><ellipse cx="60" cy="56" rx="6" ry="7.3" fill="#2b2b3d" stroke="none"/>' +
-        '<circle cx="42.4" cy="53.2" r="2.5" fill="#fff" stroke="none"/><circle cx="62.4" cy="53.2" r="2.5" fill="#fff" stroke="none"/>' +
-        '<circle cx="38.3" cy="58.6" r="1.1" fill="#fff" opacity=".7" stroke="none"/><circle cx="58.3" cy="58.6" r="1.1" fill="#fff" opacity=".7" stroke="none"/>';
+      s += '<ellipse cx="40" cy="56" rx="6.2" ry="7.5" fill="#2b2b3d" stroke="none"/><ellipse cx="60" cy="56" rx="6.2" ry="7.5" fill="#2b2b3d" stroke="none"/>' +
+        '<circle cx="42.4" cy="53" r="2.6" fill="#fff" stroke="none"/><circle cx="62.4" cy="53" r="2.6" fill="#fff" stroke="none"/>' +
+        '<circle cx="38.2" cy="58.8" r="1.2" fill="#fff" opacity=".7" stroke="none"/><circle cx="58.2" cy="58.8" r="1.2" fill="#fff" opacity=".7" stroke="none"/>' +
+        '<g class="blink"><ellipse cx="40" cy="55" rx="6.8" ry="8" fill="' + R.belly + '" stroke="none"/><ellipse cx="60" cy="55" rx="6.8" ry="8" fill="' + R.belly + '" stroke="none"/><path d="M34 56.5 Q40 59.5 46 56.5 M54 56.5 Q60 59.5 66 56.5" fill="none" stroke="#2b2b3d" stroke-width="2" stroke-linecap="round"/></g>';
     }
     s += '<path d="M50 63 C47 60,44 64,50 68 C56 64,53 60,50 63 Z" fill="' + R.cheek + '" stroke="none"/>';
     if (expr === "eat") s += '<ellipse cx="50" cy="72" rx="5" ry="4.5" fill="#b3406a" stroke="' + R.strokeC + '" stroke-width="1.5"/>';
@@ -697,7 +700,7 @@
   function petSVG(childKey, opts) {
     opts = opts || {}; var size = opts.size || 96; var showBg = opts.showBg !== false; var expr = opts.expr || "auto";
     var p = (state.pets && state.pets[childKey]) || defaultPet();
-    if (expr === "auto") expr = avgStat(p) >= 70 ? "happy" : "normal";
+    if (expr === "auto") expr = "normal";
     var species = p.species || "bunny", wear = p.wear || {};
     var R = resolveColor(childKey, p.color || "theme");
     var s = '<svg viewBox="0 0 100 100" width="' + size + '" height="' + size + '" xmlns="http://www.w3.org/2000/svg" aria-label="小怪獸">';
