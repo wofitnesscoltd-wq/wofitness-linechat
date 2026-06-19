@@ -1,0 +1,670 @@
+<!doctype html>
+<html lang="zh-Hant-TW">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta name="theme-color" content="#7c5cff" />
+<title>Mia & Tia 的 3C 時間銀行</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E⭐%3C/text%3E%3C/svg%3E" />
+<style>
+  :root {
+    --bg: #f4f5fb;
+    --card: #ffffff;
+    --ink: #1f2238;
+    --muted: #6b7088;
+    --line: #e7e8f2;
+    --mia: #ff5fa2;
+    --mia-soft: #ffe3ef;
+    --tia: #18bcd4;
+    --tia-soft: #d6f5fb;
+    --good: #18a957;
+    --bad: #e23b54;
+    --brand: #7c5cff;
+    --radius: 16px;
+    --shadow: 0 6px 22px rgba(40, 40, 90, 0.08);
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { background: var(--bg); }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang TC",
+      "Microsoft JhengHei", "Noto Sans TC", Roboto, sans-serif;
+    color: var(--ink);
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+  }
+  .wrap { max-width: 760px; margin: 0 auto; padding: 16px 16px 48px; }
+
+  header.top {
+    background: linear-gradient(135deg, #7c5cff 0%, #ff5fa2 100%);
+    color: #fff;
+    border-radius: var(--radius);
+    padding: 20px 22px;
+    box-shadow: var(--shadow);
+  }
+  header.top h1 { font-size: 1.45rem; letter-spacing: .5px; }
+  header.top h1 .emo { font-style: normal; }
+  header.top .rules {
+    margin-top: 8px; font-size: .9rem; opacity: .95;
+    background: rgba(255,255,255,.16); padding: 8px 12px; border-radius: 10px;
+  }
+  header.top .rules b { font-weight: 700; }
+
+  /* Month bar */
+  .monthbar {
+    display: flex; align-items: center; justify-content: center; gap: 10px;
+    margin: 18px 0 14px;
+  }
+  .monthbar .mlabel { font-weight: 700; font-size: 1.1rem; min-width: 150px; text-align: center; }
+  .monthbar button {
+    border: 1px solid var(--line); background: var(--card); color: var(--ink);
+    width: 40px; height: 40px; border-radius: 12px; font-size: 1.1rem; cursor: pointer;
+    box-shadow: var(--shadow);
+  }
+  .monthbar button:active { transform: translateY(1px); }
+  .monthbar .today {
+    width: auto; padding: 0 14px; height: 40px; font-size: .9rem; font-weight: 600;
+    color: var(--brand);
+  }
+
+  /* Balance cards */
+  .cards { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .card {
+    background: var(--card); border-radius: var(--radius); padding: 16px;
+    box-shadow: var(--shadow); border-top: 5px solid #ccc; position: relative; overflow: hidden;
+  }
+  .card.mia { border-top-color: var(--mia); }
+  .card.tia { border-top-color: var(--tia); }
+  .card .who { font-weight: 800; font-size: 1.15rem; display: flex; align-items: center; gap: 6px; }
+  .card.mia .who { color: var(--mia); }
+  .card.tia .who { color: var(--tia); }
+  .card .bignum { font-size: 2rem; font-weight: 800; margin-top: 6px; line-height: 1.2; }
+  .card .bignum.neg { color: var(--bad); }
+  .card .unit { font-size: .85rem; color: var(--muted); font-weight: 600; }
+  .card .sub { margin-top: 8px; font-size: .82rem; color: var(--muted); display: flex; gap: 12px; flex-wrap: wrap; }
+  .card .sub b { color: var(--ink); font-weight: 700; }
+
+  section.block {
+    background: var(--card); border-radius: var(--radius); padding: 16px;
+    box-shadow: var(--shadow); margin-top: 16px;
+  }
+  section.block > h2 { font-size: 1rem; margin-bottom: 12px; display: flex; align-items: center; gap: 7px; }
+
+  /* Forms */
+  .grid { display: grid; gap: 10px; }
+  .field { display: flex; flex-direction: column; gap: 4px; }
+  .field label { font-size: .8rem; color: var(--muted); font-weight: 600; }
+  input, select {
+    font: inherit; padding: 10px 12px; border: 1px solid var(--line); border-radius: 10px;
+    background: #fff; color: var(--ink); width: 100%;
+  }
+  input:focus, select:focus { outline: 2px solid var(--brand); outline-offset: 0; border-color: var(--brand); }
+  .row3 { grid-template-columns: 1fr 1fr 1fr; }
+  .row2 { grid-template-columns: 1fr 1fr; }
+  @media (max-width: 520px) { .row3 { grid-template-columns: 1fr 1fr; } }
+
+  .btn {
+    font: inherit; font-weight: 700; cursor: pointer; border: none; border-radius: 10px;
+    padding: 11px 16px; background: var(--brand); color: #fff;
+  }
+  .btn:active { transform: translateY(1px); }
+  .btn.sec { background: #eceaff; color: var(--brand); }
+  .btn.ghost { background: transparent; color: var(--muted); border: 1px solid var(--line); }
+  .btn.danger { background: #ffe6ea; color: var(--bad); }
+  .actions { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 4px; }
+  .preview { font-size: .9rem; color: var(--muted); min-height: 1.4em; }
+  .preview b { color: var(--brand); }
+
+  /* Records */
+  .day { border: 1px solid var(--line); border-radius: 12px; padding: 10px 12px; margin-bottom: 10px; }
+  .day-date { font-weight: 700; font-size: .92rem; color: var(--muted); margin-bottom: 8px; }
+  .rec { border-radius: 10px; padding: 9px 10px; margin-top: 6px; }
+  .rec.mia { background: var(--mia-soft); }
+  .rec.tia { background: var(--tia-soft); }
+  .rec-head { display: flex; justify-content: space-between; align-items: center; }
+  .rec-head .who { font-weight: 800; }
+  .rec.mia .who { color: var(--mia); }
+  .rec.tia .who { color: var(--tia); }
+  .rec-head .earn { font-weight: 800; }
+  .rec.mia .earn { color: var(--mia); }
+  .rec.tia .earn { color: var(--tia); }
+  .rec-body { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-top: 4px; }
+  .rec-body .dur { font-size: .85rem; color: var(--muted); font-weight: 600; }
+  .chip {
+    display: inline-flex; align-items: center; gap: 4px; background: #fff; border: 1px solid var(--line);
+    border-radius: 999px; padding: 3px 6px 3px 10px; font-size: .82rem; font-variant-numeric: tabular-nums;
+  }
+  .chip .x {
+    border: none; background: transparent; cursor: pointer; font-size: .8rem; line-height: 1;
+    width: 22px; height: 22px; border-radius: 50%; color: var(--muted);
+  }
+  .chip .x:hover { background: #f0f0f6; color: var(--ink); }
+
+  .empty { color: var(--muted); text-align: center; padding: 14px; font-size: .92rem; }
+
+  /* Usage list */
+  .uitem {
+    display: flex; align-items: center; justify-content: space-between; gap: 8px;
+    border: 1px solid var(--line); border-radius: 10px; padding: 8px 12px; margin-top: 8px; font-size: .9rem;
+  }
+  .uitem .meta { color: var(--muted); }
+  .uitem .tag { font-weight: 700; padding: 2px 8px; border-radius: 999px; font-size: .8rem; }
+  .uitem .tag.mia { background: var(--mia-soft); color: var(--mia); }
+  .uitem .tag.tia { background: var(--tia-soft); color: var(--tia); }
+
+  details.block { background: var(--card); border-radius: var(--radius); box-shadow: var(--shadow); margin-top: 16px; padding: 4px 16px; }
+  details.block > summary {
+    cursor: pointer; list-style: none; padding: 12px 0; font-weight: 700; font-size: .98rem;
+    display: flex; align-items: center; gap: 7px;
+  }
+  details.block > summary::-webkit-details-marker { display: none; }
+  details.block > summary::after { content: "＋"; margin-left: auto; color: var(--muted); font-weight: 700; }
+  details.block[open] > summary::after { content: "－"; }
+  details.block .inner { padding: 4px 0 16px; }
+
+  footer { margin-top: 22px; text-align: center; color: var(--muted); font-size: .8rem; }
+  .hint { font-size: .8rem; color: var(--muted); margin-top: 6px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header class="top">
+    <h1><i class="emo">⭐</i> Mia &amp; Tia 的 3C 時間銀行</h1>
+    <div class="rules" id="rulesLine"></div>
+  </header>
+
+  <div class="monthbar">
+    <button id="prevMonth" title="上個月">‹</button>
+    <div class="mlabel" id="monthLabel">—</div>
+    <button id="nextMonth" title="下個月">›</button>
+    <button class="today" id="thisMonth">本月</button>
+  </div>
+
+  <div class="cards" id="cards"></div>
+
+  <section class="block">
+    <h2>😴 新增睡眠紀錄</h2>
+    <form id="recForm" class="grid">
+      <div class="grid row2">
+        <div class="field">
+          <label for="recChild">是誰</label>
+          <select id="recChild">
+            <option value="mia">🌸 Mia</option>
+            <option value="tia">🐬 Tia</option>
+            <option value="both">👭 兩人都記</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="recDate">日期（起床那天）</label>
+          <input type="date" id="recDate" />
+        </div>
+      </div>
+      <div class="grid row2">
+        <div class="field">
+          <label for="recSleep">就寢時間</label>
+          <input type="time" id="recSleep" />
+        </div>
+        <div class="field">
+          <label for="recWake">起床時間</label>
+          <input type="time" id="recWake" />
+        </div>
+      </div>
+      <div class="preview" id="recPreview"></div>
+      <div class="actions">
+        <button type="submit" class="btn" id="recSubmit">新增紀錄</button>
+        <button type="button" class="btn ghost" id="recCancel" hidden>取消修改</button>
+      </div>
+    </form>
+  </section>
+
+  <section class="block">
+    <h2>📅 本月睡眠紀錄</h2>
+    <div id="records"></div>
+  </section>
+
+  <details class="block" id="usageBlock">
+    <summary>📺 使用 / 兌換紀錄（扣掉已經看的時間）</summary>
+    <div class="inner">
+      <form id="useForm" class="grid">
+        <div class="grid row3">
+          <div class="field">
+            <label for="useChild">是誰</label>
+            <select id="useChild">
+              <option value="mia">🌸 Mia</option>
+              <option value="tia">🐬 Tia</option>
+            </select>
+          </div>
+          <div class="field">
+            <label for="useDate">日期</label>
+            <input type="date" id="useDate" />
+          </div>
+          <div class="field">
+            <label for="useMin">使用分鐘數</label>
+            <input type="number" id="useMin" min="1" step="5" inputmode="numeric" placeholder="例如 30" />
+          </div>
+        </div>
+        <div class="field">
+          <label for="useNote">備註（可不填）</label>
+          <input type="text" id="useNote" placeholder="例如：看卡通、玩平板…" />
+        </div>
+        <div class="actions">
+          <button type="submit" class="btn sec">記一筆使用</button>
+        </div>
+      </form>
+      <div id="usages"></div>
+    </div>
+  </details>
+
+  <details class="block" id="settingsBlock">
+    <summary>⚙️ 進階設定（兌換規則）</summary>
+    <div class="inner">
+      <div class="grid row3">
+        <div class="field">
+          <label for="setBaseline">基本睡眠（小時）</label>
+          <input type="number" id="setBaseline" min="0" step="0.5" />
+        </div>
+        <div class="field">
+          <label for="setStep">每超過（分鐘）</label>
+          <input type="number" id="setStep" min="1" step="1" />
+        </div>
+        <div class="field">
+          <label for="setReward">可換 3C（分鐘）</label>
+          <input type="number" id="setReward" min="1" step="1" />
+        </div>
+      </div>
+      <div class="actions">
+        <button type="button" class="btn sec" id="setSave">儲存設定</button>
+        <button type="button" class="btn ghost" id="setReset">恢復預設（8小時 / 30分 / 15分）</button>
+      </div>
+      <p class="hint">修改規則後，所有月份的計算都會跟著更新。</p>
+    </div>
+  </details>
+
+  <details class="block" id="dataBlock">
+    <summary>💾 資料備份（匯出 / 匯入 / 清除）</summary>
+    <div class="inner">
+      <p class="hint">資料只存在這台裝置的瀏覽器裡。換手機或清快取前，記得先「匯出備份」。</p>
+      <div class="actions">
+        <button type="button" class="btn sec" id="exportBtn">匯出備份檔</button>
+        <button type="button" class="btn ghost" id="importBtn">匯入備份檔</button>
+        <input type="file" id="importFile" accept="application/json,.json" hidden />
+        <button type="button" class="btn danger" id="clearBtn">清除所有資料</button>
+      </div>
+    </div>
+  </details>
+
+  <footer>
+    睡飽飽，換 3C ⭐ · 每月 1 日自動歸零、重新累積（不累計到下個月）
+  </footer>
+</div>
+
+<script>
+(function () {
+  "use strict";
+
+  var STORAGE_KEY = "mt-3c-panel-v1";
+  var DEFAULTS = { baseline: 480, step: 30, reward: 15 };
+  var CHILDREN = [
+    { key: "mia", name: "Mia", emoji: "🌸", cls: "mia" },
+    { key: "tia", name: "Tia", emoji: "🐬", cls: "tia" }
+  ];
+
+  // ---------- state ----------
+  function blank() {
+    return { settings: Object.assign({}, DEFAULTS), records: [], usages: [] };
+  }
+  function load() {
+    try {
+      var raw = localStorage.getItem(STORAGE_KEY);
+      if (!raw) return blank();
+      var d = JSON.parse(raw);
+      return {
+        settings: Object.assign({}, DEFAULTS, d.settings || {}),
+        records: Array.isArray(d.records) ? d.records : [],
+        usages: Array.isArray(d.usages) ? d.usages : []
+      };
+    } catch (e) { return blank(); }
+  }
+  function save() {
+    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); }
+    catch (e) { alert("無法儲存資料，瀏覽器可能停用了本機儲存空間。"); }
+  }
+
+  var state = load();
+  var viewMonth = currentMonthKey();
+  var editingId = null;
+
+  // ---------- helpers ----------
+  function pad2(n) { return (n < 10 ? "0" : "") + n; }
+  function uid() { return Date.now().toString(36) + Math.random().toString(36).slice(2, 7); }
+  function todayStr() {
+    var d = new Date();
+    return d.getFullYear() + "-" + pad2(d.getMonth() + 1) + "-" + pad2(d.getDate());
+  }
+  function currentMonthKey() { return todayStr().slice(0, 7); }
+  function monthKey(dateStr) { return (dateStr || "").slice(0, 7); }
+  function shiftMonth(mk, delta) {
+    var p = mk.split("-"), y = +p[0], m = +p[1] + delta;
+    while (m < 1) { m += 12; y--; }
+    while (m > 12) { m -= 12; y++; }
+    return y + "-" + pad2(m);
+  }
+  function monthLabel(mk) {
+    var p = mk.split("-");
+    return p[0] + " 年 " + (+p[1]) + " 月";
+  }
+  function timeToMin(t) {
+    var p = (t || "").split(":");
+    return (+p[0]) * 60 + (+p[1]);
+  }
+  function sessionDuration(rec) {
+    var d = timeToMin(rec.wake) - timeToMin(rec.sleep);
+    if (d <= 0) d += 1440; // 跨午夜
+    return d;
+  }
+  function earnedForDuration(totalMin) {
+    var ex = totalMin - state.settings.baseline;
+    if (ex <= 0) return 0;
+    return Math.floor(ex / state.settings.step) * state.settings.reward;
+  }
+  function fmtMin(min) {
+    min = Math.round(min);
+    var sign = min < 0 ? "-" : "";
+    min = Math.abs(min);
+    var h = Math.floor(min / 60), m = min % 60;
+    if (h && m) return sign + h + " 小時 " + m + " 分";
+    if (h) return sign + h + " 小時";
+    return sign + m + " 分";
+  }
+  var WD = ["日", "一", "二", "三", "四", "五", "六"];
+  function fmtDate(d) {
+    var p = d.split("-").map(Number);
+    var wd = WD[new Date(p[0], p[1] - 1, p[2]).getDay()];
+    return p[1] + "/" + p[2] + "（" + wd + "）";
+  }
+
+  // ---------- monthly aggregation (門檻以「每人每天總睡眠」計算) ----------
+  function monthlyEarned(childKey, mk) {
+    var byDate = {};
+    state.records.forEach(function (r) {
+      if (r.child === childKey && monthKey(r.date) === mk) {
+        byDate[r.date] = (byDate[r.date] || 0) + sessionDuration(r);
+      }
+    });
+    var sum = 0;
+    Object.keys(byDate).forEach(function (k) { sum += earnedForDuration(byDate[k]); });
+    return sum;
+  }
+  function monthlyUsed(childKey, mk) {
+    var sum = 0;
+    state.usages.forEach(function (u) {
+      if (u.child === childKey && monthKey(u.date) === mk) sum += (u.minutes || 0);
+    });
+    return sum;
+  }
+
+  // ---------- DOM refs ----------
+  function $(id) { return document.getElementById(id); }
+  var monthLabelEl = $("monthLabel");
+  var cardsEl = $("cards");
+  var recordsEl = $("records");
+  var usagesEl = $("usages");
+  var rulesLineEl = $("rulesLine");
+  var recForm = $("recForm");
+  var recChild = $("recChild");
+  var recDate = $("recDate");
+  var recSleep = $("recSleep");
+  var recWake = $("recWake");
+  var recPreview = $("recPreview");
+  var recSubmit = $("recSubmit");
+  var recCancel = $("recCancel");
+
+  // ---------- render ----------
+  function renderRules() {
+    var s = state.settings;
+    rulesLineEl.innerHTML =
+      "睡滿 <b>" + fmtMin(s.baseline) + "</b> 後，每多睡 <b>" + s.step +
+      " 分鐘</b> → 兌換 <b>" + s.reward + " 分鐘</b> 3C 時間。";
+  }
+  function renderMonth() { monthLabelEl.textContent = monthLabel(viewMonth); }
+  function renderCards() {
+    cardsEl.innerHTML = CHILDREN.map(function (ch) {
+      var earned = monthlyEarned(ch.key, viewMonth);
+      var used = monthlyUsed(ch.key, viewMonth);
+      var bal = earned - used;
+      return '<div class="card ' + ch.cls + '">' +
+        '<div class="who">' + ch.emoji + " " + ch.name + "</div>" +
+        '<div class="bignum ' + (bal < 0 ? "neg" : "") + '">' + fmtMin(bal) +
+        ' <span class="unit">可用</span></div>' +
+        '<div class="sub"><span>本月賺到 <b>' + fmtMin(earned) + "</b></span>" +
+        "<span>已使用 <b>" + fmtMin(used) + "</b></span></div>" +
+        "</div>";
+    }).join("");
+  }
+  function renderRecords() {
+    var recs = state.records.filter(function (r) { return monthKey(r.date) === viewMonth; });
+    if (!recs.length) {
+      recordsEl.innerHTML = '<p class="empty">本月還沒有睡眠紀錄，從上方開始新增吧 😴</p>';
+      return;
+    }
+    var byDate = {};
+    recs.forEach(function (r) {
+      if (!byDate[r.date]) byDate[r.date] = {};
+      if (!byDate[r.date][r.child]) byDate[r.date][r.child] = [];
+      byDate[r.date][r.child].push(r);
+    });
+    var dates = Object.keys(byDate).sort().reverse();
+    var html = "";
+    dates.forEach(function (date) {
+      html += '<div class="day"><div class="day-date">' + fmtDate(date) + "</div>";
+      CHILDREN.forEach(function (ch) {
+        var sessions = byDate[date][ch.key];
+        if (!sessions) return;
+        var total = sessions.reduce(function (a, r) { return a + sessionDuration(r); }, 0);
+        var earned = earnedForDuration(total);
+        var chips = sessions.map(function (r) {
+          return '<span class="chip">' + r.sleep + " → " + r.wake +
+            '<button class="x" data-edit="' + r.id + '" title="修改">✎</button>' +
+            '<button class="x" data-del="' + r.id + '" title="刪除">✕</button></span>';
+        }).join("");
+        html += '<div class="rec ' + ch.cls + '">' +
+          '<div class="rec-head"><span class="who">' + ch.emoji + " " + ch.name + "</span>" +
+          '<span class="earn">+' + earned + ' 分 3C</span></div>' +
+          '<div class="rec-body"><span class="dur">睡 ' + fmtMin(total) + "</span>" + chips + "</div>" +
+          "</div>";
+      });
+      html += "</div>";
+    });
+    recordsEl.innerHTML = html;
+  }
+  function renderUsages() {
+    var us = state.usages.filter(function (u) { return monthKey(u.date) === viewMonth; });
+    us.sort(function (a, b) { return a.date < b.date ? 1 : -1; });
+    if (!us.length) {
+      usagesEl.innerHTML = '<p class="empty">本月還沒有使用紀錄。</p>';
+      return;
+    }
+    usagesEl.innerHTML = us.map(function (u) {
+      var ch = CHILDREN.filter(function (c) { return c.key === u.child; })[0] || CHILDREN[0];
+      return '<div class="uitem">' +
+        '<div><span class="tag ' + ch.cls + '">' + ch.emoji + " " + ch.name + "</span> " +
+        "<b>−" + u.minutes + " 分</b>" + (u.note ? ' <span class="meta">· ' + escapeHtml(u.note) + "</span>" : "") +
+        '<div class="meta">' + fmtDate(u.date) + "</div></div>" +
+        '<button class="btn ghost" data-uden="' + u.id + '">刪除</button></div>';
+    }).join("");
+  }
+  function escapeHtml(s) {
+    return String(s).replace(/[&<>"']/g, function (c) {
+      return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c];
+    });
+  }
+  function render() {
+    renderRules();
+    renderMonth();
+    renderCards();
+    renderRecords();
+    renderUsages();
+  }
+
+  // ---------- record form ----------
+  function updatePreview() {
+    if (!recSleep.value || !recWake.value) { recPreview.textContent = ""; return; }
+    var dur = sessionDuration({ sleep: recSleep.value, wake: recWake.value });
+    var earned = earnedForDuration(dur);
+    recPreview.innerHTML = "這段睡眠 <b>" + fmtMin(dur) + "</b> → 約可兌換 <b>" + earned + " 分鐘</b> 3C";
+  }
+  recSleep.addEventListener("input", updatePreview);
+  recWake.addEventListener("input", updatePreview);
+
+  recForm.addEventListener("submit", function (e) {
+    e.preventDefault();
+    var date = recDate.value || todayStr();
+    var sleep = recSleep.value, wake = recWake.value;
+    if (!sleep || !wake) { alert("請輸入就寢與起床時間"); return; }
+
+    if (editingId) {
+      var r = state.records.filter(function (x) { return x.id === editingId; })[0];
+      if (r) { r.child = recChild.value === "both" ? r.child : recChild.value; r.date = date; r.sleep = sleep; r.wake = wake; }
+      exitEdit();
+    } else {
+      var targets = recChild.value === "both" ? ["mia", "tia"] : [recChild.value];
+      targets.forEach(function (c) {
+        state.records.push({ id: uid(), child: c, date: date, sleep: sleep, wake: wake });
+      });
+    }
+    save();
+    recSleep.value = ""; recWake.value = ""; updatePreview();
+    render();
+  });
+
+  function startEdit(id) {
+    var r = state.records.filter(function (x) { return x.id === id; })[0];
+    if (!r) return;
+    editingId = id;
+    recChild.value = r.child;
+    recDate.value = r.date;
+    recSleep.value = r.sleep;
+    recWake.value = r.wake;
+    recChild.querySelector('option[value="both"]').disabled = true;
+    recSubmit.textContent = "儲存修改";
+    recCancel.hidden = false;
+    updatePreview();
+    recForm.scrollIntoView({ behavior: "smooth", block: "center" });
+  }
+  function exitEdit() {
+    editingId = null;
+    recChild.querySelector('option[value="both"]').disabled = false;
+    recSubmit.textContent = "新增紀錄";
+    recCancel.hidden = true;
+    recSleep.value = ""; recWake.value = ""; updatePreview();
+  }
+  recCancel.addEventListener("click", exitEdit);
+
+  function delRecord(id) {
+    if (!confirm("確定要刪除這筆睡眠紀錄嗎？")) return;
+    state.records = state.records.filter(function (x) { return x.id !== id; });
+    if (editingId === id) exitEdit();
+    save(); render();
+  }
+  recordsEl.addEventListener("click", function (e) {
+    var ed = e.target.closest("[data-edit]");
+    var de = e.target.closest("[data-del]");
+    if (ed) startEdit(ed.getAttribute("data-edit"));
+    else if (de) delRecord(de.getAttribute("data-del"));
+  });
+
+  // ---------- usage form ----------
+  var useForm = $("useForm");
+  useForm.addEventListener("submit", function (e) {
+    e.preventDefault();
+    var mins = parseInt($("useMin").value, 10);
+    if (!mins || mins <= 0) { alert("請輸入使用分鐘數"); return; }
+    state.usages.push({
+      id: uid(), child: $("useChild").value, date: $("useDate").value || todayStr(),
+      minutes: mins, note: $("useNote").value.trim()
+    });
+    save();
+    $("useMin").value = ""; $("useNote").value = "";
+    render();
+  });
+  usagesEl.addEventListener("click", function (e) {
+    var d = e.target.closest("[data-uden]");
+    if (!d) return;
+    if (!confirm("確定要刪除這筆使用紀錄嗎？")) return;
+    var id = d.getAttribute("data-uden");
+    state.usages = state.usages.filter(function (x) { return x.id !== id; });
+    save(); render();
+  });
+
+  // ---------- month nav ----------
+  $("prevMonth").addEventListener("click", function () { viewMonth = shiftMonth(viewMonth, -1); render(); });
+  $("nextMonth").addEventListener("click", function () { viewMonth = shiftMonth(viewMonth, 1); render(); });
+  $("thisMonth").addEventListener("click", function () { viewMonth = currentMonthKey(); render(); });
+
+  // ---------- settings ----------
+  function fillSettings() {
+    $("setBaseline").value = state.settings.baseline / 60;
+    $("setStep").value = state.settings.step;
+    $("setReward").value = state.settings.reward;
+  }
+  $("setSave").addEventListener("click", function () {
+    var b = parseFloat($("setBaseline").value);
+    var st = parseInt($("setStep").value, 10);
+    var rw = parseInt($("setReward").value, 10);
+    if (!(b >= 0) || !(st > 0) || !(rw > 0)) { alert("請輸入正確的數字（每超過、可換分鐘需大於 0）"); return; }
+    state.settings = { baseline: Math.round(b * 60), step: st, reward: rw };
+    save(); fillSettings(); render(); updatePreview();
+    alert("設定已儲存");
+  });
+  $("setReset").addEventListener("click", function () {
+    state.settings = Object.assign({}, DEFAULTS);
+    save(); fillSettings(); render(); updatePreview();
+  });
+
+  // ---------- data backup ----------
+  $("exportBtn").addEventListener("click", function () {
+    var blob = new Blob([JSON.stringify(state, null, 2)], { type: "application/json" });
+    var a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = "mia-tia-3c-" + todayStr() + ".json";
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    setTimeout(function () { URL.revokeObjectURL(a.href); }, 1000);
+  });
+  $("importBtn").addEventListener("click", function () { $("importFile").click(); });
+  $("importFile").addEventListener("change", function (e) {
+    var f = e.target.files && e.target.files[0];
+    if (!f) return;
+    var reader = new FileReader();
+    reader.onload = function () {
+      try {
+        var d = JSON.parse(reader.result);
+        if (!d || typeof d !== "object") throw new Error("bad");
+        if (!confirm("匯入會覆蓋目前的資料，確定嗎？")) { e.target.value = ""; return; }
+        state = {
+          settings: Object.assign({}, DEFAULTS, d.settings || {}),
+          records: Array.isArray(d.records) ? d.records : [],
+          usages: Array.isArray(d.usages) ? d.usages : []
+        };
+        save(); fillSettings(); render(); updatePreview();
+        alert("匯入完成 ✓");
+      } catch (err) { alert("檔案格式不正確，無法匯入。"); }
+      e.target.value = "";
+    };
+    reader.readAsText(f);
+  });
+  $("clearBtn").addEventListener("click", function () {
+    if (!confirm("確定要清除「所有」睡眠與使用紀錄嗎？此動作無法復原（建議先匯出備份）。")) return;
+    state = blank();
+    localStorage.removeItem(STORAGE_KEY);
+    exitEdit(); fillSettings(); render();
+  });
+
+  // ---------- init ----------
+  recDate.value = todayStr();
+  $("useDate").value = todayStr();
+  fillSettings();
+  render();
+})();
+</script>
+</body>
+</html>
