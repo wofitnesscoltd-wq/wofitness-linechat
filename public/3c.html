@@ -536,11 +536,17 @@
     cream: { fur: "#ffe39a", dark: "#d9ad3f", inner: "#fff3cf", belly: "#fffbe9", cheek: "#f0b73f" },
     grey: { fur: "#c4c9d6", dark: "#8a90a3", inner: "#e7eaf1", belly: "#f7f8fb", cheek: "#aab0c0" }
   };
+  function hexToRgb(h) { h = String(h).replace("#", ""); if (h.length === 3) h = h.charAt(0) + h.charAt(0) + h.charAt(1) + h.charAt(1) + h.charAt(2) + h.charAt(2); var n = parseInt(h, 16); return [(n >> 16) & 255, (n >> 8) & 255, n & 255]; }
+  function mix(hex, t, f) { var a = hexToRgb(hex); return "#" + [Math.round(a[0] + (t[0] - a[0]) * f), Math.round(a[1] + (t[1] - a[1]) * f), Math.round(a[2] + (t[2] - a[2]) * f)].map(function (x) { return ("0" + x.toString(16)).slice(-2); }).join(""); }
+  function lighten(hex, f) { return mix(hex, [255, 255, 255], f); }
+  function darken(hex, f) { return mix(hex, [28, 18, 38], f); }
   function resolveColor(childKey, colorKey) {
     if (colorKey === "rainbow") { var g = "pf" + (++svgSeq); return { furFill: "url(#" + g + ")", strokeC: "#ef9bb0", inner: "rgba(255,255,255,.6)", belly: "rgba(255,255,255,.45)", cheek: "#ff7eb6", grad: '<linearGradient id="' + g + '" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ff9ec0"/><stop offset=".45" stop-color="#ffd98a"/><stop offset="1" stop-color="#8be3b0"/></linearGradient>', special: true }; }
     if (colorKey === "galaxy") { var g2 = "pf" + (++svgSeq); return { furFill: "url(#" + g2 + ")", strokeC: "#8a6bf0", inner: "rgba(255,255,255,.6)", belly: "rgba(255,255,255,.45)", cheek: "#c79bff", grad: '<linearGradient id="' + g2 + '" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#6a5cff"/><stop offset=".5" stop-color="#b15cff"/><stop offset="1" stop-color="#ff7ad9"/></linearGradient>', special: true }; }
     var p = (colorKey === "theme" || !COLORS[colorKey]) ? (PALETTE[childKey] || PALETTE.mia) : COLORS[colorKey];
-    return { furFill: p.fur, strokeC: p.dark, inner: p.inner, belly: p.belly, cheek: p.cheek, grad: "", special: false };
+    var gid = "pf" + (++svgSeq);
+    var grad = '<linearGradient id="' + gid + '" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="' + lighten(p.fur, 0.34) + '"/><stop offset=".55" stop-color="' + p.fur + '"/><stop offset="1" stop-color="' + darken(p.fur, 0.12) + '"/></linearGradient>';
+    return { furFill: "url(#" + gid + ")", strokeC: p.dark, inner: p.inner, belly: p.belly, cheek: p.cheek, grad: grad, special: false };
   }
   // 共用：身體、臉
   function bodyCore(R) {
