@@ -236,6 +236,14 @@
   <div id="views">
   <!-- ========== 睡眠 ========== -->
   <div id="view-sleep">
+    <section class="block" id="lock-gate" style="display:none">
+      <h2>🔒 家長鎖定</h2>
+      <p class="hint">這一區（睡眠紀錄 / 設定 / 備份）已上鎖，請輸入家長密碼。寵物樂園不受影響，小朋友照玩。</p>
+      <div class="grid"><div class="field"><label for="unlockPin">家長密碼</label><input type="password" id="unlockPin" inputmode="numeric" autocomplete="off" /></div></div>
+      <div class="actions"><button type="button" class="btn" id="unlockBtn">解鎖</button></div>
+      <p class="hint" id="unlockMsg" style="color:var(--bad)"></p>
+    </section>
+    <div id="sleep-content">
     <div class="monthbar">
       <button id="prevMonth" title="上個月">‹</button>
       <div class="mlabel" id="monthLabel">—</div>
@@ -338,6 +346,29 @@
         </div>
       </div>
     </details>
+
+    <details class="block" id="lockBlock">
+      <summary>🔒 家長密碼鎖</summary>
+      <div class="inner">
+        <p class="hint" id="lockStatus"></p>
+        <div id="lockSetup">
+          <div class="grid row2">
+            <div class="field"><label for="lockPin1">設定密碼（至少 3 字）</label><input type="password" id="lockPin1" inputmode="numeric" autocomplete="off" /></div>
+            <div class="field"><label for="lockPin2">再輸入一次</label><input type="password" id="lockPin2" inputmode="numeric" autocomplete="off" /></div>
+          </div>
+          <div class="actions"><button type="button" class="btn" id="lockEnable">啟用密碼鎖</button></div>
+        </div>
+        <div id="lockManage" style="display:none">
+          <div class="actions">
+            <button type="button" class="btn warn" id="lockNowBtn">🔒 立即鎖定</button>
+            <button type="button" class="btn ghost" id="lockChange">變更密碼</button>
+            <button type="button" class="btn danger" id="lockDisable">停用密碼鎖</button>
+          </div>
+        </div>
+        <p class="hint">鎖定後：睡眠紀錄、設定、備份需要密碼才能操作；寵物樂園不受影響。<br>提醒：這是給小朋友的簡易防護，不是高強度加密。</p>
+      </div>
+    </details>
+    </div>
   </div>
 
   <!-- ========== 寵物樂園 ========== -->
@@ -432,7 +463,8 @@
   }
   function blank() {
     return { settings: Object.assign({}, DEFAULTS), records: [], usages: [],
-      pets: { mia: defaultPet(), tia: defaultPet() }, inventory: { mia: {}, tia: {} }, profile: "both" };
+      pets: { mia: defaultPet(), tia: defaultPet() }, inventory: { mia: {}, tia: {} }, profile: "both",
+      lock: { on: false, hash: "" } };
   }
   function fromData(d) {
     var pb = normPetsBlock(d);
@@ -441,7 +473,8 @@
       records: Array.isArray(d.records) ? d.records : [],
       usages: Array.isArray(d.usages) ? d.usages : [],
       pets: pb.pets, inventory: pb.inventory,
-      profile: (d.profile === "mia" || d.profile === "tia") ? d.profile : "both"
+      profile: (d.profile === "mia" || d.profile === "tia") ? d.profile : "both",
+      lock: (d.lock && typeof d.lock === "object") ? { on: !!d.lock.on, hash: typeof d.lock.hash === "string" ? d.lock.hash : "" } : { on: false, hash: "" }
     };
   }
   function load() {
@@ -456,6 +489,7 @@
   var state = load();
   var viewMonth = currentMonthKey();
   var editingId = null;
+  var unlocked = !(state.lock && state.lock.on);
 
   // ---------- earning / spending ----------
   function earnedForDuration(totalMin) { var ex = totalMin - state.settings.baseline; if (ex <= 0) return 0; return Math.floor(ex / state.settings.step) * state.settings.reward; }
@@ -980,6 +1014,49 @@
     applyProfile(); render(); renderPet();
   });
 
+  // ---------- 家長密碼鎖 ----------
+  function hashPin(s) { s = String(s); var h = 5381; for (var i = 0; i < s.length; i++) h = ((h << 5) + h + s.charCodeAt(i)) >>> 0; return h.toString(36); }
+  function refreshLockSection() {
+    var on = !!(state.lock && state.lock.on);
+    $("lockSetup").style.display = on ? "none" : "";
+    $("lockManage").style.display = on ? "" : "none";
+    $("lockStatus").textContent = on ? "狀態：✅ 已啟用（睡眠紀錄 / 設定 / 備份需要密碼）" : "狀態：尚未設定密碼。";
+  }
+  function applyLock() {
+    var locked = !!(state.lock && state.lock.on && !unlocked);
+    $("lock-gate").style.display = locked ? "" : "none";
+    $("sleep-content").style.display = locked ? "none" : "";
+    $("profileSel").disabled = locked;
+    if (!locked) refreshLockSection();
+  }
+  function tryUnlock() {
+    if (hashPin($("unlockPin").value.trim()) === state.lock.hash) { unlocked = true; $("unlockPin").value = ""; $("unlockMsg").textContent = ""; applyLock(); }
+    else { $("unlockMsg").textContent = "密碼錯誤，再試一次"; $("unlockPin").value = ""; }
+  }
+  $("unlockBtn").addEventListener("click", tryUnlock);
+  $("unlockPin").addEventListener("keydown", function (e) { if (e.key === "Enter") tryUnlock(); });
+  $("lockEnable").addEventListener("click", function () {
+    var a = $("lockPin1").value.trim(), b = $("lockPin2").value.trim();
+    if (a.length < 3) { alert("密碼至少 3 個字"); return; }
+    if (a !== b) { alert("兩次輸入不一致"); return; }
+    state.lock = { on: true, hash: hashPin(a) }; unlocked = true;
+    $("lockPin1").value = ""; $("lockPin2").value = "";
+    save(); refreshLockSection(); applyLock(); alert("已啟用密碼鎖 🔒");
+  });
+  $("lockNowBtn").addEventListener("click", function () { unlocked = false; applyLock(); showTab("sleep"); });
+  $("lockChange").addEventListener("click", function () {
+    var c = prompt("輸入目前密碼："); if (c == null) return;
+    if (hashPin(c.trim()) !== state.lock.hash) { alert("密碼錯誤"); return; }
+    var n = prompt("輸入新密碼（至少 3 個字）："); if (n == null) return; n = n.trim();
+    if (n.length < 3) { alert("密碼太短"); return; }
+    state.lock.hash = hashPin(n); save(); alert("密碼已更新");
+  });
+  $("lockDisable").addEventListener("click", function () {
+    var c = prompt("輸入目前密碼以停用："); if (c == null) return;
+    if (hashPin(c.trim()) !== state.lock.hash) { alert("密碼錯誤"); return; }
+    state.lock = { on: false, hash: "" }; unlocked = true; save(); refreshLockSection(); applyLock(); alert("已停用密碼鎖");
+  });
+
   // ---------- record form ----------
   function updateForm() {
     var sleep = readTime(recSleepH, recSleepM), wake = readTime(recWakeH, recWakeM);
@@ -1111,6 +1188,7 @@
   if (lockedChild()) petWho = lockedChild();
   applyProfile();
   fillSettings(); updateForm(); render(); showTab("sleep");
+  refreshLockSection(); applyLock();
   if (window.matchMedia) { try { window.matchMedia("(min-width:1500px)").addEventListener("change", function () { render(); }); } catch (e) {} }
 })();
 </script>
