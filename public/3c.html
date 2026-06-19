@@ -177,6 +177,29 @@
   .witem .price.lim { color: #fff; background: var(--warn); }
   .witem.sel { border-color: var(--brand); box-shadow: 0 0 0 3px #eceaff; }
   .witem.locked .wemoji { filter: grayscale(.35); opacity: .85; }
+
+  /* mode bar */
+  .modebar { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-top: 12px; font-size: .86rem; color: var(--muted); }
+  .modebar select { width: auto; padding: 7px 10px; font-weight: 700; }
+  .modebar .mb-hint { font-size: .78rem; }
+  .cards.one { grid-template-columns: 1fr; }
+
+  /* ===== wide / ultrawide (e.g. 49" Samsung) ===== */
+  @media (min-width: 1500px) {
+    .wrap { max-width: 1500px; }
+    .tabbar { display: none; }
+    #views { display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr); gap: 22px; align-items: start; }
+    #view-sleep, #view-pet { display: block !important; }
+    #view-pet .petstage { height: 320px; }
+    #view-pet .petstage .petart svg { width: 300px !important; height: 300px !important; }
+    .modebar { justify-content: flex-end; }
+  }
+  @media (min-width: 2200px) {
+    .wrap { max-width: 1980px; padding-left: 28px; padding-right: 28px; }
+    #views { grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr); gap: 32px; }
+    header.top h1 { font-size: 1.7rem; }
+    .card .bignum { font-size: 2.3rem; }
+  }
 </style>
 </head>
 <body>
@@ -192,6 +215,17 @@
     <button class="tab" data-tab="pet">🎮 寵物樂園</button>
   </div>
 
+  <div class="modebar">
+    <span class="mb-label">👤 這台裝置給：</span>
+    <select id="profileSel">
+      <option value="both">共用（家長）</option>
+      <option value="mia">🌸 Mia 專屬</option>
+      <option value="tia">🐬 Tia 專屬</option>
+    </select>
+    <span class="mb-hint" id="modeHint"></span>
+  </div>
+
+  <div id="views">
   <!-- ========== 睡眠 ========== -->
   <div id="view-sleep">
     <div class="monthbar">
@@ -300,6 +334,7 @@
 
   <!-- ========== 寵物樂園 ========== -->
   <div id="view-pet"></div>
+  </div>
 
   <footer>
     睡飽飽，換 3C ⭐ · 24 小時制 · 睡好賺 3C，3C 可看螢幕、也能幫小怪獸買裝扮 🐾
@@ -330,6 +365,8 @@
   function currentMonthKey() { return todayStr().slice(0, 7); }
   function monthKey(s) { return (s || "").slice(0, 7); }
   function childOf(key) { for (var i = 0; i < CHILDREN.length; i++) if (CHILDREN[i].key === key) return CHILDREN[i]; return CHILDREN[0]; }
+  function lockedChild() { return (state.profile === "mia" || state.profile === "tia") ? state.profile : null; }
+  function activeChildren() { var l = lockedChild(); return l ? [l] : ["mia", "tia"]; }
   function shiftMonth(mk, delta) { var p = mk.split("-"), y = +p[0], m = +p[1] + delta; while (m < 1) { m += 12; y--; } while (m > 12) { m -= 12; y++; } return y + "-" + pad2(m); }
   function monthLabel(mk) { var p = mk.split("-"); return p[0] + " 年 " + (+p[1]) + " 月"; }
   function timeToMin(t) { var p = (t || "").split(":"); return (+p[0]) * 60 + (+p[1]); }
@@ -384,7 +421,7 @@
   }
   function blank() {
     return { settings: Object.assign({}, DEFAULTS), records: [], usages: [],
-      pets: { mia: defaultPet(), tia: defaultPet() }, inventory: { mia: {}, tia: {} } };
+      pets: { mia: defaultPet(), tia: defaultPet() }, inventory: { mia: {}, tia: {} }, profile: "both" };
   }
   function fromData(d) {
     var pb = normPetsBlock(d);
@@ -392,7 +429,8 @@
       settings: Object.assign({}, DEFAULTS, d.settings || {}),
       records: Array.isArray(d.records) ? d.records : [],
       usages: Array.isArray(d.usages) ? d.usages : [],
-      pets: pb.pets, inventory: pb.inventory
+      pets: pb.pets, inventory: pb.inventory,
+      profile: (d.profile === "mia" || d.profile === "tia") ? d.profile : "both"
     };
   }
   function load() {
@@ -646,7 +684,10 @@
   }
   function renderMonth() { monthLabelEl.textContent = monthLabel(viewMonth); }
   function renderCards() {
-    cardsEl.innerHTML = CHILDREN.map(function (ch) {
+    var act = activeChildren();
+    cardsEl.className = "cards" + (act.length === 1 ? " one" : "");
+    cardsEl.innerHTML = act.map(function (ck) {
+      var ch = childOf(ck);
       var earned = monthlyEarned(ch.key, viewMonth), used = monthlyUsed(ch.key, viewMonth), bal = earned - used;
       return '<div class="card ' + ch.cls + '"><div class="card-top">' +
         '<div class="mascot">' + petSVG(ch.key, { size: 78, showBg: false }) + "</div>" +
@@ -656,7 +697,8 @@
     }).join("");
   }
   function renderPending() {
-    var pend = state.records.filter(function (r) { return !r.wake; });
+    var act = activeChildren();
+    var pend = state.records.filter(function (r) { return !r.wake && act.indexOf(r.child) >= 0; });
     pend.sort(function (a, b) { return (a.date + a.sleep) < (b.date + b.sleep) ? 1 : -1; });
     if (!pend.length) { pendingBlock.style.display = "none"; pendingEl.innerHTML = ""; return; }
     pendingBlock.style.display = "";
@@ -668,7 +710,8 @@
     }).join("");
   }
   function renderRecords() {
-    var recs = state.records.filter(function (r) { return r.wake && monthKey(r.date) === viewMonth; });
+    var act = activeChildren();
+    var recs = state.records.filter(function (r) { return r.wake && monthKey(r.date) === viewMonth && act.indexOf(r.child) >= 0; });
     if (!recs.length) { recordsEl.innerHTML = '<p class="empty">本月還沒有完成的睡眠紀錄 😴</p>'; return; }
     var byDate = {};
     recs.forEach(function (r) { if (!byDate[r.date]) byDate[r.date] = {}; if (!byDate[r.date][r.child]) byDate[r.date][r.child] = []; byDate[r.date][r.child].push(r); });
@@ -686,7 +729,8 @@
     recordsEl.innerHTML = html;
   }
   function renderUsages() {
-    var us = state.usages.filter(function (u) { return monthKey(u.date) === viewMonth; });
+    var act = activeChildren();
+    var us = state.usages.filter(function (u) { return monthKey(u.date) === viewMonth && act.indexOf(u.child) >= 0; });
     us.sort(function (a, b) { return a.date < b.date ? 1 : -1; });
     if (!us.length) { usagesEl.innerHTML = '<p class="empty">本月還沒有使用紀錄。</p>'; return; }
     usagesEl.innerHTML = us.map(function (u) {
@@ -694,7 +738,8 @@
       return '<div class="uitem"><div><span class="tag ' + ch.cls + '">' + ch.emoji + " " + ch.name + '</span> <b>−' + u.minutes + ' 分</b>' + (u.note ? ' <span class="meta">· ' + escapeHtml(u.note) + "</span>" : "") + '<div class="meta">' + fmtDate(u.date) + '</div></div><button class="btn ghost" data-uden="' + u.id + '">刪除</button></div>';
     }).join("");
   }
-  function render() { renderRules(); renderMonth(); renderCards(); renderPending(); renderRecords(); renderUsages(); }
+  function isWide() { return !!(window.matchMedia && window.matchMedia("(min-width:1500px)").matches); }
+  function render() { renderRules(); renderMonth(); renderCards(); renderPending(); renderRecords(); renderUsages(); if (isWide()) renderPet(); }
 
   // ================= render: 寵物 =================
   var petWho = "mia", petSlot = "hat";
@@ -718,12 +763,13 @@
     return '<div class="wardrobe">' + out + "</div>";
   }
   function renderPet() {
+    var lc = lockedChild(); if (lc) petWho = lc;
     var ch = childOf(petWho), p = state.pets[petWho], bal = balanceOf(petWho), nm = p.name || ch.name;
-    var sw = CHILDREN.map(function (c) { return '<button class="petsw ' + c.cls + (c.key === petWho ? " on" : "") + '" data-petwho="' + c.key + '">' + c.emoji + " " + (state.pets[c.key].name || c.name) + "</button>"; }).join("");
+    var swRow = lc ? "" : ('<div class="petsw-row">' + CHILDREN.map(function (c) { return '<button class="petsw ' + c.cls + (c.key === petWho ? " on" : "") + '" data-petwho="' + c.key + '">' + c.emoji + " " + (state.pets[c.key].name || c.name) + "</button>"; }).join("") + "</div>");
     var care = '<div class="carebtns">' + Object.keys(ACTIONS).map(function (k) { return '<button class="carebtn" data-act="' + k + '">' + ACTIONS[k].emoji + "<span>" + ACTIONS[k].label + "</span></button>"; }).join("") + "</div>";
     var slotTabs = '<div class="slottabs">' + SLOTS.map(function (sl) { return '<button class="slottab' + (sl.key === petSlot ? " on" : "") + '" data-slottab="' + sl.key + '">' + sl.name + "</button>"; }).join("") + "</div>";
     $("view-pet").innerHTML =
-      '<div class="petsw-row">' + sw + "</div>" +
+      swRow +
       '<section class="block petbox ' + ch.cls + '">' +
         '<div class="petname"><span>' + escapeHtml(nm) + '</span><button class="btn ghost sm" data-rename="1">✏️ 改名</button></div>' +
         '<div class="petstage"><div class="petart">' + petSVG(petWho, { size: 220, expr: petExpr }) + "</div></div>" +
@@ -784,6 +830,24 @@
     var tabs = document.querySelectorAll(".tab");
     for (var i = 0; i < tabs.length; i++) tabs[i].addEventListener("click", function () { showTab(this.getAttribute("data-tab")); });
   })();
+
+  // ---------- 專屬模式（預設共用） ----------
+  function applyProfile() {
+    var lc = lockedChild(), uc = $("useChild");
+    if (lc) {
+      recChild.value = lc; recChild.disabled = true;
+      uc.value = lc; uc.disabled = true;
+      $("modeHint").textContent = "（只顯示 " + childOf(lc).name + "，碰不到另一位）";
+    } else {
+      recChild.disabled = false; uc.disabled = false;
+      $("modeHint").textContent = "（兩人都顯示，輪流玩）";
+    }
+  }
+  $("profileSel").addEventListener("change", function () {
+    state.profile = this.value; save();
+    if (lockedChild()) petWho = lockedChild();
+    applyProfile(); render(); renderPet();
+  });
 
   // ---------- record form ----------
   function updateForm() {
@@ -912,7 +976,11 @@
   tickPet(state.pets.mia); tickPet(state.pets.tia); save();
   recDate.value = todayStr(); $("useDate").value = todayStr();
   setTime(recSleepH, recSleepM, ""); setTime(recWakeH, recWakeM, "");
+  $("profileSel").value = state.profile;
+  if (lockedChild()) petWho = lockedChild();
+  applyProfile();
   fillSettings(); updateForm(); render(); showTab("sleep");
+  if (window.matchMedia) { try { window.matchMedia("(min-width:1500px)").addEventListener("change", function () { render(); }); } catch (e) {} }
 })();
 </script>
 </body>
