@@ -630,9 +630,28 @@
     return "";
   }
   function drawBack(id) {
-    if (id === "wings") return '<g fill="#ffffff" stroke="#e3e3f0" stroke-width="1.5" stroke-linejoin="round"><path d="M30 56 C8 44,8 74,28 70 C18 66,20 58,30 56 Z"/><path d="M70 56 C92 44,92 74,72 70 C82 66,80 58,70 56 Z"/></g>';
-    if (id === "butterfly") return '<g stroke="#c98bdf" stroke-width="1.5" stroke-linejoin="round"><ellipse cx="22" cy="50" rx="12" ry="10" fill="#ffb3e6"/><ellipse cx="24" cy="68" rx="9" ry="8" fill="#c9a3ff"/><ellipse cx="78" cy="50" rx="12" ry="10" fill="#ffb3e6"/><ellipse cx="76" cy="68" rx="9" ry="8" fill="#c9a3ff"/></g>';
-    if (id === "dragon") return '<g fill="#9be59b" stroke="#5fa83f" stroke-width="1.5" stroke-linejoin="round"><path d="M32 54 C12 44,6 66,22 67 L25 60 L27 66 L31 61 Z"/><path d="M68 54 C88 44,94 66,78 67 L75 60 L73 66 L69 61 Z"/></g>';
+    if (id === "wings") {
+      var wg = "wg" + (++svgSeq);
+      var rw = "M64 52 C78 38,96 31,99 40 Q91 44 96 51 Q86 54 92 61 Q81 63 87 69 Q76 71 80 77 C71 74,66 61,64 56 Z";
+      var fe = "M69 54 Q83 48 93 44 M69 60 Q81 58 90 57 M70 67 Q80 67 85 68";
+      return '<defs><linearGradient id="' + wg + '" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffffff"/><stop offset="1" stop-color="#d4dff6"/></linearGradient></defs>' +
+        '<g stroke="#a7b2d6" stroke-width="1.9" stroke-linejoin="round" stroke-linecap="round">' +
+        '<path d="' + rw + '" fill="url(#' + wg + ')"/><g transform="translate(100,0) scale(-1,1)"><path d="' + rw + '" fill="url(#' + wg + ')"/></g>' +
+        '<g fill="none" stroke="#c0cae6" stroke-width="1.2"><path d="' + fe + '"/><g transform="translate(100,0) scale(-1,1)"><path d="' + fe + '"/></g></g></g>';
+    }
+    if (id === "butterfly") {
+      var ru = "M62 51 C76 33,99 35,97 52 C93 63,76 61,62 56 Z";
+      var rl = "M62 57 C76 59,93 67,87 78 C80 85,66 72,62 61 Z";
+      return '<g stroke="#cf3f93" stroke-width="1.7" stroke-linejoin="round"><path d="' + ru + '" fill="#ff8fd0"/><g transform="translate(100,0) scale(-1,1)"><path d="' + ru + '" fill="#ff8fd0"/></g></g>' +
+        '<g stroke="#8a4fc6" stroke-width="1.7" stroke-linejoin="round"><path d="' + rl + '" fill="#c193ff"/><g transform="translate(100,0) scale(-1,1)"><path d="' + rl + '" fill="#c193ff"/></g></g>' +
+        '<circle cx="85" cy="47" r="3.4" fill="#fff" opacity=".75"/><circle cx="15" cy="47" r="3.4" fill="#fff" opacity=".75"/><circle cx="82" cy="70" r="2.4" fill="#fff" opacity=".6"/><circle cx="18" cy="70" r="2.4" fill="#fff" opacity=".6"/>';
+    }
+    if (id === "dragon") {
+      var dg = "dg" + (++svgSeq);
+      var rd = "M64 51 C82 36,100 41,98 52 L89 48 L93 59 L83 55 L89 67 L78 61 C72 58,68 55,64 56 Z";
+      return '<defs><linearGradient id="' + dg + '" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#b49cff"/><stop offset="1" stop-color="#7d5bf0"/></linearGradient></defs>' +
+        '<g stroke="#5530c6" stroke-width="1.8" stroke-linejoin="round"><path d="' + rd + '" fill="url(#' + dg + ')"/><g transform="translate(100,0) scale(-1,1)"><path d="' + rd + '" fill="url(#' + dg + ')"/></g></g>';
+    }
     return "";
   }
   function drawOutfitBehind(id) {
