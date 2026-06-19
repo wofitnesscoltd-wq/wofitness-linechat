@@ -8,71 +8,44 @@
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E⭐%3C/text%3E%3C/svg%3E" />
 <style>
   :root {
-    --bg: #f4f5fb;
-    --card: #ffffff;
-    --ink: #1f2238;
-    --muted: #6b7088;
-    --line: #e7e8f2;
-    --mia: #ff5fa2;
-    --mia-soft: #ffe3ef;
-    --tia: #18bcd4;
-    --tia-soft: #d6f5fb;
-    --good: #18a957;
-    --bad: #e23b54;
-    --brand: #7c5cff;
-    --warn: #ff8f1f;
-    --radius: 16px;
-    --shadow: 0 6px 22px rgba(40, 40, 90, 0.08);
+    --bg: #f4f5fb; --card: #ffffff; --ink: #1f2238; --muted: #6b7088; --line: #e7e8f2;
+    --mia: #c45fd6; --mia-soft: #f4e3ff; --tia: #2f93ec; --tia-soft: #dcedff;
+    --good: #18a957; --bad: #e23b54; --brand: #7c5cff; --warn: #ff8f1f;
+    --radius: 16px; --shadow: 0 6px 22px rgba(40, 40, 90, 0.08);
   }
   * { box-sizing: border-box; margin: 0; padding: 0; }
   html, body { background: var(--bg); }
   body {
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang TC",
       "Microsoft JhengHei", "Noto Sans TC", Roboto, sans-serif;
-    color: var(--ink);
-    line-height: 1.6;
-    -webkit-font-smoothing: antialiased;
+    color: var(--ink); line-height: 1.6; -webkit-font-smoothing: antialiased;
   }
   .wrap { max-width: 760px; margin: 0 auto; padding: 16px 16px 48px; }
 
   header.top {
-    background: linear-gradient(135deg, #7c5cff 0%, #ff5fa2 100%);
-    color: #fff;
-    border-radius: var(--radius);
-    padding: 20px 22px;
-    box-shadow: var(--shadow);
+    background: linear-gradient(135deg, #7c5cff 0%, #ff5fa2 100%); color: #fff;
+    border-radius: var(--radius); padding: 20px 22px; box-shadow: var(--shadow);
   }
   header.top h1 { font-size: 1.45rem; letter-spacing: .5px; }
   header.top h1 .emo { font-style: normal; }
-  header.top .rules {
-    margin-top: 8px; font-size: .9rem; opacity: .95;
-    background: rgba(255,255,255,.16); padding: 8px 12px; border-radius: 10px;
-  }
+  header.top .rules { margin-top: 8px; font-size: .9rem; opacity: .95; background: rgba(255,255,255,.16); padding: 8px 12px; border-radius: 10px; }
   header.top .rules b { font-weight: 700; }
 
+  /* Tabs */
+  .tabbar { display: flex; gap: 8px; margin: 16px 0 0; }
+  .tab { flex: 1; padding: 12px; border: none; border-radius: 12px 12px 0 0; background: #ececf6; color: var(--muted); font-weight: 800; cursor: pointer; font-size: .98rem; }
+  .tab.on { background: var(--card); color: var(--brand); box-shadow: var(--shadow); }
+
   /* Month bar */
-  .monthbar {
-    display: flex; align-items: center; justify-content: center; gap: 10px;
-    margin: 18px 0 14px;
-  }
+  .monthbar { display: flex; align-items: center; justify-content: center; gap: 10px; margin: 18px 0 14px; }
   .monthbar .mlabel { font-weight: 700; font-size: 1.1rem; min-width: 150px; text-align: center; }
-  .monthbar button {
-    border: 1px solid var(--line); background: var(--card); color: var(--ink);
-    width: 40px; height: 40px; border-radius: 12px; font-size: 1.1rem; cursor: pointer;
-    box-shadow: var(--shadow);
-  }
+  .monthbar button { border: 1px solid var(--line); background: var(--card); color: var(--ink); width: 40px; height: 40px; border-radius: 12px; font-size: 1.1rem; cursor: pointer; box-shadow: var(--shadow); }
   .monthbar button:active { transform: translateY(1px); }
-  .monthbar .today {
-    width: auto; padding: 0 14px; height: 40px; font-size: .9rem; font-weight: 600;
-    color: var(--brand);
-  }
+  .monthbar .today { width: auto; padding: 0 14px; height: 40px; font-size: .9rem; font-weight: 600; color: var(--brand); }
 
   /* Balance cards */
   .cards { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
-  .card {
-    background: var(--card); border-radius: var(--radius); padding: 16px;
-    box-shadow: var(--shadow); border-top: 5px solid #ccc; position: relative; overflow: hidden;
-  }
+  .card { background: var(--card); border-radius: var(--radius); padding: 16px; box-shadow: var(--shadow); border-top: 5px solid #ccc; position: relative; overflow: hidden; }
   .card.mia { border-top-color: var(--mia); }
   .card.tia { border-top-color: var(--tia); }
   .card .who { font-weight: 800; font-size: 1.15rem; display: flex; align-items: center; gap: 6px; }
@@ -89,26 +62,7 @@
   .card .card-info { min-width: 0; }
   @media (max-width: 380px) { .card .mascot svg { width: 62px; height: 62px; } }
 
-  /* Skin picker */
-  .skinrow { margin-bottom: 12px; }
-  .skinrow .skin-who { font-weight: 800; font-size: .9rem; margin-bottom: 6px; }
-  .skinrow.mia .skin-who { color: var(--mia); }
-  .skinrow.tia .skin-who { color: var(--tia); }
-  .skins { display: flex; flex-wrap: wrap; gap: 8px; }
-  .skin {
-    border: 2px solid var(--line); background: #fff; border-radius: 14px; padding: 6px 6px 4px;
-    cursor: pointer; width: 84px; text-align: center; position: relative;
-  }
-  .skin svg { display: block; margin: 0 auto; width: 56px; height: 56px; }
-  .skin .skin-name { display: block; font-size: .72rem; color: var(--muted); margin-top: 2px; font-weight: 600; }
-  .skin.sel { border-color: var(--brand); box-shadow: 0 0 0 3px #eceaff; }
-  .skin.sel .skin-name { color: var(--brand); }
-  .skin .lim { position: absolute; top: -7px; right: -6px; background: var(--warn); color: #fff; font-size: .6rem; font-weight: 800; padding: 1px 5px; border-radius: 999px; }
-
-  section.block {
-    background: var(--card); border-radius: var(--radius); padding: 16px;
-    box-shadow: var(--shadow); margin-top: 16px;
-  }
+  section.block { background: var(--card); border-radius: var(--radius); padding: 16px; box-shadow: var(--shadow); margin-top: 16px; }
   section.block > h2 { font-size: 1rem; margin-bottom: 12px; display: flex; align-items: center; gap: 7px; }
   section.block.pending { border: 2px solid var(--warn); }
   section.block.pending > h2 { color: var(--warn); }
@@ -117,10 +71,7 @@
   .grid { display: grid; gap: 10px; }
   .field { display: flex; flex-direction: column; gap: 4px; }
   .field label { font-size: .8rem; color: var(--muted); font-weight: 600; }
-  input, select {
-    font: inherit; padding: 10px 12px; border: 1px solid var(--line); border-radius: 10px;
-    background: #fff; color: var(--ink); width: 100%;
-  }
+  input, select { font: inherit; padding: 10px 12px; border: 1px solid var(--line); border-radius: 10px; background: #fff; color: var(--ink); width: 100%; }
   input:focus, select:focus { outline: 2px solid var(--brand); outline-offset: 0; border-color: var(--brand); }
   .row3 { grid-template-columns: 1fr 1fr 1fr; }
   .row2 { grid-template-columns: 1fr 1fr; }
@@ -130,10 +81,7 @@
   .timepick select { width: auto; flex: 1; min-width: 0; text-align: center; font-variant-numeric: tabular-nums; }
   .timepick .sep { color: var(--muted); font-weight: 800; }
 
-  .btn {
-    font: inherit; font-weight: 700; cursor: pointer; border: none; border-radius: 10px;
-    padding: 11px 16px; background: var(--brand); color: #fff;
-  }
+  .btn { font: inherit; font-weight: 700; cursor: pointer; border: none; border-radius: 10px; padding: 11px 16px; background: var(--brand); color: #fff; }
   .btn:active { transform: translateY(1px); }
   .btn.sec { background: #eceaff; color: var(--brand); }
   .btn.warn { background: var(--warn); color: #fff; }
@@ -167,36 +115,21 @@
   .rec.tia .earn { color: var(--tia); }
   .rec-body { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-top: 4px; }
   .rec-body .dur { font-size: .85rem; color: var(--muted); font-weight: 600; }
-  .chip {
-    display: inline-flex; align-items: center; gap: 4px; background: #fff; border: 1px solid var(--line);
-    border-radius: 999px; padding: 3px 6px 3px 10px; font-size: .82rem; font-variant-numeric: tabular-nums;
-  }
-  .chip .x {
-    border: none; background: transparent; cursor: pointer; font-size: .8rem; line-height: 1;
-    width: 22px; height: 22px; border-radius: 50%; color: var(--muted);
-  }
+  .chip { display: inline-flex; align-items: center; gap: 4px; background: #fff; border: 1px solid var(--line); border-radius: 999px; padding: 3px 6px 3px 10px; font-size: .82rem; font-variant-numeric: tabular-nums; }
+  .chip .x { border: none; background: transparent; cursor: pointer; font-size: .8rem; line-height: 1; width: 22px; height: 22px; border-radius: 50%; color: var(--muted); }
   .chip .x:hover { background: #f0f0f6; color: var(--ink); }
 
   .empty { color: var(--muted); text-align: center; padding: 14px; font-size: .92rem; }
 
   /* Usage list */
-  .uitem {
-    display: flex; align-items: center; justify-content: space-between; gap: 8px;
-    border: 1px solid var(--line); border-radius: 10px; padding: 8px 12px; margin-top: 8px; font-size: .9rem;
-  }
+  .uitem { display: flex; align-items: center; justify-content: space-between; gap: 8px; border: 1px solid var(--line); border-radius: 10px; padding: 8px 12px; margin-top: 8px; font-size: .9rem; }
   .uitem .meta { color: var(--muted); }
-  .uitem .tag { font-weight: 700; padding: 2px 8px; border-radius: 999px; font-size: .8rem; }
-  .uitem .tag.mia { background: var(--mia-soft); color: var(--mia); }
-  .uitem .tag.tia { background: var(--tia-soft); color: var(--tia); }
   .tag { font-weight: 700; padding: 2px 8px; border-radius: 999px; font-size: .8rem; }
   .tag.mia { background: var(--mia-soft); color: var(--mia); }
   .tag.tia { background: var(--tia-soft); color: var(--tia); }
 
   details.block { background: var(--card); border-radius: var(--radius); box-shadow: var(--shadow); margin-top: 16px; padding: 4px 16px; }
-  details.block > summary {
-    cursor: pointer; list-style: none; padding: 12px 0; font-weight: 700; font-size: .98rem;
-    display: flex; align-items: center; gap: 7px;
-  }
+  details.block > summary { cursor: pointer; list-style: none; padding: 12px 0; font-weight: 700; font-size: .98rem; display: flex; align-items: center; gap: 7px; }
   details.block > summary::-webkit-details-marker { display: none; }
   details.block > summary::after { content: "＋"; margin-left: auto; color: var(--muted); font-weight: 700; }
   details.block[open] > summary::after { content: "－"; }
@@ -204,6 +137,46 @@
 
   footer { margin-top: 22px; text-align: center; color: var(--muted); font-size: .8rem; }
   .hint { font-size: .8rem; color: var(--muted); margin-top: 6px; }
+
+  /* ===== Pet playground ===== */
+  #view-pet { display: none; }
+  .petsw-row { display: flex; gap: 8px; margin-top: 16px; }
+  .petsw { flex: 1; padding: 10px; border: 2px solid var(--line); background: #fff; border-radius: 12px; font-weight: 800; cursor: pointer; color: var(--muted); }
+  .petsw.on.mia { border-color: var(--mia); color: var(--mia); background: var(--mia-soft); }
+  .petsw.on.tia { border-color: var(--tia); color: var(--tia); background: var(--tia-soft); }
+  .petbox.mia { border-top: 5px solid var(--mia); }
+  .petbox.tia { border-top: 5px solid var(--tia); }
+  .petname { display: flex; align-items: center; justify-content: center; gap: 8px; font-weight: 800; font-size: 1.2rem; }
+  .petstage { position: relative; display: flex; justify-content: center; align-items: center; height: 244px; margin: 4px 0; }
+  .petstage .petart { animation: bob 3.2s ease-in-out infinite; transform-origin: center bottom; }
+  .petstage.act .petart { animation: pop .5s ease; }
+  .petart svg { display: block; border-radius: 18px; filter: drop-shadow(0 8px 10px rgba(0,0,0,.10)); }
+  .floatfx { position: absolute; top: 28%; font-size: 30px; pointer-events: none; animation: floatup 1.4s ease-out forwards; }
+  @keyframes bob { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-6px); } }
+  @keyframes pop { 0% { transform: scale(1); } 30% { transform: scale(1.08); } 60% { transform: scale(.97); } 100% { transform: scale(1); } }
+  @keyframes floatup { 0% { transform: translateY(0) scale(.5); opacity: 0; } 25% { opacity: 1; } 100% { transform: translateY(-92px) scale(1.3); opacity: 0; } }
+  .stats { display: grid; grid-template-columns: 1fr 1fr; gap: 8px 14px; margin: 10px 4px 2px; }
+  .stat .sl { font-size: .78rem; color: var(--muted); font-weight: 700; }
+  .stat .bar { height: 10px; background: #eee; border-radius: 999px; overflow: hidden; }
+  .stat .bar i { display: block; height: 100%; background: linear-gradient(90deg,#7c5cff,#ff5fa2); border-radius: 999px; transition: width .45s ease; }
+  .carebtns { display: grid; grid-template-columns: repeat(4,1fr); gap: 8px; margin-top: 12px; }
+  .carebtn { display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 10px 4px; border: none; border-radius: 14px; background: #f3f1ff; cursor: pointer; font-size: 1.6rem; }
+  .carebtn span { font-size: .72rem; color: var(--muted); font-weight: 700; }
+  .carebtn:active { transform: translateY(1px); background: #e9e5ff; }
+  .wallet { font-weight: 700; background: #f6f4ff; border-radius: 12px; padding: 10px 12px; }
+  .wallet b { color: var(--brand); }
+  .wallet.neg b { color: var(--bad); }
+  .slottabs { display: flex; flex-wrap: wrap; gap: 6px; margin: 6px 0 12px; }
+  .slottab { padding: 7px 12px; border: 1px solid var(--line); background: #fff; border-radius: 999px; font-weight: 700; font-size: .85rem; cursor: pointer; color: var(--muted); }
+  .slottab.on { background: var(--brand); color: #fff; border-color: var(--brand); }
+  .wardrobe { display: grid; grid-template-columns: repeat(auto-fill,minmax(80px,1fr)); gap: 8px; }
+  .witem { position: relative; border: 2px solid var(--line); background: #fff; border-radius: 14px; padding: 10px 4px 6px; cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 3px; }
+  .witem .wemoji { font-size: 1.7rem; line-height: 1; }
+  .witem .wname { font-size: .72rem; color: var(--muted); font-weight: 700; }
+  .witem .price { font-size: .68rem; font-weight: 800; color: var(--brand); background: #eceaff; border-radius: 999px; padding: 1px 6px; }
+  .witem .price.lim { color: #fff; background: var(--warn); }
+  .witem.sel { border-color: var(--brand); box-shadow: 0 0 0 3px #eceaff; }
+  .witem.locked .wemoji { filter: grayscale(.35); opacity: .85; }
 </style>
 </head>
 <body>
@@ -214,146 +187,122 @@
     <div class="rules" id="rulesLine"></div>
   </header>
 
-  <div class="monthbar">
-    <button id="prevMonth" title="上個月">‹</button>
-    <div class="mlabel" id="monthLabel">—</div>
-    <button id="nextMonth" title="下個月">›</button>
-    <button class="today" id="thisMonth">本月</button>
+  <div class="tabbar">
+    <button class="tab on" data-tab="sleep">📋 睡眠紀錄</button>
+    <button class="tab" data-tab="pet">🎮 寵物樂園</button>
   </div>
 
-  <div class="cards" id="cards"></div>
-
-  <section class="block pending" id="pendingBlock" style="display:none">
-    <h2>⏰ 進行中（補登起床時間）</h2>
-    <div id="pending"></div>
-  </section>
-
-  <section class="block">
-    <h2>😴 新增睡眠紀錄</h2>
-    <form id="recForm" class="grid">
-      <div class="grid row2">
-        <div class="field">
-          <label for="recChild">是誰</label>
-          <select id="recChild">
-            <option value="mia">🌸 Mia</option>
-            <option value="tia">🐬 Tia</option>
-            <option value="both">👭 兩人都記</option>
-          </select>
-        </div>
-        <div class="field">
-          <label for="recDate">日期（睡的那一晚）</label>
-          <input type="date" id="recDate" />
-        </div>
-      </div>
-      <div class="grid row2">
-        <div class="field">
-          <label>就寢時間（24 小時制）</label>
-          <div class="timepick">
-            <select id="recSleepH"></select><span class="sep">:</span><select id="recSleepM"></select>
-          </div>
-        </div>
-        <div class="field">
-          <label>起床時間（可之後再補）</label>
-          <div class="timepick">
-            <select id="recWakeH"></select><span class="sep">:</span><select id="recWakeM"></select>
-          </div>
-        </div>
-      </div>
-      <p class="hint">晚上只想先登記入睡：起床時間維持「--」即可，明天早上再到上方「⏰ 進行中」區補上。</p>
-      <div class="preview" id="recPreview"></div>
-      <div class="actions">
-        <button type="submit" class="btn" id="recSubmit">登記</button>
-        <button type="button" class="btn ghost" id="recCancel" hidden>取消修改</button>
-      </div>
-    </form>
-  </section>
-
-  <section class="block">
-    <h2>📅 本月睡眠紀錄</h2>
-    <div id="records"></div>
-  </section>
-
-  <details class="block" id="skinBlock" open>
-    <summary>🎨 造型（幫 Mia / Tia 換裝）</summary>
-    <div class="inner">
-      <div id="skins"></div>
-      <p class="hint">點一下就換造型，會自動記住。「✨ 星空限定」是亮晶晶的限定款 💫（皆為原創小怪獸角色）</p>
+  <!-- ========== 睡眠 ========== -->
+  <div id="view-sleep">
+    <div class="monthbar">
+      <button id="prevMonth" title="上個月">‹</button>
+      <div class="mlabel" id="monthLabel">—</div>
+      <button id="nextMonth" title="下個月">›</button>
+      <button class="today" id="thisMonth">本月</button>
     </div>
-  </details>
 
-  <details class="block" id="usageBlock">
-    <summary>📺 使用 / 兌換紀錄（扣掉已經看的時間）</summary>
-    <div class="inner">
-      <form id="useForm" class="grid">
-        <div class="grid row3">
+    <div class="cards" id="cards"></div>
+
+    <section class="block pending" id="pendingBlock" style="display:none">
+      <h2>⏰ 進行中（補登起床時間）</h2>
+      <div id="pending"></div>
+    </section>
+
+    <section class="block">
+      <h2>😴 新增睡眠紀錄</h2>
+      <form id="recForm" class="grid">
+        <div class="grid row2">
           <div class="field">
-            <label for="useChild">是誰</label>
-            <select id="useChild">
+            <label for="recChild">是誰</label>
+            <select id="recChild">
               <option value="mia">🌸 Mia</option>
               <option value="tia">🐬 Tia</option>
+              <option value="both">👭 兩人都記</option>
             </select>
           </div>
           <div class="field">
-            <label for="useDate">日期</label>
-            <input type="date" id="useDate" />
+            <label for="recDate">日期（睡的那一晚）</label>
+            <input type="date" id="recDate" />
+          </div>
+        </div>
+        <div class="grid row2">
+          <div class="field">
+            <label>就寢時間（24 小時制）</label>
+            <div class="timepick"><select id="recSleepH"></select><span class="sep">:</span><select id="recSleepM"></select></div>
           </div>
           <div class="field">
-            <label for="useMin">使用分鐘數</label>
-            <input type="number" id="useMin" min="1" step="5" inputmode="numeric" placeholder="例如 30" />
+            <label>起床時間（可之後再補）</label>
+            <div class="timepick"><select id="recWakeH"></select><span class="sep">:</span><select id="recWakeM"></select></div>
           </div>
         </div>
-        <div class="field">
-          <label for="useNote">備註（可不填）</label>
-          <input type="text" id="useNote" placeholder="例如：看卡通、玩平板…" />
-        </div>
+        <p class="hint">晚上只想先登記入睡：起床時間維持「--」即可，明天早上再到上方「⏰ 進行中」區補上。</p>
+        <div class="preview" id="recPreview"></div>
         <div class="actions">
-          <button type="submit" class="btn sec">記一筆使用</button>
+          <button type="submit" class="btn" id="recSubmit">登記</button>
+          <button type="button" class="btn ghost" id="recCancel" hidden>取消修改</button>
         </div>
       </form>
-      <div id="usages"></div>
-    </div>
-  </details>
+    </section>
 
-  <details class="block" id="settingsBlock">
-    <summary>⚙️ 進階設定（兌換規則）</summary>
-    <div class="inner">
-      <div class="grid row3">
-        <div class="field">
-          <label for="setBaseline">基本睡眠（小時）</label>
-          <input type="number" id="setBaseline" min="0" step="0.5" />
-        </div>
-        <div class="field">
-          <label for="setStep">每超過（分鐘）</label>
-          <input type="number" id="setStep" min="1" step="1" />
-        </div>
-        <div class="field">
-          <label for="setReward">可換 3C（分鐘）</label>
-          <input type="number" id="setReward" min="1" step="1" />
-        </div>
-      </div>
-      <div class="actions">
-        <button type="button" class="btn sec" id="setSave">儲存設定</button>
-        <button type="button" class="btn ghost" id="setReset">恢復預設（8小時 / 30分 / 15分）</button>
-      </div>
-      <p class="hint">修改規則後，所有月份的計算都會跟著更新。</p>
-    </div>
-  </details>
+    <section class="block">
+      <h2>📅 本月睡眠紀錄</h2>
+      <div id="records"></div>
+    </section>
 
-  <details class="block" id="dataBlock">
-    <summary>💾 資料備份（匯出 / 匯入 / 清除）</summary>
-    <div class="inner">
-      <p class="hint">資料只存在這台裝置的瀏覽器裡。<b>更新版本、換手機或清快取前，請先「匯出備份」，到新檔案再「匯入」。</b></p>
-      <div class="actions">
-        <button type="button" class="btn sec" id="exportBtn">匯出備份檔</button>
-        <button type="button" class="btn ghost" id="importBtn">匯入備份檔</button>
-        <input type="file" id="importFile" accept="application/json,.json" hidden />
-        <button type="button" class="btn danger" id="clearBtn">清除所有資料</button>
+    <details class="block" id="usageBlock">
+      <summary>📺 使用 / 兌換紀錄（扣掉已經看的、買寵物的時間）</summary>
+      <div class="inner">
+        <form id="useForm" class="grid">
+          <div class="grid row3">
+            <div class="field">
+              <label for="useChild">是誰</label>
+              <select id="useChild"><option value="mia">🌸 Mia</option><option value="tia">🐬 Tia</option></select>
+            </div>
+            <div class="field"><label for="useDate">日期</label><input type="date" id="useDate" /></div>
+            <div class="field"><label for="useMin">使用分鐘數</label><input type="number" id="useMin" min="1" step="5" inputmode="numeric" placeholder="例如 30" /></div>
+          </div>
+          <div class="field"><label for="useNote">備註（可不填）</label><input type="text" id="useNote" placeholder="例如：看卡通、玩平板…" /></div>
+          <div class="actions"><button type="submit" class="btn sec">記一筆使用</button></div>
+        </form>
+        <div id="usages"></div>
       </div>
-    </div>
-  </details>
+    </details>
+
+    <details class="block" id="settingsBlock">
+      <summary>⚙️ 進階設定（兌換規則）</summary>
+      <div class="inner">
+        <div class="grid row3">
+          <div class="field"><label for="setBaseline">基本睡眠（小時）</label><input type="number" id="setBaseline" min="0" step="0.5" /></div>
+          <div class="field"><label for="setStep">每超過（分鐘）</label><input type="number" id="setStep" min="1" step="1" /></div>
+          <div class="field"><label for="setReward">可換 3C（分鐘）</label><input type="number" id="setReward" min="1" step="1" /></div>
+        </div>
+        <div class="actions">
+          <button type="button" class="btn sec" id="setSave">儲存設定</button>
+          <button type="button" class="btn ghost" id="setReset">恢復預設（8小時 / 30分 / 15分）</button>
+        </div>
+        <p class="hint">修改規則後，所有月份的計算都會跟著更新。</p>
+      </div>
+    </details>
+
+    <details class="block" id="dataBlock">
+      <summary>💾 資料備份（匯出 / 匯入 / 清除）</summary>
+      <div class="inner">
+        <p class="hint">資料只存在這台裝置的瀏覽器裡。<b>更新版本、換手機或清快取前，請先「匯出備份」，到新檔案再「匯入」。</b></p>
+        <div class="actions">
+          <button type="button" class="btn sec" id="exportBtn">匯出備份檔</button>
+          <button type="button" class="btn ghost" id="importBtn">匯入備份檔</button>
+          <input type="file" id="importFile" accept="application/json,.json" hidden />
+          <button type="button" class="btn danger" id="clearBtn">清除所有資料</button>
+        </div>
+      </div>
+    </details>
+  </div>
+
+  <!-- ========== 寵物樂園 ========== -->
+  <div id="view-pet"></div>
 
   <footer>
-    睡飽飽，換 3C ⭐ · 24 小時制 · 每月 1 日自動歸零、重新累積（不累計到下個月）
+    睡飽飽，換 3C ⭐ · 24 小時制 · 睡好賺 3C，3C 可看螢幕、也能幫小怪獸買裝扮 🐾
   </footer>
 </div>
 
@@ -367,27 +316,88 @@
     { key: "mia", name: "Mia", emoji: "🌸", cls: "mia" },
     { key: "tia", name: "Tia", emoji: "🐬", cls: "tia" }
   ];
+  var PALETTE = {
+    mia: { fur: "#c98bff", dark: "#9a5fd0", inner: "#ecd8ff", belly: "#faf3ff", cheek: "#ff6fbe" },
+    tia: { fur: "#5fb0ff", dark: "#2f86d8", inner: "#d6eaff", belly: "#f2f8ff", cheek: "#3a93ec" }
+  };
 
-  // ---------- state ----------
-  var DEFAULT_STYLES = { mia: "classic", tia: "classic" };
-  function blank() {
-    return { settings: Object.assign({}, DEFAULTS), records: [], usages: [], styles: Object.assign({}, DEFAULT_STYLES) };
+  // ---------- helpers ----------
+  function $(id) { return document.getElementById(id); }
+  function pad2(n) { return (n < 10 ? "0" : "") + n; }
+  function uid() { return Date.now().toString(36) + Math.random().toString(36).slice(2, 7); }
+  function clamp(v) { return Math.max(0, Math.min(100, v)); }
+  function todayStr() { var d = new Date(); return d.getFullYear() + "-" + pad2(d.getMonth() + 1) + "-" + pad2(d.getDate()); }
+  function currentMonthKey() { return todayStr().slice(0, 7); }
+  function monthKey(s) { return (s || "").slice(0, 7); }
+  function childOf(key) { for (var i = 0; i < CHILDREN.length; i++) if (CHILDREN[i].key === key) return CHILDREN[i]; return CHILDREN[0]; }
+  function shiftMonth(mk, delta) { var p = mk.split("-"), y = +p[0], m = +p[1] + delta; while (m < 1) { m += 12; y--; } while (m > 12) { m -= 12; y++; } return y + "-" + pad2(m); }
+  function monthLabel(mk) { var p = mk.split("-"); return p[0] + " 年 " + (+p[1]) + " 月"; }
+  function timeToMin(t) { var p = (t || "").split(":"); return (+p[0]) * 60 + (+p[1]); }
+  function sessionDuration(rec) { if (!rec.wake || !rec.sleep) return 0; var d = timeToMin(rec.wake) - timeToMin(rec.sleep); if (d <= 0) d += 1440; return d; }
+  function fmtMin(min) {
+    min = Math.round(min); var sign = min < 0 ? "-" : ""; min = Math.abs(min);
+    var h = Math.floor(min / 60), m = min % 60;
+    if (h && m) return sign + h + " 小時 " + m + " 分";
+    if (h) return sign + h + " 小時";
+    return sign + m + " 分";
   }
-  function normStyles(s) {
-    return (s && typeof s === "object") ? Object.assign({}, DEFAULT_STYLES, s) : Object.assign({}, DEFAULT_STYLES);
+  var WD = ["日", "一", "二", "三", "四", "五", "六"];
+  function fmtDate(d) { var p = d.split("-").map(Number); var wd = WD[new Date(p[0], p[1] - 1, p[2]).getDay()]; return p[1] + "/" + p[2] + "（" + wd + "）"; }
+  function escapeHtml(s) { return String(s).replace(/[&<>"']/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]; }); }
+
+  // ---------- state / persistence ----------
+  function defaultPet() {
+    return { name: "", base: "classic",
+      wear: { hat: null, eyes: null, outfit: null, back: null, hand: null, bg: null },
+      stats: { happy: 70, full: 70, clean: 70, energy: 70 }, lastTick: Date.now() };
+  }
+  function normPet(o) {
+    var dp = defaultPet();
+    if (!o || typeof o !== "object") return dp;
+    if (typeof o.name === "string") dp.name = o.name;
+    if (o.base) dp.base = o.base;
+    if (o.wear && typeof o.wear === "object") Object.keys(dp.wear).forEach(function (k) { dp.wear[k] = o.wear[k] || null; });
+    if (o.stats && typeof o.stats === "object") ["happy", "full", "clean", "energy"].forEach(function (k) { var v = +o.stats[k]; dp.stats[k] = isNaN(v) ? 70 : clamp(v); });
+    dp.lastTick = +o.lastTick || Date.now();
+    return dp;
+  }
+  function buildPetsFromStyles(styles) {
+    var pets = { mia: defaultPet(), tia: defaultPet() }, inv = { mia: {}, tia: {} };
+    ["mia", "tia"].forEach(function (c) {
+      var st = styles && styles[c]; if (!st) return;
+      if (st === "rainbow") { pets[c].base = "rainbow"; inv[c].rainbow = true; }
+      else if (st === "galaxy") { pets[c].base = "galaxy"; inv[c].galaxy = true; }
+      else if (st === "bow") { pets[c].wear.hat = "bow"; }
+      else if (st === "crown") { pets[c].wear.hat = "crown"; }
+    });
+    return { pets: pets, inventory: inv };
+  }
+  function normPetsBlock(d) {
+    if (d.pets && typeof d.pets === "object") {
+      var pets = { mia: normPet(d.pets.mia), tia: normPet(d.pets.tia) };
+      var inv = { mia: {}, tia: {} };
+      if (d.inventory && typeof d.inventory === "object")
+        ["mia", "tia"].forEach(function (c) { if (d.inventory[c] && typeof d.inventory[c] === "object") inv[c] = Object.assign({}, d.inventory[c]); });
+      return { pets: pets, inventory: inv };
+    }
+    return buildPetsFromStyles(d.styles);
+  }
+  function blank() {
+    return { settings: Object.assign({}, DEFAULTS), records: [], usages: [],
+      pets: { mia: defaultPet(), tia: defaultPet() }, inventory: { mia: {}, tia: {} } };
+  }
+  function fromData(d) {
+    var pb = normPetsBlock(d);
+    return {
+      settings: Object.assign({}, DEFAULTS, d.settings || {}),
+      records: Array.isArray(d.records) ? d.records : [],
+      usages: Array.isArray(d.usages) ? d.usages : [],
+      pets: pb.pets, inventory: pb.inventory
+    };
   }
   function load() {
-    try {
-      var raw = localStorage.getItem(STORAGE_KEY);
-      if (!raw) return blank();
-      var d = JSON.parse(raw);
-      return {
-        settings: Object.assign({}, DEFAULTS, d.settings || {}),
-        records: Array.isArray(d.records) ? d.records : [],
-        usages: Array.isArray(d.usages) ? d.usages : [],
-        styles: normStyles(d.styles)
-      };
-    } catch (e) { return blank(); }
+    try { var raw = localStorage.getItem(STORAGE_KEY); if (!raw) return blank(); return fromData(JSON.parse(raw)); }
+    catch (e) { return blank(); }
   }
   function save() {
     try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); }
@@ -398,251 +408,251 @@
   var viewMonth = currentMonthKey();
   var editingId = null;
 
-  // ---------- helpers ----------
-  function pad2(n) { return (n < 10 ? "0" : "") + n; }
-  function uid() { return Date.now().toString(36) + Math.random().toString(36).slice(2, 7); }
-  function todayStr() {
-    var d = new Date();
-    return d.getFullYear() + "-" + pad2(d.getMonth() + 1) + "-" + pad2(d.getDate());
+  // ---------- earning / spending ----------
+  function earnedForDuration(totalMin) { var ex = totalMin - state.settings.baseline; if (ex <= 0) return 0; return Math.floor(ex / state.settings.step) * state.settings.reward; }
+  function monthlyEarned(childKey, mk) {
+    var byDate = {};
+    state.records.forEach(function (r) { if (r.child === childKey && r.wake && monthKey(r.date) === mk) byDate[r.date] = (byDate[r.date] || 0) + sessionDuration(r); });
+    var sum = 0; Object.keys(byDate).forEach(function (k) { sum += earnedForDuration(byDate[k]); }); return sum;
   }
-  function currentMonthKey() { return todayStr().slice(0, 7); }
-  function monthKey(dateStr) { return (dateStr || "").slice(0, 7); }
-  function childOf(key) {
-    for (var i = 0; i < CHILDREN.length; i++) if (CHILDREN[i].key === key) return CHILDREN[i];
-    return CHILDREN[0];
-  }
-  function shiftMonth(mk, delta) {
-    var p = mk.split("-"), y = +p[0], m = +p[1] + delta;
-    while (m < 1) { m += 12; y--; }
-    while (m > 12) { m -= 12; y++; }
-    return y + "-" + pad2(m);
-  }
-  function monthLabel(mk) {
-    var p = mk.split("-");
-    return p[0] + " 年 " + (+p[1]) + " 月";
-  }
-  function timeToMin(t) {
-    var p = (t || "").split(":");
-    return (+p[0]) * 60 + (+p[1]);
-  }
-  function sessionDuration(rec) {
-    if (!rec.wake || !rec.sleep) return 0; // 尚未補起床時間
-    var d = timeToMin(rec.wake) - timeToMin(rec.sleep);
-    if (d <= 0) d += 1440; // 跨午夜
-    return d;
-  }
-  function earnedForDuration(totalMin) {
-    var ex = totalMin - state.settings.baseline;
-    if (ex <= 0) return 0;
-    return Math.floor(ex / state.settings.step) * state.settings.reward;
-  }
-  function fmtMin(min) {
-    min = Math.round(min);
-    var sign = min < 0 ? "-" : "";
-    min = Math.abs(min);
-    var h = Math.floor(min / 60), m = min % 60;
-    if (h && m) return sign + h + " 小時 " + m + " 分";
-    if (h) return sign + h + " 小時";
-    return sign + m + " 分";
-  }
-  var WD = ["日", "一", "二", "三", "四", "五", "六"];
-  function fmtDate(d) {
-    var p = d.split("-").map(Number);
-    var wd = WD[new Date(p[0], p[1] - 1, p[2]).getDay()];
-    return p[1] + "/" + p[2] + "（" + wd + "）";
+  function monthlyUsed(childKey, mk) { var s = 0; state.usages.forEach(function (u) { if (u.child === childKey && monthKey(u.date) === mk) s += (u.minutes || 0); }); return s; }
+  function balanceOf(childKey) { return monthlyEarned(childKey, currentMonthKey()) - monthlyUsed(childKey, currentMonthKey()); }
+  function sleepStreak(childKey) {
+    var have = {};
+    state.records.forEach(function (r) { if (r.child === childKey && r.wake && sessionDuration(r) >= state.settings.baseline) have[r.date] = true; });
+    function ds(dt) { return dt.getFullYear() + "-" + pad2(dt.getMonth() + 1) + "-" + pad2(dt.getDate()); }
+    var d = new Date(), streak = 0;
+    if (!have[ds(d)]) d.setDate(d.getDate() - 1);
+    while (have[ds(d)]) { streak++; d.setDate(d.getDate() - 1); }
+    return streak;
   }
 
-  // ---------- 24h time <select> options ----------
+  // ---------- 24h selects ----------
   var HOUR_OPTS = '<option value="">--</option>';
   for (var _h = 0; _h < 24; _h++) HOUR_OPTS += '<option value="' + pad2(_h) + '">' + pad2(_h) + "</option>";
   var MIN_OPTS = "";
   for (var _m = 0; _m < 60; _m++) MIN_OPTS += '<option value="' + pad2(_m) + '">' + pad2(_m) + "</option>";
+  function readTime(hSel, mSel) { var h = hSel.value; if (!h) return ""; return h + ":" + (mSel.value || "00"); }
+  function setTime(hSel, mSel, val) { if (!val) { hSel.value = ""; mSel.value = "00"; return; } var p = val.split(":"); hSel.value = p[0]; mSel.value = p[1]; }
 
-  function readTime(hSel, mSel) {
-    var h = hSel.value;
-    if (!h) return "";
-    return h + ":" + (mSel.value || "00");
-  }
-  function setTime(hSel, mSel, val) {
-    if (!val) { hSel.value = ""; mSel.value = "00"; return; }
-    var p = val.split(":");
-    hSel.value = p[0]; mSel.value = p[1];
-  }
-
-  // ---------- 原創小怪獸造型（可換裝、可收集） ----------
-  var PALETTE = {
-    mia: { fur: "#ff7eb6", dark: "#e25f9b", inner: "#ffd5e8", belly: "#fff4f9", cheek: "#ff4f97" },
-    tia: { fur: "#45cfe6", dark: "#1aa7bf", inner: "#cdf2f9", belly: "#f1fdff", cheek: "#12b4cc" }
-  };
-  var STYLES = [
-    { key: "classic", name: "經典" },
-    { key: "bow", name: "蝴蝶結", acc: "bow" },
-    { key: "crown", name: "小皇冠", acc: "crown" },
-    { key: "star", name: "星星肚肚", belly: "star" },
-    { key: "rainbow", name: "彩虹", fur: "rainbow" },
-    { key: "galaxy", name: "✨星空限定", fur: "galaxy", acc: "crown", sparkle: true, limited: true }
-  ];
-  function styleDef(key) {
-    for (var i = 0; i < STYLES.length; i++) if (STYLES[i].key === key) return STYLES[i];
-    return STYLES[0];
-  }
-  function styleOf(childKey) { return (state.styles && state.styles[childKey]) || "classic"; }
-
+  // ================= 小怪獸繪圖 =================
   var svgSeq = 0;
   function pts(arr) { return arr.map(function (p) { return p[0].toFixed(1) + "," + p[1].toFixed(1); }).join(" "); }
-  function sparkle(x, y, r) {
-    var a = r * 0.22;
-    return '<polygon points="' + pts([[x, y - r], [x + a, y - a], [x + r, y], [x + a, y + a], [x, y + r], [x - a, y + a], [x - r, y], [x - a, y - a]]) + '" fill="#fff" opacity=".95"/>';
-  }
+  function sparkle(x, y, r) { var a = r * 0.22; return '<polygon points="' + pts([[x, y - r], [x + a, y - a], [x + r, y], [x + a, y + a], [x, y + r], [x - a, y + a], [x - r, y], [x - a, y - a]]) + '" fill="#fff" opacity=".95"/>'; }
   function star5(cx, cy, r, fill, stroke) {
-    var p = [];
-    for (var i = 0; i < 10; i++) {
-      var rr = (i % 2) ? r * 0.45 : r;
-      var a = -Math.PI / 2 + i * Math.PI / 5;
-      p.push([cx + rr * Math.cos(a), cy + rr * Math.sin(a)]);
-    }
+    var p = []; for (var i = 0; i < 10; i++) { var rr = (i % 2) ? r * 0.45 : r; var a = -Math.PI / 2 + i * Math.PI / 5; p.push([cx + rr * Math.cos(a), cy + rr * Math.sin(a)]); }
     return '<polygon points="' + pts(p) + '" fill="' + fill + '" stroke="' + stroke + '" stroke-width="1.4" stroke-linejoin="round"/>';
   }
-  function mascotSVG(childKey, styleKey, size) {
-    size = size || 96;
-    var pal = PALETTE[childKey] || PALETTE.mia;
-    var st = styleDef(styleKey);
-    var special = (st.fur === "rainbow" || st.fur === "galaxy");
-    var gid = "mg" + (++svgSeq);
-    var defs = "", furFill = pal.fur, strokeC = pal.dark;
-    if (st.fur === "rainbow") {
-      defs = '<linearGradient id="' + gid + '" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ff9ec0"/><stop offset=".45" stop-color="#ffd98a"/><stop offset="1" stop-color="#8be3b0"/></linearGradient>';
-      furFill = "url(#" + gid + ")"; strokeC = "#ef9bb0";
-    } else if (st.fur === "galaxy") {
-      defs = '<linearGradient id="' + gid + '" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#6a5cff"/><stop offset=".5" stop-color="#b15cff"/><stop offset="1" stop-color="#ff7ad9"/></linearGradient>';
-      furFill = "url(#" + gid + ")"; strokeC = "#8a6bf0";
-    }
-    var innerFill = special ? "rgba(255,255,255,.6)" : pal.inner;
-    var bellyFill = special ? "rgba(255,255,255,.45)" : pal.belly;
-    var s = '<svg viewBox="0 0 100 100" width="' + size + '" height="' + size + '" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="小怪獸">';
-    s += "<defs>" + defs + "</defs>";
-    s += '<g stroke="' + strokeC + '" stroke-width="2" stroke-linejoin="round">';
-    // 耳朵
+  function drawBody(pal, furFill, strokeC, innerFill, bellyFill, expr) {
+    var s = '<g stroke="' + strokeC + '" stroke-width="2" stroke-linejoin="round">';
     s += '<ellipse cx="35" cy="24" rx="11.5" ry="21" transform="rotate(-14 35 24)" fill="' + furFill + '"/>';
     s += '<ellipse cx="65" cy="24" rx="11.5" ry="21" transform="rotate(14 65 24)" fill="' + furFill + '"/>';
     s += '<ellipse cx="35" cy="27" rx="5.5" ry="12.5" transform="rotate(-14 35 27)" fill="' + innerFill + '" stroke="none"/>';
     s += '<ellipse cx="65" cy="27" rx="5.5" ry="12.5" transform="rotate(14 65 27)" fill="' + innerFill + '" stroke="none"/>';
-    // 腳
     s += '<ellipse cx="38" cy="91" rx="9" ry="6.5" fill="' + furFill + '"/><ellipse cx="62" cy="91" rx="9" ry="6.5" fill="' + furFill + '"/>';
-    // 身體
     s += '<ellipse cx="50" cy="61" rx="29" ry="30" fill="' + furFill + '"/>';
-    // 肚肚
     s += '<ellipse cx="50" cy="68" rx="18" ry="19" fill="' + bellyFill + '" stroke="none"/>';
-    if (st.belly === "star") s += star5(50, 69, 9, "#ffd23f", "#e6a700");
-    // 手
     s += '<ellipse cx="24" cy="64" rx="6.5" ry="8.5" transform="rotate(20 24 64)" fill="' + furFill + '"/>';
     s += '<ellipse cx="76" cy="64" rx="6.5" ry="8.5" transform="rotate(-20 76 64)" fill="' + furFill + '"/>';
-    // 腮紅
     s += '<circle cx="31" cy="64" r="5" fill="' + pal.cheek + '" opacity=".4" stroke="none"/><circle cx="69" cy="64" r="5" fill="' + pal.cheek + '" opacity=".4" stroke="none"/>';
-    // 眼睛
-    s += '<ellipse cx="40" cy="56" rx="5.5" ry="6.5" fill="#2b2b3d" stroke="none"/><ellipse cx="60" cy="56" rx="5.5" ry="6.5" fill="#2b2b3d" stroke="none"/>';
-    s += '<circle cx="42" cy="53" r="2" fill="#fff" stroke="none"/><circle cx="62" cy="53" r="2" fill="#fff" stroke="none"/>';
-    // 愛心鼻 + 嘴 + 牙
+    if (expr === "happy") {
+      s += '<path d="M34 57 Q40 50 46 57" fill="none" stroke="#2b2b3d" stroke-width="2.6" stroke-linecap="round"/>';
+      s += '<path d="M54 57 Q60 50 66 57" fill="none" stroke="#2b2b3d" stroke-width="2.6" stroke-linecap="round"/>';
+    } else {
+      s += '<ellipse cx="40" cy="56" rx="5.5" ry="6.5" fill="#2b2b3d" stroke="none"/><ellipse cx="60" cy="56" rx="5.5" ry="6.5" fill="#2b2b3d" stroke="none"/>';
+      s += '<circle cx="42" cy="53" r="2" fill="#fff" stroke="none"/><circle cx="62" cy="53" r="2" fill="#fff" stroke="none"/>';
+    }
     s += '<path d="M50 63 C47 60,44 64,50 68 C56 64,53 60,50 63 Z" fill="' + pal.cheek + '" stroke="none"/>';
-    s += '<path d="M44 70 Q50 76 56 70" fill="none" stroke="' + strokeC + '" stroke-width="2.4" stroke-linecap="round"/>';
-    s += '<rect x="47.3" y="70.4" width="2.6" height="3.6" rx="1" fill="#fff" stroke-width="0.8"/>';
-    s += '<rect x="50.1" y="70.4" width="2.6" height="3.6" rx="1" fill="#fff" stroke-width="0.8"/>';
-    // 配件
-    if (st.acc === "bow") {
-      s += '<g fill="#ff5277" stroke="#d83a5c"><polygon points="' + pts([[61, 11], [53, 6], [53, 17]]) + '"/><polygon points="' + pts([[61, 11], [69, 6], [69, 17]]) + '"/><circle cx="61" cy="11" r="3.2"/></g>';
-    } else if (st.acc === "crown") {
-      s += '<polygon points="' + pts([[41, 21], [44, 13], [47, 19], [50, 11], [53, 19], [56, 13], [59, 21]]) + '" fill="#ffcf3f" stroke="#e0a500"/>';
-      s += '<circle cx="50" cy="12" r="1.6" fill="#ff5277" stroke="none"/>';
+    if (expr === "happy") {
+      s += '<path d="M43 69 Q50 79 57 69 Z" fill="#fff" stroke="' + strokeC + '" stroke-width="2.2" stroke-linejoin="round"/>';
+    } else {
+      s += '<path d="M44 70 Q50 76 56 70" fill="none" stroke="' + strokeC + '" stroke-width="2.4" stroke-linecap="round"/>';
+      s += '<rect x="47.3" y="70.4" width="2.6" height="3.6" rx="1" fill="#fff" stroke-width="0.8"/>';
+      s += '<rect x="50.1" y="70.4" width="2.6" height="3.6" rx="1" fill="#fff" stroke-width="0.8"/>';
     }
     s += "</g>";
-    if (st.sparkle) {
-      s += sparkle(18, 42, 3.2) + sparkle(83, 48, 3.6) + sparkle(74, 22, 2.6) + sparkle(26, 76, 2.6) + sparkle(58, 86, 2.2) + sparkle(50, 30, 2.2);
+    return s;
+  }
+  function drawBg(id) {
+    if (id === "rainbow") {
+      var bands = ["#ff8fa3", "#ffd36e", "#fff27a", "#9be59b", "#8fd0ff", "#c9a3ff"];
+      var s = '<rect x="0" y="0" width="100" height="100" fill="#eef7ff"/>';
+      for (var i = 0; i < bands.length; i++) { var r = 66 - i * 5; s += '<path d="M' + (50 - r) + ' 106 A' + r + ' ' + r + ' 0 0 1 ' + (50 + r) + ' 106" fill="none" stroke="' + bands[i] + '" stroke-width="5"/>'; }
+      s += '<circle cx="20" cy="22" r="7" fill="#fff"/><circle cx="28" cy="23" r="9" fill="#fff"/><circle cx="82" cy="17" r="6" fill="#fff"/><circle cx="88" cy="19" r="8" fill="#fff"/>';
+      return s;
     }
+    if (id === "night") {
+      var g = "pg" + (++svgSeq);
+      var s2 = '<linearGradient id="' + g + '" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#2a2557"/><stop offset="1" stop-color="#4a3b8a"/></linearGradient>';
+      s2 += '<rect x="0" y="0" width="100" height="100" fill="url(#' + g + ')"/>';
+      s2 += '<circle cx="80" cy="20" r="9" fill="#ffe9a8"/><circle cx="76" cy="18" r="8" fill="url(#' + g + ')"/>';
+      var stz = [[15, 18], [30, 30], [22, 46], [42, 14], [62, 26], [88, 42], [12, 70], [50, 10]];
+      for (var j = 0; j < stz.length; j++) s2 += sparkle(stz[j][0], stz[j][1], 1.8);
+      return s2;
+    }
+    return "";
+  }
+  function drawBack(id) {
+    if (id === "wings") return '<g fill="#ffffff" stroke="#e3e3f0" stroke-width="1.5" stroke-linejoin="round"><path d="M30 56 C8 44,8 74,28 70 C18 66,20 58,30 56 Z"/><path d="M70 56 C92 44,92 74,72 70 C82 66,80 58,70 56 Z"/></g>';
+    if (id === "butterfly") return '<g stroke="#c98bdf" stroke-width="1.5" stroke-linejoin="round"><ellipse cx="22" cy="50" rx="12" ry="10" fill="#ffb3e6"/><ellipse cx="24" cy="68" rx="9" ry="8" fill="#c9a3ff"/><ellipse cx="78" cy="50" rx="12" ry="10" fill="#ffb3e6"/><ellipse cx="76" cy="68" rx="9" ry="8" fill="#c9a3ff"/></g>';
+    return "";
+  }
+  function drawOutfitBehind(id) {
+    if (id === "cape") return '<path d="M34 50 Q50 60 66 50 L80 94 Q50 86 20 94 Z" fill="#ff5277" stroke="#d83a5c" stroke-width="1.5" stroke-linejoin="round"/>';
+    return "";
+  }
+  function drawOutfit(id, pal) {
+    if (id === "dress") {
+      return '<path d="M38 64 Q50 68 62 64 L74 92 Q50 98 26 92 Z" fill="' + pal.cheek + '" stroke="' + pal.dark + '" stroke-width="1.5" stroke-linejoin="round"/>' +
+        '<circle cx="34" cy="90" r="2.4" fill="#fff"/><circle cx="42" cy="93" r="2.4" fill="#fff"/><circle cx="50" cy="94" r="2.4" fill="#fff"/><circle cx="58" cy="93" r="2.4" fill="#fff"/><circle cx="66" cy="90" r="2.4" fill="#fff"/>' +
+        '<rect x="40" y="61.5" width="20" height="5" rx="2.5" fill="#fff" stroke="' + pal.dark + '" stroke-width="1"/>';
+    }
+    if (id === "cape") return '<path d="M41 52 Q50 58 59 52 L56 60 Q50 64 44 60 Z" fill="#ff5277" stroke="#d83a5c" stroke-width="1.5" stroke-linejoin="round"/><circle cx="50" cy="56" r="2.6" fill="#ffd23f" stroke="#e0a500" stroke-width="1"/>';
+    return "";
+  }
+  function drawEyes(id) {
+    if (id === "glasses") return '<g fill="#cdeeff" fill-opacity=".55" stroke="#6b5a48" stroke-width="2"><circle cx="40" cy="56" r="7.5"/><circle cx="60" cy="56" r="7.5"/></g><path d="M47.5 55 H52.5 M32.5 54 L27 50 M67.5 54 L73 50" fill="none" stroke="#6b5a48" stroke-width="2" stroke-linecap="round"/>';
+    if (id === "heart") return '<g fill="#2b2b3d"><path d="M40 53 C37.5 50,33.5 51.5,33.5 55 C33.5 58,38 60.5,40 62.5 C42 60.5,46.5 58,46.5 55 C46.5 51.5,42.5 50,40 53 Z"/><path d="M60 53 C57.5 50,53.5 51.5,53.5 55 C53.5 58,58 60.5,60 62.5 C62 60.5,66.5 58,66.5 55 C66.5 51.5,62.5 50,60 53 Z"/></g><path d="M47 54.5 H53" stroke="#2b2b3d" stroke-width="2"/>';
+    return "";
+  }
+  function drawHat(id) {
+    if (id === "crown") return '<polygon points="' + pts([[41, 21], [44, 13], [47, 19], [50, 11], [53, 19], [56, 13], [59, 21]]) + '" fill="#ffcf3f" stroke="#e0a500" stroke-width="2" stroke-linejoin="round"/><circle cx="50" cy="12" r="1.6" fill="#ff5277"/>';
+    if (id === "bow") return '<g fill="#ff5277" stroke="#d83a5c" stroke-width="2" stroke-linejoin="round"><polygon points="' + pts([[50, 9], [42, 4], [42, 15]]) + '"/><polygon points="' + pts([[50, 9], [58, 4], [58, 15]]) + '"/><circle cx="50" cy="9" r="3.2"/></g>';
+    if (id === "party") return '<g stroke="#5a3fd6" stroke-width="2" stroke-linejoin="round"><polygon points="' + pts([[50, 2], [41, 18], [59, 18]]) + '" fill="#7c5cff"/><polygon points="' + pts([[50, 8], [46, 18], [54, 18]]) + '" fill="#ffd23f" stroke="none"/></g><circle cx="50" cy="3" r="2.8" fill="#ff5fa2" stroke="#d83a5c" stroke-width="1.5"/>';
+    if (id === "flower") return '<g stroke="#e6a700" stroke-width="1.2"><circle cx="61" cy="9" r="3" fill="#ff8fc2"/><circle cx="73" cy="9" r="3" fill="#ff8fc2"/><circle cx="64" cy="14" r="3" fill="#ff8fc2"/><circle cx="70" cy="14" r="3" fill="#ff8fc2"/><circle cx="67" cy="6" r="3" fill="#ff8fc2"/><circle cx="67" cy="10.5" r="2.6" fill="#ffd23f"/></g>';
+    return "";
+  }
+  function drawHand(id) {
+    if (id === "balloon") return '<path d="M76 72 Q83 58 85 46" fill="none" stroke="#c9c9d6" stroke-width="1.2"/><ellipse cx="85" cy="40" rx="7.5" ry="9" fill="#ff5277" stroke="#d83a5c" stroke-width="1.5"/><polygon points="' + pts([[83.5, 48], [86.5, 48], [85, 51]]) + '" fill="#ff5277" stroke="#d83a5c" stroke-width="1"/><ellipse cx="82" cy="37" rx="2" ry="3" fill="#fff" opacity=".6"/>';
+    if (id === "icecream") return '<polygon points="' + pts([[80, 90], [74, 74], [86, 74]]) + '" fill="#e6b15c" stroke="#c8923a" stroke-width="1.5" stroke-linejoin="round"/><circle cx="80" cy="72" r="5.5" fill="#ffb3d9" stroke="#e58cc0" stroke-width="1"/><circle cx="80" cy="66" r="5" fill="#bfe9ff" stroke="#8fd0f0" stroke-width="1"/><circle cx="80" cy="61" r="2" fill="#ff5277"/>';
+    if (id === "wand") return '<line x1="76" y1="80" x2="87" y2="61" stroke="#caa15a" stroke-width="2.4" stroke-linecap="round"/>' + star5(88, 58, 5.5, "#ffd23f", "#e0a500");
+    return "";
+  }
+  function avgStat(p) { var s = p.stats; return (s.happy + s.full + s.clean + s.energy) / 4; }
+  function petSVG(childKey, opts) {
+    opts = opts || {}; var size = opts.size || 96; var showBg = opts.showBg !== false; var expr = opts.expr || "auto";
+    var p = (state.pets && state.pets[childKey]) || defaultPet();
+    if (expr === "auto") expr = avgStat(p) >= 70 ? "happy" : "normal";
+    var pal = PALETTE[childKey] || PALETTE.mia;
+    var base = p.base || "classic", wear = p.wear || {};
+    var furFill = pal.fur, strokeC = pal.dark, special = (base === "rainbow" || base === "galaxy"), grad = "";
+    if (base === "rainbow") { var g = "pf" + (++svgSeq); grad = '<linearGradient id="' + g + '" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ff9ec0"/><stop offset=".45" stop-color="#ffd98a"/><stop offset="1" stop-color="#8be3b0"/></linearGradient>'; furFill = "url(#" + g + ")"; strokeC = "#ef9bb0"; }
+    else if (base === "galaxy") { var g2 = "pf" + (++svgSeq); grad = '<linearGradient id="' + g2 + '" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#6a5cff"/><stop offset=".5" stop-color="#b15cff"/><stop offset="1" stop-color="#ff7ad9"/></linearGradient>'; furFill = "url(#" + g2 + ")"; strokeC = "#8a6bf0"; }
+    var innerFill = special ? "rgba(255,255,255,.6)" : pal.inner;
+    var bellyFill = special ? "rgba(255,255,255,.45)" : pal.belly;
+    var s = '<svg viewBox="0 0 100 100" width="' + size + '" height="' + size + '" xmlns="http://www.w3.org/2000/svg" aria-label="小怪獸">';
+    s += grad;
+    if (showBg && wear.bg) s += drawBg(wear.bg);
+    if (wear.back) s += drawBack(wear.back);
+    if (wear.outfit) s += drawOutfitBehind(wear.outfit);
+    s += drawBody(pal, furFill, strokeC, innerFill, bellyFill, expr);
+    if (wear.outfit) s += drawOutfit(wear.outfit, pal);
+    if (wear.eyes) s += drawEyes(wear.eyes);
+    if (wear.hat) s += drawHat(wear.hat);
+    if (wear.hand) s += drawHand(wear.hand);
+    if (base === "galaxy") s += sparkle(18, 42, 3.2) + sparkle(83, 48, 3.6) + sparkle(74, 22, 2.6) + sparkle(26, 76, 2.6);
     s += "</svg>";
     return s;
   }
 
-  // ---------- monthly aggregation (門檻以「每人每天總睡眠」計算；未補起床者不計) ----------
-  function monthlyEarned(childKey, mk) {
-    var byDate = {};
-    state.records.forEach(function (r) {
-      if (r.child === childKey && r.wake && monthKey(r.date) === mk) {
-        byDate[r.date] = (byDate[r.date] || 0) + sessionDuration(r);
-      }
-    });
-    var sum = 0;
-    Object.keys(byDate).forEach(function (k) { sum += earnedForDuration(byDate[k]); });
-    return sum;
+  // ---------- catalog ----------
+  var SLOTS = [
+    { key: "base", name: "底色" }, { key: "hat", name: "頭飾" }, { key: "eyes", name: "眼鏡" },
+    { key: "outfit", name: "衣服" }, { key: "back", name: "背飾" }, { key: "hand", name: "手持" }, { key: "bg", name: "背景" }
+  ];
+  var ITEMS = {
+    base: [
+      { id: "classic", name: "經典", emoji: "🐾", price: 0 },
+      { id: "rainbow", name: "彩虹", emoji: "🌈", price: 60 },
+      { id: "galaxy", name: "星空", emoji: "✨", price: 180, limited: true, unlockStreak: 7 }
+    ],
+    hat: [
+      { id: "crown", name: "皇冠", emoji: "👑", price: 0 },
+      { id: "bow", name: "蝴蝶結", emoji: "🎀", price: 0 },
+      { id: "party", name: "派對帽", emoji: "🥳", price: 30 },
+      { id: "flower", name: "小花", emoji: "🌼", price: 20 }
+    ],
+    eyes: [
+      { id: "glasses", name: "圓眼鏡", emoji: "👓", price: 0 },
+      { id: "heart", name: "愛心墨鏡", emoji: "😎", price: 30 }
+    ],
+    outfit: [
+      { id: "dress", name: "小洋裝", emoji: "👗", price: 0 },
+      { id: "cape", name: "英雄斗篷", emoji: "🦸", price: 45 }
+    ],
+    back: [
+      { id: "wings", name: "天使翅膀", emoji: "😇", price: 60 },
+      { id: "butterfly", name: "蝴蝶翅膀", emoji: "🦋", price: 90, limited: true, unlockStreak: 14 }
+    ],
+    hand: [
+      { id: "balloon", name: "氣球", emoji: "🎈", price: 0 },
+      { id: "icecream", name: "冰淇淋", emoji: "🍦", price: 20 },
+      { id: "wand", name: "魔法棒", emoji: "🪄", price: 35 }
+    ],
+    bg: [
+      { id: "rainbow", name: "彩虹", emoji: "🌈", price: 0 },
+      { id: "night", name: "星空夜", emoji: "🌌", price: 40 }
+    ]
+  };
+  function findItem(slot, id) { var l = ITEMS[slot] || []; for (var i = 0; i < l.length; i++) if (l[i].id === id) return l[i]; return null; }
+  function isOwned(childKey, it) {
+    if (!it || it.price === 0) return true;
+    if (state.inventory[childKey] && state.inventory[childKey][it.id]) return true;
+    if (it.unlockStreak && sleepStreak(childKey) >= it.unlockStreak) return true;
+    return false;
   }
-  function monthlyUsed(childKey, mk) {
-    var sum = 0;
-    state.usages.forEach(function (u) {
-      if (u.child === childKey && monthKey(u.date) === mk) sum += (u.minutes || 0);
-    });
-    return sum;
+
+  // ---------- pet care ----------
+  var ACTIONS = {
+    feed: { emoji: "🍎", fx: "😋", label: "餵食", boost: { full: 28, happy: 8 } },
+    bath: { emoji: "🛁", fx: "🫧", label: "洗澡", boost: { clean: 32, happy: 6 } },
+    play: { emoji: "🎈", fx: "😆", label: "玩耍", boost: { happy: 26, energy: 6 } },
+    pat: { emoji: "🫶", fx: "❤️", label: "摸摸", boost: { happy: 16 } }
+  };
+  function tickPet(p) {
+    var now = Date.now(), last = p.lastTick || now, hrs = (now - last) / 3600000; p.lastTick = now;
+    if (hrs <= 0) return;
+    var rate = 4;
+    ["happy", "full", "clean", "energy"].forEach(function (k) { var v = p.stats[k], t = 60, d = rate * hrs; p.stats[k] = Math.round(v > t ? Math.max(t, v - d) : Math.min(t, v + d)); });
+  }
+  var petExpr = "auto", exprTimer = null;
+  function doAction(childKey, key) {
+    var a = ACTIONS[key], p = state.pets[childKey]; if (!a || !p) return;
+    Object.keys(a.boost).forEach(function (k) { p.stats[k] = clamp(p.stats[k] + a.boost[k]); });
+    save();
+    petExpr = "happy"; renderPet(); spawnFX(a.fx);
+    clearTimeout(exprTimer); exprTimer = setTimeout(function () { petExpr = "auto"; renderPet(); }, 1400);
+  }
+  function spawnFX(emoji) {
+    var stage = document.querySelector(".petstage"); if (!stage) return;
+    stage.classList.remove("act"); void stage.offsetWidth; stage.classList.add("act");
+    var sp = document.createElement("span"); sp.className = "floatfx"; sp.textContent = emoji;
+    sp.style.left = (40 + Math.random() * 20) + "%";
+    stage.appendChild(sp);
+    setTimeout(function () { if (sp.parentNode) sp.parentNode.removeChild(sp); }, 1450);
   }
 
-  // ---------- DOM refs ----------
-  function $(id) { return document.getElementById(id); }
-  var monthLabelEl = $("monthLabel");
-  var cardsEl = $("cards");
-  var skinsEl = $("skins");
-  var pendingBlock = $("pendingBlock");
-  var pendingEl = $("pending");
-  var recordsEl = $("records");
-  var usagesEl = $("usages");
-  var rulesLineEl = $("rulesLine");
-  var recForm = $("recForm");
-  var recChild = $("recChild");
-  var recDate = $("recDate");
-  var recSleepH = $("recSleepH"), recSleepM = $("recSleepM");
-  var recWakeH = $("recWakeH"), recWakeM = $("recWakeM");
-  var recPreview = $("recPreview");
-  var recSubmit = $("recSubmit");
-  var recCancel = $("recCancel");
+  // ================= render: 睡眠 =================
+  var monthLabelEl = $("monthLabel"), cardsEl = $("cards"), pendingBlock = $("pendingBlock"),
+    pendingEl = $("pending"), recordsEl = $("records"), usagesEl = $("usages"), rulesLineEl = $("rulesLine");
+  var recForm = $("recForm"), recChild = $("recChild"), recDate = $("recDate"),
+    recSleepH = $("recSleepH"), recSleepM = $("recSleepM"), recWakeH = $("recWakeH"), recWakeM = $("recWakeM"),
+    recPreview = $("recPreview"), recSubmit = $("recSubmit"), recCancel = $("recCancel");
+  recSleepH.innerHTML = HOUR_OPTS; recSleepM.innerHTML = MIN_OPTS; recWakeH.innerHTML = HOUR_OPTS; recWakeM.innerHTML = MIN_OPTS;
 
-  recSleepH.innerHTML = HOUR_OPTS; recSleepM.innerHTML = MIN_OPTS;
-  recWakeH.innerHTML = HOUR_OPTS; recWakeM.innerHTML = MIN_OPTS;
-
-  // ---------- render ----------
   function renderRules() {
     var s = state.settings;
-    rulesLineEl.innerHTML =
-      "睡滿 <b>" + fmtMin(s.baseline) + "</b> 後，每多睡 <b>" + s.step +
-      " 分鐘</b> → 兌換 <b>" + s.reward + " 分鐘</b> 3C 時間。";
+    rulesLineEl.innerHTML = "睡滿 <b>" + fmtMin(s.baseline) + "</b> 後，每多睡 <b>" + s.step + " 分鐘</b> → 兌換 <b>" + s.reward + " 分鐘</b> 3C 時間。";
   }
   function renderMonth() { monthLabelEl.textContent = monthLabel(viewMonth); }
   function renderCards() {
     cardsEl.innerHTML = CHILDREN.map(function (ch) {
-      var earned = monthlyEarned(ch.key, viewMonth);
-      var used = monthlyUsed(ch.key, viewMonth);
-      var bal = earned - used;
-      return '<div class="card ' + ch.cls + '">' +
-        '<div class="card-top">' +
-          '<div class="mascot">' + mascotSVG(ch.key, styleOf(ch.key), 78) + "</div>" +
-          '<div class="card-info">' +
-            '<div class="who">' + ch.emoji + " " + ch.name + "</div>" +
-            '<div class="bignum ' + (bal < 0 ? "neg" : "") + '">' + fmtMin(bal) +
-            ' <span class="unit">可用</span></div>' +
-          "</div>" +
-        "</div>" +
-        '<div class="sub"><span>本月賺到 <b>' + fmtMin(earned) + "</b></span>" +
-        "<span>已使用 <b>" + fmtMin(used) + "</b></span></div>" +
-        "</div>";
-    }).join("");
-  }
-  function renderSkins() {
-    skinsEl.innerHTML = CHILDREN.map(function (ch) {
-      var cur = styleOf(ch.key);
-      var btns = STYLES.map(function (st) {
-        return '<button type="button" class="skin ' + (st.key === cur ? "sel" : "") +
-          '" data-skin-child="' + ch.key + '" data-skin-style="' + st.key + '">' +
-          (st.limited ? '<span class="lim">限定</span>' : "") +
-          mascotSVG(ch.key, st.key, 56) +
-          '<span class="skin-name">' + st.name + "</span></button>";
-      }).join("");
-      return '<div class="skinrow ' + ch.cls + '"><div class="skin-who">' + ch.emoji + " " +
-        ch.name + " 的造型</div><div class=\"skins\">" + btns + "</div></div>";
+      var earned = monthlyEarned(ch.key, viewMonth), used = monthlyUsed(ch.key, viewMonth), bal = earned - used;
+      return '<div class="card ' + ch.cls + '"><div class="card-top">' +
+        '<div class="mascot">' + petSVG(ch.key, { size: 78, showBg: false }) + "</div>" +
+        '<div class="card-info"><div class="who">' + ch.emoji + " " + ch.name + "</div>" +
+        '<div class="bignum ' + (bal < 0 ? "neg" : "") + '">' + fmtMin(bal) + ' <span class="unit">可用</span></div></div></div>' +
+        '<div class="sub"><span>本月賺到 <b>' + fmtMin(earned) + "</b></span><span>已使用 <b>" + fmtMin(used) + "</b></span></div></div>";
     }).join("");
   }
   function renderPending() {
@@ -652,48 +662,24 @@
     pendingBlock.style.display = "";
     pendingEl.innerHTML = pend.map(function (r) {
       var ch = childOf(r.child);
-      return '<div class="prow" data-id="' + r.id + '">' +
-        '<div class="pinfo"><span class="tag ' + ch.cls + '">' + ch.emoji + " " + ch.name + "</span> " +
-        "<b>入睡 " + r.sleep + "</b> <span class=\"meta\">" + fmtDate(r.date) + "</span></div>" +
-        '<div class="pcomplete"><span class="lbl">起床時間</span>' +
-        '<select class="ph">' + HOUR_OPTS + "</select><span class=\"sep\">:</span>" +
-        '<select class="pm">' + MIN_OPTS + "</select>" +
-        '<button class="btn warn sm" data-complete="' + r.id + '">✓ 完成</button>' +
-        '<button class="btn ghost sm" data-cancel="' + r.id + '">刪除</button></div>' +
-        "</div>";
+      return '<div class="prow" data-id="' + r.id + '"><div class="pinfo"><span class="tag ' + ch.cls + '">' + ch.emoji + " " + ch.name + '</span> <b>入睡 ' + r.sleep + '</b> <span class="meta">' + fmtDate(r.date) + '</span></div>' +
+        '<div class="pcomplete"><span class="lbl">起床時間</span><select class="ph">' + HOUR_OPTS + '</select><span class="sep">:</span><select class="pm">' + MIN_OPTS + '</select>' +
+        '<button class="btn warn sm" data-complete="' + r.id + '">✓ 完成</button><button class="btn ghost sm" data-cancel="' + r.id + '">刪除</button></div></div>';
     }).join("");
   }
   function renderRecords() {
     var recs = state.records.filter(function (r) { return r.wake && monthKey(r.date) === viewMonth; });
-    if (!recs.length) {
-      recordsEl.innerHTML = '<p class="empty">本月還沒有完成的睡眠紀錄 😴</p>';
-      return;
-    }
+    if (!recs.length) { recordsEl.innerHTML = '<p class="empty">本月還沒有完成的睡眠紀錄 😴</p>'; return; }
     var byDate = {};
-    recs.forEach(function (r) {
-      if (!byDate[r.date]) byDate[r.date] = {};
-      if (!byDate[r.date][r.child]) byDate[r.date][r.child] = [];
-      byDate[r.date][r.child].push(r);
-    });
-    var dates = Object.keys(byDate).sort().reverse();
-    var html = "";
+    recs.forEach(function (r) { if (!byDate[r.date]) byDate[r.date] = {}; if (!byDate[r.date][r.child]) byDate[r.date][r.child] = []; byDate[r.date][r.child].push(r); });
+    var dates = Object.keys(byDate).sort().reverse(), html = "";
     dates.forEach(function (date) {
       html += '<div class="day"><div class="day-date">' + fmtDate(date) + "</div>";
       CHILDREN.forEach(function (ch) {
-        var sessions = byDate[date][ch.key];
-        if (!sessions) return;
-        var total = sessions.reduce(function (a, r) { return a + sessionDuration(r); }, 0);
-        var earned = earnedForDuration(total);
-        var chips = sessions.map(function (r) {
-          return '<span class="chip">' + r.sleep + " → " + r.wake +
-            '<button class="x" data-edit="' + r.id + '" title="修改">✎</button>' +
-            '<button class="x" data-del="' + r.id + '" title="刪除">✕</button></span>';
-        }).join("");
-        html += '<div class="rec ' + ch.cls + '">' +
-          '<div class="rec-head"><span class="who">' + ch.emoji + " " + ch.name + "</span>" +
-          '<span class="earn">+' + earned + ' 分 3C</span></div>' +
-          '<div class="rec-body"><span class="dur">睡 ' + fmtMin(total) + "</span>" + chips + "</div>" +
-          "</div>";
+        var sessions = byDate[date][ch.key]; if (!sessions) return;
+        var total = sessions.reduce(function (a, r) { return a + sessionDuration(r); }, 0), earned = earnedForDuration(total);
+        var chips = sessions.map(function (r) { return '<span class="chip">' + r.sleep + " → " + r.wake + '<button class="x" data-edit="' + r.id + '" title="修改">✎</button><button class="x" data-del="' + r.id + '" title="刪除">✕</button></span>'; }).join("");
+        html += '<div class="rec ' + ch.cls + '"><div class="rec-head"><span class="who">' + ch.emoji + " " + ch.name + '</span><span class="earn">+' + earned + ' 分 3C</span></div><div class="rec-body"><span class="dur">睡 ' + fmtMin(total) + "</span>" + chips + "</div></div>";
       });
       html += "</div>";
     });
@@ -702,108 +688,140 @@
   function renderUsages() {
     var us = state.usages.filter(function (u) { return monthKey(u.date) === viewMonth; });
     us.sort(function (a, b) { return a.date < b.date ? 1 : -1; });
-    if (!us.length) {
-      usagesEl.innerHTML = '<p class="empty">本月還沒有使用紀錄。</p>';
-      return;
-    }
+    if (!us.length) { usagesEl.innerHTML = '<p class="empty">本月還沒有使用紀錄。</p>'; return; }
     usagesEl.innerHTML = us.map(function (u) {
       var ch = childOf(u.child);
-      return '<div class="uitem">' +
-        '<div><span class="tag ' + ch.cls + '">' + ch.emoji + " " + ch.name + "</span> " +
-        "<b>−" + u.minutes + " 分</b>" + (u.note ? ' <span class="meta">· ' + escapeHtml(u.note) + "</span>" : "") +
-        '<div class="meta">' + fmtDate(u.date) + "</div></div>" +
-        '<button class="btn ghost" data-uden="' + u.id + '">刪除</button></div>';
+      return '<div class="uitem"><div><span class="tag ' + ch.cls + '">' + ch.emoji + " " + ch.name + '</span> <b>−' + u.minutes + ' 分</b>' + (u.note ? ' <span class="meta">· ' + escapeHtml(u.note) + "</span>" : "") + '<div class="meta">' + fmtDate(u.date) + '</div></div><button class="btn ghost" data-uden="' + u.id + '">刪除</button></div>';
     }).join("");
   }
-  function escapeHtml(s) {
-    return String(s).replace(/[&<>"']/g, function (c) {
-      return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c];
-    });
+  function render() { renderRules(); renderMonth(); renderCards(); renderPending(); renderRecords(); renderUsages(); }
+
+  // ================= render: 寵物 =================
+  var petWho = "mia", petSlot = "hat";
+  function statsHTML(p) {
+    var defs = [["happy", "開心", "💛"], ["full", "飽足", "🍙"], ["clean", "清潔", "🫧"], ["energy", "精神", "⚡"]];
+    return '<div class="stats">' + defs.map(function (d) {
+      return '<div class="stat"><span class="sl">' + d[2] + " " + d[1] + '</span><div class="bar"><i style="width:' + Math.round(p.stats[d[0]]) + '%"></i></div></div>';
+    }).join("") + "</div>";
   }
-  function render() {
-    renderRules();
-    renderMonth();
-    renderCards();
-    renderSkins();
-    renderPending();
-    renderRecords();
-    renderUsages();
+  function itemBtn(childKey, slotKey, it, sel) {
+    var none = it.id === null, owned = none ? true : isOwned(childKey, it), tag = "";
+    if (!none && !owned) tag = '<span class="price">' + (it.limited ? "🔒 " : "") + fmtMin(it.price) + "</span>";
+    else if (!none && it.limited) tag = '<span class="price lim">限定</span>';
+    return '<button class="witem' + (sel ? " sel" : "") + (owned ? "" : " locked") + '" data-wslot="' + slotKey + '" data-witem="' + (none ? "" : it.id) + '">' +
+      '<span class="wemoji">' + (it.emoji || "⭐") + '</span><span class="wname">' + it.name + "</span>" + tag + "</button>";
   }
+  function wardrobeHTML(childKey, slotKey) {
+    var p = state.pets[childKey], worn = (slotKey === "base") ? p.base : p.wear[slotKey], out = "";
+    if (slotKey !== "base") out += itemBtn(childKey, slotKey, { id: null, name: "不戴", emoji: "🚫", price: 0 }, worn == null);
+    (ITEMS[slotKey] || []).forEach(function (it) { out += itemBtn(childKey, slotKey, it, worn === it.id); });
+    return '<div class="wardrobe">' + out + "</div>";
+  }
+  function renderPet() {
+    var ch = childOf(petWho), p = state.pets[petWho], bal = balanceOf(petWho), nm = p.name || ch.name;
+    var sw = CHILDREN.map(function (c) { return '<button class="petsw ' + c.cls + (c.key === petWho ? " on" : "") + '" data-petwho="' + c.key + '">' + c.emoji + " " + (state.pets[c.key].name || c.name) + "</button>"; }).join("");
+    var care = '<div class="carebtns">' + Object.keys(ACTIONS).map(function (k) { return '<button class="carebtn" data-act="' + k + '">' + ACTIONS[k].emoji + "<span>" + ACTIONS[k].label + "</span></button>"; }).join("") + "</div>";
+    var slotTabs = '<div class="slottabs">' + SLOTS.map(function (sl) { return '<button class="slottab' + (sl.key === petSlot ? " on" : "") + '" data-slottab="' + sl.key + '">' + sl.name + "</button>"; }).join("") + "</div>";
+    $("view-pet").innerHTML =
+      '<div class="petsw-row">' + sw + "</div>" +
+      '<section class="block petbox ' + ch.cls + '">' +
+        '<div class="petname"><span>' + escapeHtml(nm) + '</span><button class="btn ghost sm" data-rename="1">✏️ 改名</button></div>' +
+        '<div class="petstage"><div class="petart">' + petSVG(petWho, { size: 220, expr: petExpr }) + "</div></div>" +
+        statsHTML(p) + care +
+      "</section>" +
+      '<section class="block"><div class="wallet ' + (bal < 0 ? "neg" : "") + '">👛 ' + ch.name + " 的 3C 錢包：<b>" + fmtMin(bal) + "</b></div>" +
+        '<h2 style="margin-top:12px">🛍️ 衣櫥 / 商店</h2>' + slotTabs + wardrobeHTML(petWho, petSlot) +
+        '<p class="hint">基本款免費換；標價的用 3C 兌換（會記一筆扣款）；🔒 限定款連續睡飽解鎖、或用 3C 兌換。</p></section>';
+  }
+  function renamePet() {
+    var n = prompt("幫 " + childOf(petWho).name + " 的小怪獸取名字：", state.pets[petWho].name || "");
+    if (n === null) return;
+    state.pets[petWho].name = n.trim().slice(0, 12); save(); renderPet();
+  }
+  function tryBuy(childKey, it) {
+    if (it.unlockStreak && sleepStreak(childKey) >= it.unlockStreak) { state.inventory[childKey][it.id] = true; return true; }
+    var bal = balanceOf(childKey);
+    if (bal < it.price) { alert("3C 不夠喔！還差 " + fmtMin(it.price - bal) + "。" + (it.unlockStreak ? "（或連續睡飽 " + it.unlockStreak + " 晚免費解鎖）" : "")); return false; }
+    if (!confirm("用 " + fmtMin(it.price) + " 3C 兌換「" + it.name + "」嗎？")) return false;
+    state.usages.push({ id: uid(), child: childKey, date: todayStr(), minutes: it.price, note: "🛍️ 換購 " + it.name });
+    if (!state.inventory[childKey]) state.inventory[childKey] = {};
+    state.inventory[childKey][it.id] = true;
+    return true;
+  }
+  function chooseItem(childKey, slotKey, itemId) {
+    var p = state.pets[childKey];
+    if (slotKey === "base") {
+      var b = findItem("base", itemId); if (!b) return;
+      if (!isOwned(childKey, b) && !tryBuy(childKey, b)) return;
+      p.base = itemId;
+    } else if (itemId === "") {
+      p.wear[slotKey] = null;
+    } else {
+      var it = findItem(slotKey, itemId); if (!it) return;
+      if (!isOwned(childKey, it) && !tryBuy(childKey, it)) return;
+      p.wear[slotKey] = (p.wear[slotKey] === itemId) ? null : itemId;
+    }
+    save(); renderPet(); renderCards();
+  }
+  $("view-pet").addEventListener("click", function (e) {
+    var t;
+    if ((t = e.target.closest("[data-petwho]"))) { petWho = t.getAttribute("data-petwho"); petExpr = "auto"; clearTimeout(exprTimer); renderPet(); return; }
+    if ((t = e.target.closest("[data-rename]"))) { renamePet(); return; }
+    if ((t = e.target.closest("[data-act]"))) { doAction(petWho, t.getAttribute("data-act")); return; }
+    if ((t = e.target.closest("[data-slottab]"))) { petSlot = t.getAttribute("data-slottab"); renderPet(); return; }
+    if ((t = e.target.closest("[data-witem]"))) { chooseItem(petWho, t.getAttribute("data-wslot"), t.getAttribute("data-witem")); return; }
+  });
+
+  // ---------- tabs ----------
+  function showTab(t) {
+    $("view-sleep").style.display = t === "sleep" ? "block" : "none";
+    $("view-pet").style.display = t === "pet" ? "block" : "none";
+    var tabs = document.querySelectorAll(".tab");
+    for (var i = 0; i < tabs.length; i++) tabs[i].classList.toggle("on", tabs[i].getAttribute("data-tab") === t);
+    if (t === "pet") renderPet();
+  }
+  (function () {
+    var tabs = document.querySelectorAll(".tab");
+    for (var i = 0; i < tabs.length; i++) tabs[i].addEventListener("click", function () { showTab(this.getAttribute("data-tab")); });
+  })();
 
   // ---------- record form ----------
   function updateForm() {
-    var sleep = readTime(recSleepH, recSleepM);
-    var wake = readTime(recWakeH, recWakeM);
-    if (!sleep) {
-      recPreview.textContent = "";
-    } else if (!wake) {
-      recPreview.innerHTML = "先登記入睡 <b>" + sleep + "</b>，起床後再補、屆時計算 3C。";
-    } else {
-      var dur = sessionDuration({ sleep: sleep, wake: wake });
-      var earned = earnedForDuration(dur);
-      recPreview.innerHTML = "這段睡眠 <b>" + fmtMin(dur) + "</b> → 約可兌換 <b>" + earned + " 分鐘</b> 3C";
-    }
-    if (!editingId) {
-      recSubmit.textContent = sleep && !wake ? "登記入睡（起床再補）" : "登記";
-    }
+    var sleep = readTime(recSleepH, recSleepM), wake = readTime(recWakeH, recWakeM);
+    if (!sleep) recPreview.textContent = "";
+    else if (!wake) recPreview.innerHTML = "先登記入睡 <b>" + sleep + "</b>，起床後再補、屆時計算 3C。";
+    else { var dur = sessionDuration({ sleep: sleep, wake: wake }); recPreview.innerHTML = "這段睡眠 <b>" + fmtMin(dur) + "</b> → 約可兌換 <b>" + earnedForDuration(dur) + " 分鐘</b> 3C"; }
+    if (!editingId) recSubmit.textContent = sleep && !wake ? "登記入睡（起床再補）" : "登記";
   }
-  [recSleepH, recSleepM, recWakeH, recWakeM].forEach(function (el) {
-    el.addEventListener("change", updateForm);
-  });
-
+  [recSleepH, recSleepM, recWakeH, recWakeM].forEach(function (el) { el.addEventListener("change", updateForm); });
+  function findRec(id) { for (var i = 0; i < state.records.length; i++) if (state.records[i].id === id) return state.records[i]; return null; }
   recForm.addEventListener("submit", function (e) {
     e.preventDefault();
-    var date = recDate.value || todayStr();
-    var sleep = readTime(recSleepH, recSleepM);
-    var wake = readTime(recWakeH, recWakeM);
+    var date = recDate.value || todayStr(), sleep = readTime(recSleepH, recSleepM), wake = readTime(recWakeH, recWakeM);
     if (!sleep) { alert("請選擇就寢時間"); return; }
-
     if (editingId) {
       var r = findRec(editingId);
       if (r) { r.child = recChild.value === "both" ? r.child : recChild.value; r.date = date; r.sleep = sleep; r.wake = wake; }
       exitEdit();
     } else {
       var targets = recChild.value === "both" ? ["mia", "tia"] : [recChild.value];
-      targets.forEach(function (c) {
-        state.records.push({ id: uid(), child: c, date: date, sleep: sleep, wake: wake });
-      });
+      targets.forEach(function (c) { state.records.push({ id: uid(), child: c, date: date, sleep: sleep, wake: wake }); });
     }
-    save();
-    setTime(recSleepH, recSleepM, "");
-    setTime(recWakeH, recWakeM, "");
-    updateForm();
-    render();
+    save(); setTime(recSleepH, recSleepM, ""); setTime(recWakeH, recWakeM, ""); updateForm(); render();
   });
-
-  function findRec(id) {
-    for (var i = 0; i < state.records.length; i++) if (state.records[i].id === id) return state.records[i];
-    return null;
-  }
-
   function startEdit(id) {
-    var r = findRec(id);
-    if (!r) return;
-    editingId = id;
-    recChild.value = r.child;
-    recDate.value = r.date;
-    setTime(recSleepH, recSleepM, r.sleep);
-    setTime(recWakeH, recWakeM, r.wake);
+    var r = findRec(id); if (!r) return;
+    editingId = id; recChild.value = r.child; recDate.value = r.date;
+    setTime(recSleepH, recSleepM, r.sleep); setTime(recWakeH, recWakeM, r.wake);
     recChild.querySelector('option[value="both"]').disabled = true;
-    recSubmit.textContent = "儲存修改";
-    recCancel.hidden = false;
-    updateForm();
+    recSubmit.textContent = "儲存修改"; recCancel.hidden = false; updateForm();
     recForm.scrollIntoView({ behavior: "smooth", block: "center" });
   }
   function exitEdit() {
-    editingId = null;
-    recChild.querySelector('option[value="both"]').disabled = false;
-    recCancel.hidden = true;
-    setTime(recSleepH, recSleepM, "");
-    setTime(recWakeH, recWakeM, "");
-    updateForm();
+    editingId = null; recChild.querySelector('option[value="both"]').disabled = false; recCancel.hidden = true;
+    setTime(recSleepH, recSleepM, ""); setTime(recWakeH, recWakeM, ""); updateForm();
   }
   recCancel.addEventListener("click", exitEdit);
-
   function delRecord(id) {
     if (!confirm("確定要刪除這筆睡眠紀錄嗎？")) return;
     state.records = state.records.filter(function (x) { return x.id !== id; });
@@ -811,23 +829,16 @@
     save(); render();
   }
   recordsEl.addEventListener("click", function (e) {
-    var ed = e.target.closest("[data-edit]");
-    var de = e.target.closest("[data-del]");
-    if (ed) startEdit(ed.getAttribute("data-edit"));
-    else if (de) delRecord(de.getAttribute("data-del"));
+    var ed = e.target.closest("[data-edit]"), de = e.target.closest("[data-del]");
+    if (ed) startEdit(ed.getAttribute("data-edit")); else if (de) delRecord(de.getAttribute("data-del"));
   });
-
-  // ---------- pending: 補登起床時間 ----------
   pendingEl.addEventListener("click", function (e) {
-    var done = e.target.closest("[data-complete]");
-    var cancel = e.target.closest("[data-cancel]");
+    var done = e.target.closest("[data-complete]"), cancel = e.target.closest("[data-cancel]");
     if (done) {
-      var row = done.closest(".prow");
-      var h = row.querySelector(".ph").value;
-      var m = row.querySelector(".pm").value || "00";
+      var row = done.closest(".prow"), h = row.querySelector(".ph").value, m = row.querySelector(".pm").value || "00";
       if (!h) { alert("請選擇起床時間"); return; }
       var r = findRec(done.getAttribute("data-complete"));
-      if (r) { r.wake = h + ":" + m; save(); render(); }
+      if (r) { r.wake = h + ":" + m; var pet = state.pets[r.child]; if (pet) pet.stats.energy = clamp(pet.stats.energy + 30); save(); render(); }
     } else if (cancel) {
       if (!confirm("刪除這筆入睡登記？")) return;
       var id = cancel.getAttribute("data-cancel");
@@ -842,29 +853,14 @@
     e.preventDefault();
     var mins = parseInt($("useMin").value, 10);
     if (!mins || mins <= 0) { alert("請輸入使用分鐘數"); return; }
-    state.usages.push({
-      id: uid(), child: $("useChild").value, date: $("useDate").value || todayStr(),
-      minutes: mins, note: $("useNote").value.trim()
-    });
-    save();
-    $("useMin").value = ""; $("useNote").value = "";
-    render();
+    state.usages.push({ id: uid(), child: $("useChild").value, date: $("useDate").value || todayStr(), minutes: mins, note: $("useNote").value.trim() });
+    save(); $("useMin").value = ""; $("useNote").value = ""; render();
   });
   usagesEl.addEventListener("click", function (e) {
-    var d = e.target.closest("[data-uden]");
-    if (!d) return;
+    var d = e.target.closest("[data-uden]"); if (!d) return;
     if (!confirm("確定要刪除這筆使用紀錄嗎？")) return;
     var id = d.getAttribute("data-uden");
     state.usages = state.usages.filter(function (x) { return x.id !== id; });
-    save(); render();
-  });
-
-  // ---------- 換造型 ----------
-  skinsEl.addEventListener("click", function (e) {
-    var b = e.target.closest("[data-skin-child]");
-    if (!b) return;
-    if (!state.styles) state.styles = {};
-    state.styles[b.getAttribute("data-skin-child")] = b.getAttribute("data-skin-style");
     save(); render();
   });
 
@@ -874,51 +870,33 @@
   $("thisMonth").addEventListener("click", function () { viewMonth = currentMonthKey(); render(); });
 
   // ---------- settings ----------
-  function fillSettings() {
-    $("setBaseline").value = state.settings.baseline / 60;
-    $("setStep").value = state.settings.step;
-    $("setReward").value = state.settings.reward;
-  }
+  function fillSettings() { $("setBaseline").value = state.settings.baseline / 60; $("setStep").value = state.settings.step; $("setReward").value = state.settings.reward; }
   $("setSave").addEventListener("click", function () {
-    var b = parseFloat($("setBaseline").value);
-    var st = parseInt($("setStep").value, 10);
-    var rw = parseInt($("setReward").value, 10);
+    var b = parseFloat($("setBaseline").value), st = parseInt($("setStep").value, 10), rw = parseInt($("setReward").value, 10);
     if (!(b >= 0) || !(st > 0) || !(rw > 0)) { alert("請輸入正確的數字（每超過、可換分鐘需大於 0）"); return; }
     state.settings = { baseline: Math.round(b * 60), step: st, reward: rw };
-    save(); fillSettings(); render(); updateForm();
-    alert("設定已儲存");
+    save(); fillSettings(); render(); updateForm(); alert("設定已儲存");
   });
-  $("setReset").addEventListener("click", function () {
-    state.settings = Object.assign({}, DEFAULTS);
-    save(); fillSettings(); render(); updateForm();
-  });
+  $("setReset").addEventListener("click", function () { state.settings = Object.assign({}, DEFAULTS); save(); fillSettings(); render(); updateForm(); });
 
-  // ---------- data backup ----------
+  // ---------- backup ----------
   $("exportBtn").addEventListener("click", function () {
     var blob = new Blob([JSON.stringify(state, null, 2)], { type: "application/json" });
-    var a = document.createElement("a");
-    a.href = URL.createObjectURL(blob);
-    a.download = "mia-tia-3c-" + todayStr() + ".json";
+    var a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = "mia-tia-3c-" + todayStr() + ".json";
     document.body.appendChild(a); a.click(); document.body.removeChild(a);
     setTimeout(function () { URL.revokeObjectURL(a.href); }, 1000);
   });
   $("importBtn").addEventListener("click", function () { $("importFile").click(); });
   $("importFile").addEventListener("change", function (e) {
-    var f = e.target.files && e.target.files[0];
-    if (!f) return;
+    var f = e.target.files && e.target.files[0]; if (!f) return;
     var reader = new FileReader();
     reader.onload = function () {
       try {
         var d = JSON.parse(reader.result);
         if (!d || typeof d !== "object") throw new Error("bad");
         if (!confirm("匯入會覆蓋目前的資料，確定嗎？")) { e.target.value = ""; return; }
-        state = {
-          settings: Object.assign({}, DEFAULTS, d.settings || {}),
-          records: Array.isArray(d.records) ? d.records : [],
-          usages: Array.isArray(d.usages) ? d.usages : [],
-          styles: normStyles(d.styles)
-        };
-        save(); fillSettings(); render(); updateForm();
+        state = fromData(d); save(); fillSettings(); render(); updateForm();
+        if ($("view-pet").style.display !== "none") renderPet();
         alert("匯入完成 ✓");
       } catch (err) { alert("檔案格式不正確，無法匯入。"); }
       e.target.value = "";
@@ -926,20 +904,15 @@
     reader.readAsText(f);
   });
   $("clearBtn").addEventListener("click", function () {
-    if (!confirm("確定要清除「所有」睡眠與使用紀錄嗎？此動作無法復原（建議先匯出備份）。")) return;
-    state = blank();
-    localStorage.removeItem(STORAGE_KEY);
-    exitEdit(); fillSettings(); render();
+    if (!confirm("確定要清除「所有」資料嗎？此動作無法復原（建議先匯出備份）。")) return;
+    state = blank(); localStorage.removeItem(STORAGE_KEY); exitEdit(); fillSettings(); render();
   });
 
   // ---------- init ----------
-  recDate.value = todayStr();
-  $("useDate").value = todayStr();
-  setTime(recSleepH, recSleepM, "");
-  setTime(recWakeH, recWakeM, "");
-  fillSettings();
-  updateForm();
-  render();
+  tickPet(state.pets.mia); tickPet(state.pets.tia); save();
+  recDate.value = todayStr(); $("useDate").value = todayStr();
+  setTime(recSleepH, recSleepM, ""); setTime(recWakeH, recWakeM, "");
+  fillSettings(); updateForm(); render(); showTab("sleep");
 })();
 </script>
 </body>
