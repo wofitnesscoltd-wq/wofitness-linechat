@@ -155,6 +155,14 @@
   @keyframes bob { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-6px); } }
   @keyframes pop { 0% { transform: scale(1); } 30% { transform: scale(1.08); } 60% { transform: scale(.97); } 100% { transform: scale(1); } }
   @keyframes floatup { 0% { transform: translateY(0) scale(.5); opacity: 0; } 25% { opacity: 1; } 100% { transform: translateY(-92px) scale(1.3); opacity: 0; } }
+  @keyframes feedwob { 0%,100% { transform: rotate(0) scale(1); } 20% { transform: rotate(-6deg); } 45% { transform: scale(1.08,.92); } 70% { transform: rotate(6deg); } }
+  @keyframes bathshake { 0%,100% { transform: translateX(0) rotate(0); } 15% { transform: translateX(-6px) rotate(-4deg); } 35% { transform: translateX(6px) rotate(4deg); } 55% { transform: translateX(-5px) rotate(-3deg); } 75% { transform: translateX(5px) rotate(3deg); } }
+  @keyframes playjump { 0%,100% { transform: translateY(0) scale(1); } 25% { transform: translateY(-30px) scale(1.04); } 45% { transform: translateY(0) scale(.96,1.04); } 70% { transform: translateY(-18px); } }
+  @keyframes patsquish { 0%,100% { transform: scaleY(1); } 35% { transform: scaleY(.88) translateY(5px); } 70% { transform: scaleY(1.03); } }
+  .petstage.fx-feed .petart { animation: feedwob .8s ease; }
+  .petstage.fx-bath .petart { animation: bathshake .9s ease; }
+  .petstage.fx-play .petart { animation: playjump .9s ease; }
+  .petstage.fx-pat .petart { animation: patsquish .7s ease; }
   .stats { display: grid; grid-template-columns: 1fr 1fr; gap: 8px 14px; margin: 10px 4px 2px; }
   .stat .sl { font-size: .78rem; color: var(--muted); font-weight: 700; }
   .stat .bar { height: 10px; background: #eee; border-radius: 999px; overflow: hidden; }
@@ -384,7 +392,7 @@
 
   // ---------- state / persistence ----------
   function defaultPet() {
-    return { name: "", base: "classic",
+    return { name: "", species: "bunny", color: "theme",
       wear: { hat: null, eyes: null, outfit: null, back: null, hand: null, bg: null },
       stats: { happy: 70, full: 70, clean: 70, energy: 70 }, lastTick: Date.now() };
   }
@@ -392,7 +400,10 @@
     var dp = defaultPet();
     if (!o || typeof o !== "object") return dp;
     if (typeof o.name === "string") dp.name = o.name;
-    if (o.base) dp.base = o.base;
+    if (o.species) dp.species = o.species;
+    if (o.color) dp.color = o.color;
+    else if (o.base === "rainbow") dp.color = "rainbow";
+    else if (o.base === "galaxy") dp.color = "galaxy";
     if (o.wear && typeof o.wear === "object") Object.keys(dp.wear).forEach(function (k) { dp.wear[k] = o.wear[k] || null; });
     if (o.stats && typeof o.stats === "object") ["happy", "full", "clean", "energy"].forEach(function (k) { var v = +o.stats[k]; dp.stats[k] = isNaN(v) ? 70 : clamp(v); });
     dp.lastTick = +o.lastTick || Date.now();
@@ -402,8 +413,8 @@
     var pets = { mia: defaultPet(), tia: defaultPet() }, inv = { mia: {}, tia: {} };
     ["mia", "tia"].forEach(function (c) {
       var st = styles && styles[c]; if (!st) return;
-      if (st === "rainbow") { pets[c].base = "rainbow"; inv[c].rainbow = true; }
-      else if (st === "galaxy") { pets[c].base = "galaxy"; inv[c].galaxy = true; }
+      if (st === "rainbow") { pets[c].color = "rainbow"; inv[c].rainbow = true; }
+      else if (st === "galaxy") { pets[c].color = "galaxy"; inv[c].galaxy = true; }
       else if (st === "bow") { pets[c].wear.hat = "bow"; }
       else if (st === "crown") { pets[c].wear.hat = "crown"; }
     });
@@ -481,35 +492,76 @@
     var p = []; for (var i = 0; i < 10; i++) { var rr = (i % 2) ? r * 0.45 : r; var a = -Math.PI / 2 + i * Math.PI / 5; p.push([cx + rr * Math.cos(a), cy + rr * Math.sin(a)]); }
     return '<polygon points="' + pts(p) + '" fill="' + fill + '" stroke="' + stroke + '" stroke-width="1.4" stroke-linejoin="round"/>';
   }
-  function drawBody(pal, furFill, strokeC, innerFill, bellyFill, expr) {
-    var s = '<g stroke="' + strokeC + '" stroke-width="2" stroke-linejoin="round">';
-    s += '<ellipse cx="35" cy="24" rx="11.5" ry="21" transform="rotate(-14 35 24)" fill="' + furFill + '"/>';
-    s += '<ellipse cx="65" cy="24" rx="11.5" ry="21" transform="rotate(14 65 24)" fill="' + furFill + '"/>';
-    s += '<ellipse cx="35" cy="27" rx="5.5" ry="12.5" transform="rotate(-14 35 27)" fill="' + innerFill + '" stroke="none"/>';
-    s += '<ellipse cx="65" cy="27" rx="5.5" ry="12.5" transform="rotate(14 65 27)" fill="' + innerFill + '" stroke="none"/>';
-    s += '<ellipse cx="38" cy="91" rx="9" ry="6.5" fill="' + furFill + '"/><ellipse cx="62" cy="91" rx="9" ry="6.5" fill="' + furFill + '"/>';
-    s += '<ellipse cx="50" cy="61" rx="29" ry="30" fill="' + furFill + '"/>';
-    s += '<ellipse cx="50" cy="68" rx="18" ry="19" fill="' + bellyFill + '" stroke="none"/>';
-    s += '<ellipse cx="24" cy="64" rx="6.5" ry="8.5" transform="rotate(20 24 64)" fill="' + furFill + '"/>';
-    s += '<ellipse cx="76" cy="64" rx="6.5" ry="8.5" transform="rotate(-20 76 64)" fill="' + furFill + '"/>';
-    s += '<circle cx="31" cy="64" r="5" fill="' + pal.cheek + '" opacity=".4" stroke="none"/><circle cx="69" cy="64" r="5" fill="' + pal.cheek + '" opacity=".4" stroke="none"/>';
-    if (expr === "happy") {
-      s += '<path d="M34 57 Q40 50 46 57" fill="none" stroke="#2b2b3d" stroke-width="2.6" stroke-linecap="round"/>';
-      s += '<path d="M54 57 Q60 50 66 57" fill="none" stroke="#2b2b3d" stroke-width="2.6" stroke-linecap="round"/>';
+  // 顏色（底色）
+  var COLORS = {
+    pink: { fur: "#ff9ec9", dark: "#e25f9b", inner: "#ffd9ec", belly: "#fff4fa", cheek: "#ff5fa6" },
+    purple: { fur: "#c98bff", dark: "#9a5fd0", inner: "#ecd8ff", belly: "#faf3ff", cheek: "#b06bff" },
+    blue: { fur: "#5fb0ff", dark: "#2f86d8", inner: "#d6eaff", belly: "#f2f8ff", cheek: "#3a93ec" },
+    mint: { fur: "#7fe0c0", dark: "#2bb38d", inner: "#d4f7ec", belly: "#f1fffb", cheek: "#34c79f" },
+    peach: { fur: "#ffb38a", dark: "#e07e4f", inner: "#ffe2cf", belly: "#fff6ef", cheek: "#ff8f5e" },
+    cream: { fur: "#ffe39a", dark: "#d9ad3f", inner: "#fff3cf", belly: "#fffbe9", cheek: "#f0b73f" },
+    grey: { fur: "#c4c9d6", dark: "#8a90a3", inner: "#e7eaf1", belly: "#f7f8fb", cheek: "#aab0c0" }
+  };
+  function resolveColor(childKey, colorKey) {
+    if (colorKey === "rainbow") { var g = "pf" + (++svgSeq); return { furFill: "url(#" + g + ")", strokeC: "#ef9bb0", inner: "rgba(255,255,255,.6)", belly: "rgba(255,255,255,.45)", cheek: "#ff7eb6", grad: '<linearGradient id="' + g + '" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ff9ec0"/><stop offset=".45" stop-color="#ffd98a"/><stop offset="1" stop-color="#8be3b0"/></linearGradient>', special: true }; }
+    if (colorKey === "galaxy") { var g2 = "pf" + (++svgSeq); return { furFill: "url(#" + g2 + ")", strokeC: "#8a6bf0", inner: "rgba(255,255,255,.6)", belly: "rgba(255,255,255,.45)", cheek: "#c79bff", grad: '<linearGradient id="' + g2 + '" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#6a5cff"/><stop offset=".5" stop-color="#b15cff"/><stop offset="1" stop-color="#ff7ad9"/></linearGradient>', special: true }; }
+    var p = (colorKey === "theme" || !COLORS[colorKey]) ? (PALETTE[childKey] || PALETTE.mia) : COLORS[colorKey];
+    return { furFill: p.fur, strokeC: p.dark, inner: p.inner, belly: p.belly, cheek: p.cheek, grad: "", special: false };
+  }
+  // 共用：身體、臉
+  function bodyCore(R) {
+    return '<ellipse cx="38" cy="91" rx="9" ry="6.5" fill="' + R.furFill + '"/><ellipse cx="62" cy="91" rx="9" ry="6.5" fill="' + R.furFill + '"/>' +
+      '<ellipse cx="50" cy="61" rx="29" ry="30" fill="' + R.furFill + '"/>' +
+      '<ellipse cx="42" cy="47" rx="17" ry="14" fill="#fff" opacity=".16" stroke="none"/>' +
+      '<ellipse cx="50" cy="84" rx="25" ry="11" fill="#3a2a4a" opacity=".07" stroke="none"/>' +
+      '<ellipse cx="50" cy="68" rx="18" ry="19" fill="' + R.belly + '" stroke="none"/>' +
+      '<ellipse cx="50" cy="63" rx="12.5" ry="10" fill="#fff" opacity=".22" stroke="none"/>' +
+      '<ellipse cx="24" cy="64" rx="6.5" ry="8.5" transform="rotate(20 24 64)" fill="' + R.furFill + '"/>' +
+      '<ellipse cx="76" cy="64" rx="6.5" ry="8.5" transform="rotate(-20 76 64)" fill="' + R.furFill + '"/>';
+  }
+  function faceCore(R, expr) {
+    var s = '<circle cx="31" cy="64" r="5" fill="' + R.cheek + '" opacity=".4" stroke="none"/><circle cx="69" cy="64" r="5" fill="' + R.cheek + '" opacity=".4" stroke="none"/>';
+    if (expr === "happy" || expr === "eat") {
+      s += '<path d="M34 57 Q40 50 46 57" fill="none" stroke="#2b2b3d" stroke-width="2.6" stroke-linecap="round"/><path d="M54 57 Q60 50 66 57" fill="none" stroke="#2b2b3d" stroke-width="2.6" stroke-linecap="round"/>';
     } else {
-      s += '<ellipse cx="40" cy="56" rx="5.5" ry="6.5" fill="#2b2b3d" stroke="none"/><ellipse cx="60" cy="56" rx="5.5" ry="6.5" fill="#2b2b3d" stroke="none"/>';
-      s += '<circle cx="42" cy="53" r="2" fill="#fff" stroke="none"/><circle cx="62" cy="53" r="2" fill="#fff" stroke="none"/>';
+      s += '<ellipse cx="40" cy="56" rx="6" ry="7.3" fill="#2b2b3d" stroke="none"/><ellipse cx="60" cy="56" rx="6" ry="7.3" fill="#2b2b3d" stroke="none"/>' +
+        '<circle cx="42.4" cy="53.2" r="2.5" fill="#fff" stroke="none"/><circle cx="62.4" cy="53.2" r="2.5" fill="#fff" stroke="none"/>' +
+        '<circle cx="38.3" cy="58.6" r="1.1" fill="#fff" opacity=".7" stroke="none"/><circle cx="58.3" cy="58.6" r="1.1" fill="#fff" opacity=".7" stroke="none"/>';
     }
-    s += '<path d="M50 63 C47 60,44 64,50 68 C56 64,53 60,50 63 Z" fill="' + pal.cheek + '" stroke="none"/>';
-    if (expr === "happy") {
-      s += '<path d="M43 69 Q50 79 57 69 Z" fill="#fff" stroke="' + strokeC + '" stroke-width="2.2" stroke-linejoin="round"/>';
-    } else {
-      s += '<path d="M44 70 Q50 76 56 70" fill="none" stroke="' + strokeC + '" stroke-width="2.4" stroke-linecap="round"/>';
-      s += '<rect x="47.3" y="70.4" width="2.6" height="3.6" rx="1" fill="#fff" stroke-width="0.8"/>';
-      s += '<rect x="50.1" y="70.4" width="2.6" height="3.6" rx="1" fill="#fff" stroke-width="0.8"/>';
-    }
-    s += "</g>";
+    s += '<path d="M50 63 C47 60,44 64,50 68 C56 64,53 60,50 63 Z" fill="' + R.cheek + '" stroke="none"/>';
+    if (expr === "eat") s += '<ellipse cx="50" cy="72" rx="5" ry="4.5" fill="#b3406a" stroke="' + R.strokeC + '" stroke-width="1.5"/>';
+    else if (expr === "happy") s += '<path d="M43 69 Q50 79 57 69 Z" fill="#fff" stroke="' + R.strokeC + '" stroke-width="2.2" stroke-linejoin="round"/>';
+    else s += '<path d="M44 70 Q50 76 56 70" fill="none" stroke="' + R.strokeC + '" stroke-width="2.4" stroke-linecap="round"/><rect x="47.3" y="70.4" width="2.6" height="3.6" rx="1" fill="#fff" stroke-width="0.8"/><rect x="50.1" y="70.4" width="2.6" height="3.6" rx="1" fill="#fff" stroke-width="0.8"/>';
     return s;
+  }
+  // 各品種（原創）
+  function drawCreature(species, R, expr) {
+    var ears = "", behind = "", front = "", F = R.furFill, I = R.inner, K = R.strokeC;
+    if (species === "cat") {
+      ears = '<polygon points="' + pts([[28, 31], [29, 9], [45, 25]]) + '" fill="' + F + '"/><polygon points="' + pts([[72, 31], [71, 9], [55, 25]]) + '" fill="' + F + '"/><polygon points="' + pts([[33, 26], [34, 15], [42, 25]]) + '" fill="' + I + '" stroke="none"/><polygon points="' + pts([[67, 26], [66, 15], [58, 25]]) + '" fill="' + I + '" stroke="none"/>';
+      front = '<g stroke="' + K + '" stroke-width="1.1" stroke-linecap="round"><path d="M30 62 H17 M30 66 H18 M70 62 H83 M70 66 H82"/></g>';
+    } else if (species === "bear") {
+      ears = '<circle cx="32" cy="22" r="9" fill="' + F + '"/><circle cx="68" cy="22" r="9" fill="' + F + '"/><circle cx="32" cy="22" r="4.5" fill="' + I + '" stroke="none"/><circle cx="68" cy="22" r="4.5" fill="' + I + '" stroke="none"/>';
+    } else if (species === "puppy") {
+      ears = '<ellipse cx="25" cy="44" rx="8.5" ry="16" transform="rotate(20 25 44)" fill="' + K + '"/><ellipse cx="75" cy="44" rx="8.5" ry="16" transform="rotate(-20 75 44)" fill="' + K + '"/>';
+      behind = '<ellipse cx="50" cy="67" rx="12" ry="9.5" fill="' + I + '" stroke="none"/>';
+    } else if (species === "fox") {
+      ears = '<polygon points="' + pts([[25, 30], [31, 7], [46, 27]]) + '" fill="' + F + '"/><polygon points="' + pts([[75, 30], [69, 7], [54, 27]]) + '" fill="' + F + '"/><polygon points="' + pts([[28, 15], [31, 7], [37, 19]]) + '" fill="#43342f" stroke="none"/><polygon points="' + pts([[72, 15], [69, 7], [63, 19]]) + '" fill="#43342f" stroke="none"/>';
+      behind = '<path d="M50 52 Q64 56 59 78 Q50 84 41 78 Q36 56 50 52 Z" fill="#fff7f0" stroke="none"/>';
+    } else if (species === "panda") {
+      ears = '<circle cx="30" cy="20" r="9" fill="#3a3a44"/><circle cx="70" cy="20" r="9" fill="#3a3a44"/>';
+      behind = '<ellipse cx="40" cy="56" rx="8" ry="9.5" transform="rotate(16 40 56)" fill="#3a3a44" stroke="none"/><ellipse cx="60" cy="56" rx="8" ry="9.5" transform="rotate(-16 60 56)" fill="#3a3a44" stroke="none"/>';
+      front = '<circle cx="41" cy="54" r="1.7" fill="#fff"/><circle cx="61" cy="54" r="1.7" fill="#fff"/>';
+    } else if (species === "unicorn") {
+      ears = '<polygon points="' + pts([[44, 20], [50, 3], [56, 20]]) + '" fill="#ffe49a" stroke="#e0b34a"/><path d="M47 18 L53 18 M46 14 L54 14 M47.5 10 L52.5 10" stroke="#e0b34a" stroke-width="1"/>' +
+        '<ellipse cx="37" cy="20" rx="5" ry="9" transform="rotate(-15 37 20)" fill="' + F + '"/><ellipse cx="63" cy="20" rx="5" ry="9" transform="rotate(15 63 20)" fill="' + F + '"/>';
+      front = '<g stroke="none"><path d="M40 30 Q43 21 47 29 Z" fill="#ff8fc2"/><path d="M47 29 Q50 19 53 29 Z" fill="#ffd36e"/><path d="M53 29 Q57 21 60 30 Z" fill="#8fd0ff"/></g>';
+    } else if (species === "dino") {
+      ears = '<polygon points="' + pts([[40, 31], [44, 18], [48, 31]]) + '" fill="#8fd06a" stroke="#5fa83f"/><polygon points="' + pts([[48, 31], [52, 14], [56, 31]]) + '" fill="#8fd06a" stroke="#5fa83f"/><polygon points="' + pts([[56, 31], [60, 18], [64, 31]]) + '" fill="#8fd06a" stroke="#5fa83f"/>';
+    } else { // bunny
+      ears = '<ellipse cx="35" cy="24" rx="11.5" ry="21" transform="rotate(-14 35 24)" fill="' + F + '"/><ellipse cx="65" cy="24" rx="11.5" ry="21" transform="rotate(14 65 24)" fill="' + F + '"/><ellipse cx="35" cy="27" rx="5.5" ry="12.5" transform="rotate(-14 35 27)" fill="' + I + '" stroke="none"/><ellipse cx="65" cy="27" rx="5.5" ry="12.5" transform="rotate(14 65 27)" fill="' + I + '" stroke="none"/>';
+    }
+    return '<g stroke="' + K + '" stroke-width="2.2" stroke-linejoin="round"><ellipse cx="50" cy="95" rx="22" ry="3.6" fill="#3a2a4a" opacity=".08" stroke="none"/>' + ears + bodyCore(R) + behind + faceCore(R, expr) + front + "</g>";
   }
   function drawBg(id) {
     if (id === "rainbow") {
@@ -528,22 +580,47 @@
       for (var j = 0; j < stz.length; j++) s2 += sparkle(stz[j][0], stz[j][1], 1.8);
       return s2;
     }
+    if (id === "garden") return '<rect x="0" y="0" width="100" height="100" fill="#eafaf2"/><circle cx="18" cy="18" r="8" fill="#ffe08a"/><path d="M0 80 Q50 72 100 80 V100 H0 Z" fill="#bdeec4"/><g stroke="#5fa83f" stroke-width="1.4"><path d="M22 92 V84 M50 94 V85 M78 92 V84"/></g><circle cx="22" cy="82" r="3.5" fill="#ff8fc2"/><circle cx="50" cy="83" r="3.5" fill="#ffd36e"/><circle cx="78" cy="82" r="3.5" fill="#b08fff"/>';
+    if (id === "beach") return '<rect x="0" y="0" width="100" height="100" fill="#bfe9ff"/><circle cx="80" cy="18" r="8" fill="#ffe08a"/><rect x="0" y="64" width="100" height="14" fill="#6fcff0"/><path d="M0 76 Q50 72 100 76 V100 H0 Z" fill="#ffe9b0"/>';
+    if (id === "space") { var sp = '<rect x="0" y="0" width="100" height="100" fill="#1e1b3a"/>'; var st = [[14, 16], [34, 12], [24, 40], [70, 18], [86, 34], [12, 66], [44, 74], [90, 72]]; for (var k = 0; k < st.length; k++) sp += sparkle(st[k][0], st[k][1], 1.8); sp += '<circle cx="80" cy="82" r="11" fill="#ff9ec0"/><ellipse cx="80" cy="82" rx="16" ry="4.5" fill="none" stroke="#ffd98a" stroke-width="2" transform="rotate(-18 80 82)"/>'; return sp; }
+    if (id === "room") return '<rect x="0" y="0" width="100" height="100" fill="#fbeede"/><rect x="0" y="74" width="100" height="26" fill="#ecc9a0"/><rect x="8" y="12" width="26" height="24" rx="2" fill="#bfe9ff" stroke="#cbb08a" stroke-width="2"/><path d="M21 12 V36 M8 24 H34" stroke="#cbb08a" stroke-width="2"/>';
     return "";
   }
   function drawBack(id) {
     if (id === "wings") return '<g fill="#ffffff" stroke="#e3e3f0" stroke-width="1.5" stroke-linejoin="round"><path d="M30 56 C8 44,8 74,28 70 C18 66,20 58,30 56 Z"/><path d="M70 56 C92 44,92 74,72 70 C82 66,80 58,70 56 Z"/></g>';
     if (id === "butterfly") return '<g stroke="#c98bdf" stroke-width="1.5" stroke-linejoin="round"><ellipse cx="22" cy="50" rx="12" ry="10" fill="#ffb3e6"/><ellipse cx="24" cy="68" rx="9" ry="8" fill="#c9a3ff"/><ellipse cx="78" cy="50" rx="12" ry="10" fill="#ffb3e6"/><ellipse cx="76" cy="68" rx="9" ry="8" fill="#c9a3ff"/></g>';
+    if (id === "dragon") return '<g fill="#9be59b" stroke="#5fa83f" stroke-width="1.5" stroke-linejoin="round"><path d="M32 54 C12 44,6 66,22 67 L25 60 L27 66 L31 61 Z"/><path d="M68 54 C88 44,94 66,78 67 L75 60 L73 66 L69 61 Z"/></g>';
     return "";
   }
   function drawOutfitBehind(id) {
     if (id === "cape") return '<path d="M34 50 Q50 60 66 50 L80 94 Q50 86 20 94 Z" fill="#ff5277" stroke="#d83a5c" stroke-width="1.5" stroke-linejoin="round"/>';
     return "";
   }
-  function drawOutfit(id, pal) {
+  function drawOutfit(id, R) {
     if (id === "dress") {
-      return '<path d="M38 64 Q50 68 62 64 L74 92 Q50 98 26 92 Z" fill="' + pal.cheek + '" stroke="' + pal.dark + '" stroke-width="1.5" stroke-linejoin="round"/>' +
-        '<circle cx="34" cy="90" r="2.4" fill="#fff"/><circle cx="42" cy="93" r="2.4" fill="#fff"/><circle cx="50" cy="94" r="2.4" fill="#fff"/><circle cx="58" cy="93" r="2.4" fill="#fff"/><circle cx="66" cy="90" r="2.4" fill="#fff"/>' +
-        '<rect x="40" y="61.5" width="20" height="5" rx="2.5" fill="#fff" stroke="' + pal.dark + '" stroke-width="1"/>';
+      var dc = R.cheek, ds = R.strokeC;
+      return '<path d="M44 53 L41 60 M56 53 L59 60" stroke="' + ds + '" stroke-width="2.4" stroke-linecap="round" fill="none"/>' +
+        '<path d="M40 59 Q50 63 60 59 L61 69 Q50 72 39 69 Z" fill="' + dc + '" stroke="' + ds + '" stroke-width="1.4" stroke-linejoin="round"/>' +
+        '<path d="M39 68 L61 68 L71 87 Q65.5 91 60 87 Q55 92 50 87 Q45 92 40 87 Q34.5 91 29 87 Z" fill="' + dc + '" stroke="' + ds + '" stroke-width="1.4" stroke-linejoin="round"/>' +
+        '<rect x="39" y="67" width="22" height="3.4" rx="1.7" fill="#fff" opacity=".9"/>' +
+        '<circle cx="45" cy="80" r="1.7" fill="#fff"/><circle cx="53" cy="83" r="1.7" fill="#fff"/><circle cx="59" cy="79" r="1.7" fill="#fff"/>' +
+        '<g fill="#fff" stroke="' + ds + '" stroke-width="0.8"><polygon points="' + pts([[50, 68], [45.5, 65], [45.5, 71]]) + '"/><polygon points="' + pts([[50, 68], [54.5, 65], [54.5, 71]]) + '"/><circle cx="50" cy="68" r="1.8"/></g>';
+    }
+    if (id === "overalls") {
+      return '<path d="M42 53 L40 62 M58 53 L60 62" stroke="#3f7ec0" stroke-width="3" stroke-linecap="round"/>' +
+        '<path d="M39 60 Q50 64 61 60 L64 88 Q50 92 36 88 Z" fill="#6fa8e0" stroke="#3f7ec0" stroke-width="1.4" stroke-linejoin="round"/>' +
+        '<rect x="44" y="64" width="12" height="9" rx="2" fill="#5b98d6" stroke="#3f7ec0" stroke-width="1"/>' +
+        '<circle cx="41" cy="62" r="1.8" fill="#ffd23f"/><circle cx="59" cy="62" r="1.8" fill="#ffd23f"/>';
+    }
+    if (id === "tutu") {
+      return '<path d="M34 70 Q50 76 66 70 Q70 81 60 85 Q50 89 40 85 Q30 81 34 70 Z" fill="#ffb3d9" stroke="#ff8fc2" stroke-width="1.3" stroke-linejoin="round"/>' +
+        '<path d="M38 72 L42 86 M50 73 L50 88 M62 72 L58 86" stroke="#ff8fc2" stroke-width="1"/>' +
+        '<rect x="40" y="68" width="20" height="3.4" rx="1.7" fill="#ff7ec2"/>';
+    }
+    if (id === "scarf") {
+      return '<path d="M38 56 Q50 62 62 56 L62 61 Q50 67 38 61 Z" fill="' + R.cheek + '" stroke="' + R.strokeC + '" stroke-width="1.2" stroke-linejoin="round"/>' +
+        '<path d="M53 60 L57 76 L51 76 L52 60 Z" fill="' + R.cheek + '" stroke="' + R.strokeC + '" stroke-width="1.2" stroke-linejoin="round"/>' +
+        '<path d="M51 76 H57 M51.5 78 H56.5" stroke="' + R.strokeC + '" stroke-width="1" stroke-linecap="round"/>';
     }
     if (id === "cape") return '<path d="M41 52 Q50 58 59 52 L56 60 Q50 64 44 60 Z" fill="#ff5277" stroke="#d83a5c" stroke-width="1.5" stroke-linejoin="round"/><circle cx="50" cy="56" r="2.6" fill="#ffd23f" stroke="#e0a500" stroke-width="1"/>';
     return "";
@@ -551,19 +628,28 @@
   function drawEyes(id) {
     if (id === "glasses") return '<g fill="#cdeeff" fill-opacity=".55" stroke="#6b5a48" stroke-width="2"><circle cx="40" cy="56" r="7.5"/><circle cx="60" cy="56" r="7.5"/></g><path d="M47.5 55 H52.5 M32.5 54 L27 50 M67.5 54 L73 50" fill="none" stroke="#6b5a48" stroke-width="2" stroke-linecap="round"/>';
     if (id === "heart") return '<g fill="#2b2b3d"><path d="M40 53 C37.5 50,33.5 51.5,33.5 55 C33.5 58,38 60.5,40 62.5 C42 60.5,46.5 58,46.5 55 C46.5 51.5,42.5 50,40 53 Z"/><path d="M60 53 C57.5 50,53.5 51.5,53.5 55 C53.5 58,58 60.5,60 62.5 C62 60.5,66.5 58,66.5 55 C66.5 51.5,62.5 50,60 53 Z"/></g><path d="M47 54.5 H53" stroke="#2b2b3d" stroke-width="2"/>';
+    if (id === "star") return star5(40, 56, 7.5, "#cdeeff", "#5a9fd0") + star5(60, 56, 7.5, "#cdeeff", "#5a9fd0") + '<path d="M47.5 56 H52.5" stroke="#5a9fd0" stroke-width="2"/>';
+    if (id === "shades") return '<g fill="#2b2b3d" stroke="#1a1a26" stroke-width="1"><path d="M31 51 H46 Q47 60 38.5 60 Q31 60 31 51 Z"/><path d="M69 51 H54 Q53 60 61.5 60 Q69 60 69 51 Z"/><rect x="46" y="52.5" width="8" height="2.2"/></g>';
     return "";
   }
-  function drawHat(id) {
+  function drawHat(id, R) {
     if (id === "crown") return '<polygon points="' + pts([[41, 21], [44, 13], [47, 19], [50, 11], [53, 19], [56, 13], [59, 21]]) + '" fill="#ffcf3f" stroke="#e0a500" stroke-width="2" stroke-linejoin="round"/><circle cx="50" cy="12" r="1.6" fill="#ff5277"/>';
     if (id === "bow") return '<g fill="#ff5277" stroke="#d83a5c" stroke-width="2" stroke-linejoin="round"><polygon points="' + pts([[50, 9], [42, 4], [42, 15]]) + '"/><polygon points="' + pts([[50, 9], [58, 4], [58, 15]]) + '"/><circle cx="50" cy="9" r="3.2"/></g>';
     if (id === "party") return '<g stroke="#5a3fd6" stroke-width="2" stroke-linejoin="round"><polygon points="' + pts([[50, 2], [41, 18], [59, 18]]) + '" fill="#7c5cff"/><polygon points="' + pts([[50, 8], [46, 18], [54, 18]]) + '" fill="#ffd23f" stroke="none"/></g><circle cx="50" cy="3" r="2.8" fill="#ff5fa2" stroke="#d83a5c" stroke-width="1.5"/>';
     if (id === "flower") return '<g stroke="#e6a700" stroke-width="1.2"><circle cx="61" cy="9" r="3" fill="#ff8fc2"/><circle cx="73" cy="9" r="3" fill="#ff8fc2"/><circle cx="64" cy="14" r="3" fill="#ff8fc2"/><circle cx="70" cy="14" r="3" fill="#ff8fc2"/><circle cx="67" cy="6" r="3" fill="#ff8fc2"/><circle cx="67" cy="10.5" r="2.6" fill="#ffd23f"/></g>';
+    if (id === "beanie") return '<path d="M30 25 Q50 4 70 25 Z" fill="' + R.cheek + '" stroke="' + R.strokeC + '" stroke-width="1.4" stroke-linejoin="round"/><rect x="29" y="22" width="42" height="6.5" rx="3.2" fill="' + R.strokeC + '"/><circle cx="50" cy="6" r="3.5" fill="#fff"/>';
+    if (id === "tophat") return '<rect x="38" y="4" width="24" height="17" rx="2" fill="#3a3550" stroke="#262138" stroke-width="1.2"/><rect x="31" y="20" width="38" height="4.5" rx="2.2" fill="#3a3550" stroke="#262138" stroke-width="1.2"/><rect x="38" y="16" width="24" height="4" fill="#ff5277"/>';
+    if (id === "cap") return '<path d="M32 23 Q50 6 68 22 Q50 17 32 23 Z" fill="' + R.cheek + '" stroke="' + R.strokeC + '" stroke-width="1.3" stroke-linejoin="round"/><path d="M64 21 Q80 21 82 26 Q72 25 63 24 Z" fill="' + R.cheek + '" stroke="' + R.strokeC + '" stroke-width="1.3" stroke-linejoin="round"/><circle cx="50" cy="11" r="2" fill="' + R.strokeC + '"/>';
+    if (id === "halo") return '<ellipse cx="50" cy="8" rx="13" ry="4.5" fill="none" stroke="#ffe066" stroke-width="3.2"/><ellipse cx="50" cy="8" rx="13" ry="4.5" fill="none" stroke="#fff6c0" stroke-width="1"/>';
     return "";
   }
-  function drawHand(id) {
+  function drawHand(id, R) {
     if (id === "balloon") return '<path d="M76 72 Q83 58 85 46" fill="none" stroke="#c9c9d6" stroke-width="1.2"/><ellipse cx="85" cy="40" rx="7.5" ry="9" fill="#ff5277" stroke="#d83a5c" stroke-width="1.5"/><polygon points="' + pts([[83.5, 48], [86.5, 48], [85, 51]]) + '" fill="#ff5277" stroke="#d83a5c" stroke-width="1"/><ellipse cx="82" cy="37" rx="2" ry="3" fill="#fff" opacity=".6"/>';
     if (id === "icecream") return '<polygon points="' + pts([[80, 90], [74, 74], [86, 74]]) + '" fill="#e6b15c" stroke="#c8923a" stroke-width="1.5" stroke-linejoin="round"/><circle cx="80" cy="72" r="5.5" fill="#ffb3d9" stroke="#e58cc0" stroke-width="1"/><circle cx="80" cy="66" r="5" fill="#bfe9ff" stroke="#8fd0f0" stroke-width="1"/><circle cx="80" cy="61" r="2" fill="#ff5277"/>';
     if (id === "wand") return '<line x1="76" y1="80" x2="87" y2="61" stroke="#caa15a" stroke-width="2.4" stroke-linecap="round"/>' + star5(88, 58, 5.5, "#ffd23f", "#e0a500");
+    if (id === "lollipop") return '<line x1="76" y1="80" x2="84" y2="58" stroke="#e8d6b0" stroke-width="2.2" stroke-linecap="round"/><circle cx="85" cy="53" r="7.5" fill="#ff8fc2" stroke="#e25f9b" stroke-width="1.4"/><path d="M85 53 m-4.6 0 a4.6 4.6 0 1 1 9.2 0 a2.6 2.6 0 1 1 -5.2 0" fill="none" stroke="#fff" stroke-width="1.3"/>';
+    if (id === "bouquet") return '<path d="M78 82 L84 64 M81 80 L87 66" stroke="#5fa83f" stroke-width="1.6"/><g stroke="#e0a500" stroke-width="1"><circle cx="84" cy="60" r="3.3" fill="#ff8fc2"/><circle cx="89" cy="62" r="3.3" fill="#ffd36e"/><circle cx="86" cy="56" r="3.3" fill="#b08fff"/><circle cx="86.3" cy="59.3" r="1.6" fill="#fff7d0"/></g>';
+    if (id === "sword") return '<line x1="74" y1="84" x2="90" y2="58" stroke="#cfd6e0" stroke-width="3.4" stroke-linecap="round"/><line x1="69" y1="80" x2="80" y2="73" stroke="#caa15a" stroke-width="3" stroke-linecap="round"/><circle cx="72" cy="82" r="2.3" fill="#ffd23f" stroke="#e0a500" stroke-width="0.8"/>';
     return "";
   }
   function avgStat(p) { var s = p.stats; return (s.happy + s.full + s.clean + s.energy) / 4; }
@@ -571,65 +657,95 @@
     opts = opts || {}; var size = opts.size || 96; var showBg = opts.showBg !== false; var expr = opts.expr || "auto";
     var p = (state.pets && state.pets[childKey]) || defaultPet();
     if (expr === "auto") expr = avgStat(p) >= 70 ? "happy" : "normal";
-    var pal = PALETTE[childKey] || PALETTE.mia;
-    var base = p.base || "classic", wear = p.wear || {};
-    var furFill = pal.fur, strokeC = pal.dark, special = (base === "rainbow" || base === "galaxy"), grad = "";
-    if (base === "rainbow") { var g = "pf" + (++svgSeq); grad = '<linearGradient id="' + g + '" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ff9ec0"/><stop offset=".45" stop-color="#ffd98a"/><stop offset="1" stop-color="#8be3b0"/></linearGradient>'; furFill = "url(#" + g + ")"; strokeC = "#ef9bb0"; }
-    else if (base === "galaxy") { var g2 = "pf" + (++svgSeq); grad = '<linearGradient id="' + g2 + '" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#6a5cff"/><stop offset=".5" stop-color="#b15cff"/><stop offset="1" stop-color="#ff7ad9"/></linearGradient>'; furFill = "url(#" + g2 + ")"; strokeC = "#8a6bf0"; }
-    var innerFill = special ? "rgba(255,255,255,.6)" : pal.inner;
-    var bellyFill = special ? "rgba(255,255,255,.45)" : pal.belly;
+    var species = p.species || "bunny", wear = p.wear || {};
+    var R = resolveColor(childKey, p.color || "theme");
     var s = '<svg viewBox="0 0 100 100" width="' + size + '" height="' + size + '" xmlns="http://www.w3.org/2000/svg" aria-label="小怪獸">';
-    s += grad;
+    s += R.grad;
     if (showBg && wear.bg) s += drawBg(wear.bg);
     if (wear.back) s += drawBack(wear.back);
     if (wear.outfit) s += drawOutfitBehind(wear.outfit);
-    s += drawBody(pal, furFill, strokeC, innerFill, bellyFill, expr);
-    if (wear.outfit) s += drawOutfit(wear.outfit, pal);
+    s += drawCreature(species, R, expr);
+    if (wear.outfit) s += drawOutfit(wear.outfit, R);
     if (wear.eyes) s += drawEyes(wear.eyes);
-    if (wear.hat) s += drawHat(wear.hat);
-    if (wear.hand) s += drawHand(wear.hand);
-    if (base === "galaxy") s += sparkle(18, 42, 3.2) + sparkle(83, 48, 3.6) + sparkle(74, 22, 2.6) + sparkle(26, 76, 2.6);
+    if (wear.hat) s += drawHat(wear.hat, R);
+    if (wear.hand) s += drawHand(wear.hand, R);
+    if (p.color === "galaxy") s += sparkle(18, 42, 3.2) + sparkle(83, 48, 3.6) + sparkle(74, 22, 2.6) + sparkle(26, 76, 2.6);
     s += "</svg>";
     return s;
   }
 
   // ---------- catalog ----------
   var SLOTS = [
-    { key: "base", name: "底色" }, { key: "hat", name: "頭飾" }, { key: "eyes", name: "眼鏡" },
-    { key: "outfit", name: "衣服" }, { key: "back", name: "背飾" }, { key: "hand", name: "手持" }, { key: "bg", name: "背景" }
+    { key: "species", name: "品種" }, { key: "color", name: "顏色" }, { key: "hat", name: "頭飾" },
+    { key: "eyes", name: "眼鏡" }, { key: "outfit", name: "衣服" }, { key: "back", name: "背飾" },
+    { key: "hand", name: "手持" }, { key: "bg", name: "背景" }
   ];
   var ITEMS = {
-    base: [
-      { id: "classic", name: "經典", emoji: "🐾", price: 0 },
+    species: [
+      { id: "bunny", name: "兔兔", emoji: "🐰", price: 0 },
+      { id: "cat", name: "貓咪", emoji: "🐱", price: 0 },
+      { id: "bear", name: "熊熊", emoji: "🐻", price: 0 },
+      { id: "puppy", name: "狗狗", emoji: "🐶", price: 0 },
+      { id: "fox", name: "狐狸", emoji: "🦊", price: 30 },
+      { id: "panda", name: "熊貓", emoji: "🐼", price: 40 },
+      { id: "dino", name: "恐龍", emoji: "🦖", price: 60 },
+      { id: "unicorn", name: "獨角獸", emoji: "🦄", price: 120, limited: true, unlockStreak: 7 }
+    ],
+    color: [
+      { id: "theme", name: "原色", emoji: "⭐", price: 0 },
+      { id: "pink", name: "粉紅", emoji: "💗", price: 0 },
+      { id: "purple", name: "紫色", emoji: "💜", price: 0 },
+      { id: "blue", name: "天藍", emoji: "💙", price: 0 },
+      { id: "mint", name: "薄荷", emoji: "💚", price: 20 },
+      { id: "peach", name: "蜜桃", emoji: "🧡", price: 20 },
+      { id: "cream", name: "奶油", emoji: "💛", price: 20 },
+      { id: "grey", name: "灰色", emoji: "🌫️", price: 20 },
       { id: "rainbow", name: "彩虹", emoji: "🌈", price: 60 },
       { id: "galaxy", name: "星空", emoji: "✨", price: 180, limited: true, unlockStreak: 7 }
     ],
     hat: [
       { id: "crown", name: "皇冠", emoji: "👑", price: 0 },
       { id: "bow", name: "蝴蝶結", emoji: "🎀", price: 0 },
+      { id: "flower", name: "小花", emoji: "🌼", price: 20 },
       { id: "party", name: "派對帽", emoji: "🥳", price: 30 },
-      { id: "flower", name: "小花", emoji: "🌼", price: 20 }
+      { id: "beanie", name: "毛帽", emoji: "🧢", price: 20 },
+      { id: "tophat", name: "紳士帽", emoji: "🎩", price: 35 },
+      { id: "cap", name: "鴨舌帽", emoji: "🧢", price: 25 },
+      { id: "halo", name: "光環", emoji: "😇", price: 40 }
     ],
     eyes: [
       { id: "glasses", name: "圓眼鏡", emoji: "👓", price: 0 },
-      { id: "heart", name: "愛心墨鏡", emoji: "😎", price: 30 }
+      { id: "star", name: "星星眼鏡", emoji: "🤩", price: 25 },
+      { id: "heart", name: "愛心墨鏡", emoji: "😍", price: 30 },
+      { id: "shades", name: "太陽眼鏡", emoji: "😎", price: 30 }
     ],
     outfit: [
       { id: "dress", name: "小洋裝", emoji: "👗", price: 0 },
+      { id: "overalls", name: "吊帶褲", emoji: "👖", price: 25 },
+      { id: "scarf", name: "圍巾", emoji: "🧣", price: 20 },
+      { id: "tutu", name: "蓬蓬裙", emoji: "🩰", price: 30 },
       { id: "cape", name: "英雄斗篷", emoji: "🦸", price: 45 }
     ],
     back: [
       { id: "wings", name: "天使翅膀", emoji: "😇", price: 60 },
+      { id: "dragon", name: "龍之翼", emoji: "🐉", price: 70 },
       { id: "butterfly", name: "蝴蝶翅膀", emoji: "🦋", price: 90, limited: true, unlockStreak: 14 }
     ],
     hand: [
       { id: "balloon", name: "氣球", emoji: "🎈", price: 0 },
+      { id: "lollipop", name: "棒棒糖", emoji: "🍭", price: 15 },
       { id: "icecream", name: "冰淇淋", emoji: "🍦", price: 20 },
-      { id: "wand", name: "魔法棒", emoji: "🪄", price: 35 }
+      { id: "bouquet", name: "花束", emoji: "💐", price: 25 },
+      { id: "wand", name: "魔法棒", emoji: "🪄", price: 35 },
+      { id: "sword", name: "寶劍", emoji: "⚔️", price: 40 }
     ],
     bg: [
       { id: "rainbow", name: "彩虹", emoji: "🌈", price: 0 },
-      { id: "night", name: "星空夜", emoji: "🌌", price: 40 }
+      { id: "garden", name: "花園", emoji: "🌷", price: 0 },
+      { id: "room", name: "房間", emoji: "🏠", price: 30 },
+      { id: "night", name: "星空夜", emoji: "🌌", price: 40 },
+      { id: "beach", name: "海灘", emoji: "🏖️", price: 40 },
+      { id: "space", name: "太空", emoji: "🚀", price: 50 }
     ]
   };
   function findItem(slot, id) { var l = ITEMS[slot] || []; for (var i = 0; i < l.length; i++) if (l[i].id === id) return l[i]; return null; }
@@ -654,20 +770,33 @@
     ["happy", "full", "clean", "energy"].forEach(function (k) { var v = p.stats[k], t = 60, d = rate * hrs; p.stats[k] = Math.round(v > t ? Math.max(t, v - d) : Math.min(t, v + d)); });
   }
   var petExpr = "auto", exprTimer = null;
+  var FX_PARTS = {
+    feed: { emo: ["🍎", "😋", "✨", "🍎"], n: 5 },
+    bath: { emo: ["🫧", "🫧", "✨", "🫧", "💧"], n: 9 },
+    play: { emo: ["🎈", "⭐", "🎉", "😆", "🎊"], n: 7 },
+    pat: { emo: ["❤️", "💕", "✨", "❤️"], n: 6 }
+  };
   function doAction(childKey, key) {
     var a = ACTIONS[key], p = state.pets[childKey]; if (!a || !p) return;
     Object.keys(a.boost).forEach(function (k) { p.stats[k] = clamp(p.stats[k] + a.boost[k]); });
     save();
-    petExpr = "happy"; renderPet(); spawnFX(a.fx);
-    clearTimeout(exprTimer); exprTimer = setTimeout(function () { petExpr = "auto"; renderPet(); }, 1400);
+    petExpr = (key === "feed") ? "eat" : "happy"; renderPet(); playFX(key);
+    clearTimeout(exprTimer); exprTimer = setTimeout(function () { petExpr = "auto"; renderPet(); }, 1500);
   }
-  function spawnFX(emoji) {
+  function playFX(key) {
     var stage = document.querySelector(".petstage"); if (!stage) return;
-    stage.classList.remove("act"); void stage.offsetWidth; stage.classList.add("act");
+    stage.className = "petstage"; void stage.offsetWidth; stage.classList.add("fx-" + key);
+    var conf = FX_PARTS[key] || FX_PARTS.pat;
+    for (var i = 0; i < conf.n; i++) spawnParticle(stage, conf.emo[i % conf.emo.length], i);
+  }
+  function spawnParticle(stage, emoji, i) {
     var sp = document.createElement("span"); sp.className = "floatfx"; sp.textContent = emoji;
-    sp.style.left = (40 + Math.random() * 20) + "%";
+    sp.style.left = (18 + Math.random() * 64) + "%";
+    sp.style.top = (28 + Math.random() * 26) + "%";
+    sp.style.fontSize = (20 + Math.random() * 14) + "px";
+    sp.style.animationDelay = (i * 75) + "ms";
     stage.appendChild(sp);
-    setTimeout(function () { if (sp.parentNode) sp.parentNode.removeChild(sp); }, 1450);
+    setTimeout(function () { if (sp.parentNode) sp.parentNode.removeChild(sp); }, 1500 + i * 75);
   }
 
   // ================= render: 睡眠 =================
@@ -742,7 +871,7 @@
   function render() { renderRules(); renderMonth(); renderCards(); renderPending(); renderRecords(); renderUsages(); if (isWide()) renderPet(); }
 
   // ================= render: 寵物 =================
-  var petWho = "mia", petSlot = "hat";
+  var petWho = "mia", petSlot = "species";
   function statsHTML(p) {
     var defs = [["happy", "開心", "💛"], ["full", "飽足", "🍙"], ["clean", "清潔", "🫧"], ["energy", "精神", "⚡"]];
     return '<div class="stats">' + defs.map(function (d) {
@@ -757,8 +886,10 @@
       '<span class="wemoji">' + (it.emoji || "⭐") + '</span><span class="wname">' + it.name + "</span>" + tag + "</button>";
   }
   function wardrobeHTML(childKey, slotKey) {
-    var p = state.pets[childKey], worn = (slotKey === "base") ? p.base : p.wear[slotKey], out = "";
-    if (slotKey !== "base") out += itemBtn(childKey, slotKey, { id: null, name: "不戴", emoji: "🚫", price: 0 }, worn == null);
+    var p = state.pets[childKey];
+    var worn = (slotKey === "species") ? p.species : (slotKey === "color") ? p.color : p.wear[slotKey];
+    var noNone = (slotKey === "species" || slotKey === "color"), out = "";
+    if (!noNone) out += itemBtn(childKey, slotKey, { id: null, name: "不戴", emoji: "🚫", price: 0 }, worn == null);
     (ITEMS[slotKey] || []).forEach(function (it) { out += itemBtn(childKey, slotKey, it, worn === it.id); });
     return '<div class="wardrobe">' + out + "</div>";
   }
@@ -796,10 +927,10 @@
   }
   function chooseItem(childKey, slotKey, itemId) {
     var p = state.pets[childKey];
-    if (slotKey === "base") {
-      var b = findItem("base", itemId); if (!b) return;
+    if (slotKey === "species" || slotKey === "color") {
+      var b = findItem(slotKey, itemId); if (!b) return;
       if (!isOwned(childKey, b) && !tryBuy(childKey, b)) return;
-      p.base = itemId;
+      if (slotKey === "species") p.species = itemId; else p.color = itemId;
     } else if (itemId === "") {
       p.wear[slotKey] = null;
     } else {
