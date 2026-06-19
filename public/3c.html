@@ -20,6 +20,7 @@
     --good: #18a957;
     --bad: #e23b54;
     --brand: #7c5cff;
+    --warn: #ff8f1f;
     --radius: 16px;
     --shadow: 0 6px 22px rgba(40, 40, 90, 0.08);
   }
@@ -88,6 +89,8 @@
     box-shadow: var(--shadow); margin-top: 16px;
   }
   section.block > h2 { font-size: 1rem; margin-bottom: 12px; display: flex; align-items: center; gap: 7px; }
+  section.block.pending { border: 2px solid var(--warn); }
+  section.block.pending > h2 { color: var(--warn); }
 
   /* Forms */
   .grid { display: grid; gap: 10px; }
@@ -102,17 +105,31 @@
   .row2 { grid-template-columns: 1fr 1fr; }
   @media (max-width: 520px) { .row3 { grid-template-columns: 1fr 1fr; } }
 
+  .timepick { display: flex; align-items: center; gap: 6px; }
+  .timepick select { width: auto; flex: 1; min-width: 0; text-align: center; font-variant-numeric: tabular-nums; }
+  .timepick .sep { color: var(--muted); font-weight: 800; }
+
   .btn {
     font: inherit; font-weight: 700; cursor: pointer; border: none; border-radius: 10px;
     padding: 11px 16px; background: var(--brand); color: #fff;
   }
   .btn:active { transform: translateY(1px); }
   .btn.sec { background: #eceaff; color: var(--brand); }
+  .btn.warn { background: var(--warn); color: #fff; }
   .btn.ghost { background: transparent; color: var(--muted); border: 1px solid var(--line); }
   .btn.danger { background: #ffe6ea; color: var(--bad); }
+  .btn.sm { padding: 8px 12px; font-size: .85rem; }
   .actions { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 4px; }
   .preview { font-size: .9rem; color: var(--muted); min-height: 1.4em; }
   .preview b { color: var(--brand); }
+
+  /* Pending rows */
+  .prow { border: 1px solid var(--line); border-radius: 12px; padding: 10px 12px; margin-top: 10px; background: #fffaf2; }
+  .prow .pinfo { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+  .prow .pinfo b { font-variant-numeric: tabular-nums; }
+  .prow .pcomplete { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; margin-top: 10px; }
+  .prow .pcomplete .lbl { font-size: .85rem; color: var(--muted); font-weight: 600; }
+  .prow .pcomplete select { width: auto; min-width: 64px; text-align: center; font-variant-numeric: tabular-nums; }
 
   /* Records */
   .day { border: 1px solid var(--line); border-radius: 12px; padding: 10px 12px; margin-bottom: 10px; }
@@ -150,6 +167,9 @@
   .uitem .tag { font-weight: 700; padding: 2px 8px; border-radius: 999px; font-size: .8rem; }
   .uitem .tag.mia { background: var(--mia-soft); color: var(--mia); }
   .uitem .tag.tia { background: var(--tia-soft); color: var(--tia); }
+  .tag { font-weight: 700; padding: 2px 8px; border-radius: 999px; font-size: .8rem; }
+  .tag.mia { background: var(--mia-soft); color: var(--mia); }
+  .tag.tia { background: var(--tia-soft); color: var(--tia); }
 
   details.block { background: var(--card); border-radius: var(--radius); box-shadow: var(--shadow); margin-top: 16px; padding: 4px 16px; }
   details.block > summary {
@@ -182,6 +202,11 @@
 
   <div class="cards" id="cards"></div>
 
+  <section class="block pending" id="pendingBlock" style="display:none">
+    <h2>⏰ 進行中（補登起床時間）</h2>
+    <div id="pending"></div>
+  </section>
+
   <section class="block">
     <h2>😴 新增睡眠紀錄</h2>
     <form id="recForm" class="grid">
@@ -195,23 +220,28 @@
           </select>
         </div>
         <div class="field">
-          <label for="recDate">日期（起床那天）</label>
+          <label for="recDate">日期（睡的那一晚）</label>
           <input type="date" id="recDate" />
         </div>
       </div>
       <div class="grid row2">
         <div class="field">
-          <label for="recSleep">就寢時間</label>
-          <input type="time" id="recSleep" />
+          <label>就寢時間（24 小時制）</label>
+          <div class="timepick">
+            <select id="recSleepH"></select><span class="sep">:</span><select id="recSleepM"></select>
+          </div>
         </div>
         <div class="field">
-          <label for="recWake">起床時間</label>
-          <input type="time" id="recWake" />
+          <label>起床時間（可之後再補）</label>
+          <div class="timepick">
+            <select id="recWakeH"></select><span class="sep">:</span><select id="recWakeM"></select>
+          </div>
         </div>
       </div>
+      <p class="hint">晚上只想先登記入睡：起床時間維持「--」即可，明天早上再到上方「⏰ 進行中」區補上。</p>
       <div class="preview" id="recPreview"></div>
       <div class="actions">
-        <button type="submit" class="btn" id="recSubmit">新增紀錄</button>
+        <button type="submit" class="btn" id="recSubmit">登記</button>
         <button type="button" class="btn ghost" id="recCancel" hidden>取消修改</button>
       </div>
     </form>
@@ -283,7 +313,7 @@
   <details class="block" id="dataBlock">
     <summary>💾 資料備份（匯出 / 匯入 / 清除）</summary>
     <div class="inner">
-      <p class="hint">資料只存在這台裝置的瀏覽器裡。換手機或清快取前，記得先「匯出備份」。</p>
+      <p class="hint">資料只存在這台裝置的瀏覽器裡。<b>更新版本、換手機或清快取前，請先「匯出備份」，到新檔案再「匯入」。</b></p>
       <div class="actions">
         <button type="button" class="btn sec" id="exportBtn">匯出備份檔</button>
         <button type="button" class="btn ghost" id="importBtn">匯入備份檔</button>
@@ -294,7 +324,7 @@
   </details>
 
   <footer>
-    睡飽飽，換 3C ⭐ · 每月 1 日自動歸零、重新累積（不累計到下個月）
+    睡飽飽，換 3C ⭐ · 24 小時制 · 每月 1 日自動歸零、重新累積（不累計到下個月）
   </footer>
 </div>
 
@@ -343,6 +373,10 @@
   }
   function currentMonthKey() { return todayStr().slice(0, 7); }
   function monthKey(dateStr) { return (dateStr || "").slice(0, 7); }
+  function childOf(key) {
+    for (var i = 0; i < CHILDREN.length; i++) if (CHILDREN[i].key === key) return CHILDREN[i];
+    return CHILDREN[0];
+  }
   function shiftMonth(mk, delta) {
     var p = mk.split("-"), y = +p[0], m = +p[1] + delta;
     while (m < 1) { m += 12; y--; }
@@ -358,6 +392,7 @@
     return (+p[0]) * 60 + (+p[1]);
   }
   function sessionDuration(rec) {
+    if (!rec.wake || !rec.sleep) return 0; // 尚未補起床時間
     var d = timeToMin(rec.wake) - timeToMin(rec.sleep);
     if (d <= 0) d += 1440; // 跨午夜
     return d;
@@ -383,11 +418,28 @@
     return p[1] + "/" + p[2] + "（" + wd + "）";
   }
 
-  // ---------- monthly aggregation (門檻以「每人每天總睡眠」計算) ----------
+  // ---------- 24h time <select> options ----------
+  var HOUR_OPTS = '<option value="">--</option>';
+  for (var _h = 0; _h < 24; _h++) HOUR_OPTS += '<option value="' + pad2(_h) + '">' + pad2(_h) + "</option>";
+  var MIN_OPTS = "";
+  for (var _m = 0; _m < 60; _m++) MIN_OPTS += '<option value="' + pad2(_m) + '">' + pad2(_m) + "</option>";
+
+  function readTime(hSel, mSel) {
+    var h = hSel.value;
+    if (!h) return "";
+    return h + ":" + (mSel.value || "00");
+  }
+  function setTime(hSel, mSel, val) {
+    if (!val) { hSel.value = ""; mSel.value = "00"; return; }
+    var p = val.split(":");
+    hSel.value = p[0]; mSel.value = p[1];
+  }
+
+  // ---------- monthly aggregation (門檻以「每人每天總睡眠」計算；未補起床者不計) ----------
   function monthlyEarned(childKey, mk) {
     var byDate = {};
     state.records.forEach(function (r) {
-      if (r.child === childKey && monthKey(r.date) === mk) {
+      if (r.child === childKey && r.wake && monthKey(r.date) === mk) {
         byDate[r.date] = (byDate[r.date] || 0) + sessionDuration(r);
       }
     });
@@ -407,17 +459,22 @@
   function $(id) { return document.getElementById(id); }
   var monthLabelEl = $("monthLabel");
   var cardsEl = $("cards");
+  var pendingBlock = $("pendingBlock");
+  var pendingEl = $("pending");
   var recordsEl = $("records");
   var usagesEl = $("usages");
   var rulesLineEl = $("rulesLine");
   var recForm = $("recForm");
   var recChild = $("recChild");
   var recDate = $("recDate");
-  var recSleep = $("recSleep");
-  var recWake = $("recWake");
+  var recSleepH = $("recSleepH"), recSleepM = $("recSleepM");
+  var recWakeH = $("recWakeH"), recWakeM = $("recWakeM");
   var recPreview = $("recPreview");
   var recSubmit = $("recSubmit");
   var recCancel = $("recCancel");
+
+  recSleepH.innerHTML = HOUR_OPTS; recSleepM.innerHTML = MIN_OPTS;
+  recWakeH.innerHTML = HOUR_OPTS; recWakeM.innerHTML = MIN_OPTS;
 
   // ---------- render ----------
   function renderRules() {
@@ -441,10 +498,28 @@
         "</div>";
     }).join("");
   }
+  function renderPending() {
+    var pend = state.records.filter(function (r) { return !r.wake; });
+    pend.sort(function (a, b) { return (a.date + a.sleep) < (b.date + b.sleep) ? 1 : -1; });
+    if (!pend.length) { pendingBlock.style.display = "none"; pendingEl.innerHTML = ""; return; }
+    pendingBlock.style.display = "";
+    pendingEl.innerHTML = pend.map(function (r) {
+      var ch = childOf(r.child);
+      return '<div class="prow" data-id="' + r.id + '">' +
+        '<div class="pinfo"><span class="tag ' + ch.cls + '">' + ch.emoji + " " + ch.name + "</span> " +
+        "<b>入睡 " + r.sleep + "</b> <span class=\"meta\">" + fmtDate(r.date) + "</span></div>" +
+        '<div class="pcomplete"><span class="lbl">起床時間</span>' +
+        '<select class="ph">' + HOUR_OPTS + "</select><span class=\"sep\">:</span>" +
+        '<select class="pm">' + MIN_OPTS + "</select>" +
+        '<button class="btn warn sm" data-complete="' + r.id + '">✓ 完成</button>' +
+        '<button class="btn ghost sm" data-cancel="' + r.id + '">刪除</button></div>' +
+        "</div>";
+    }).join("");
+  }
   function renderRecords() {
-    var recs = state.records.filter(function (r) { return monthKey(r.date) === viewMonth; });
+    var recs = state.records.filter(function (r) { return r.wake && monthKey(r.date) === viewMonth; });
     if (!recs.length) {
-      recordsEl.innerHTML = '<p class="empty">本月還沒有睡眠紀錄，從上方開始新增吧 😴</p>';
+      recordsEl.innerHTML = '<p class="empty">本月還沒有完成的睡眠紀錄 😴</p>';
       return;
     }
     var byDate = {};
@@ -485,7 +560,7 @@
       return;
     }
     usagesEl.innerHTML = us.map(function (u) {
-      var ch = CHILDREN.filter(function (c) { return c.key === u.child; })[0] || CHILDREN[0];
+      var ch = childOf(u.child);
       return '<div class="uitem">' +
         '<div><span class="tag ' + ch.cls + '">' + ch.emoji + " " + ch.name + "</span> " +
         "<b>−" + u.minutes + " 分</b>" + (u.note ? ' <span class="meta">· ' + escapeHtml(u.note) + "</span>" : "") +
@@ -502,28 +577,41 @@
     renderRules();
     renderMonth();
     renderCards();
+    renderPending();
     renderRecords();
     renderUsages();
   }
 
   // ---------- record form ----------
-  function updatePreview() {
-    if (!recSleep.value || !recWake.value) { recPreview.textContent = ""; return; }
-    var dur = sessionDuration({ sleep: recSleep.value, wake: recWake.value });
-    var earned = earnedForDuration(dur);
-    recPreview.innerHTML = "這段睡眠 <b>" + fmtMin(dur) + "</b> → 約可兌換 <b>" + earned + " 分鐘</b> 3C";
+  function updateForm() {
+    var sleep = readTime(recSleepH, recSleepM);
+    var wake = readTime(recWakeH, recWakeM);
+    if (!sleep) {
+      recPreview.textContent = "";
+    } else if (!wake) {
+      recPreview.innerHTML = "先登記入睡 <b>" + sleep + "</b>，起床後再補、屆時計算 3C。";
+    } else {
+      var dur = sessionDuration({ sleep: sleep, wake: wake });
+      var earned = earnedForDuration(dur);
+      recPreview.innerHTML = "這段睡眠 <b>" + fmtMin(dur) + "</b> → 約可兌換 <b>" + earned + " 分鐘</b> 3C";
+    }
+    if (!editingId) {
+      recSubmit.textContent = sleep && !wake ? "登記入睡（起床再補）" : "登記";
+    }
   }
-  recSleep.addEventListener("input", updatePreview);
-  recWake.addEventListener("input", updatePreview);
+  [recSleepH, recSleepM, recWakeH, recWakeM].forEach(function (el) {
+    el.addEventListener("change", updateForm);
+  });
 
   recForm.addEventListener("submit", function (e) {
     e.preventDefault();
     var date = recDate.value || todayStr();
-    var sleep = recSleep.value, wake = recWake.value;
-    if (!sleep || !wake) { alert("請輸入就寢與起床時間"); return; }
+    var sleep = readTime(recSleepH, recSleepM);
+    var wake = readTime(recWakeH, recWakeM);
+    if (!sleep) { alert("請選擇就寢時間"); return; }
 
     if (editingId) {
-      var r = state.records.filter(function (x) { return x.id === editingId; })[0];
+      var r = findRec(editingId);
       if (r) { r.child = recChild.value === "both" ? r.child : recChild.value; r.date = date; r.sleep = sleep; r.wake = wake; }
       exitEdit();
     } else {
@@ -533,30 +621,38 @@
       });
     }
     save();
-    recSleep.value = ""; recWake.value = ""; updatePreview();
+    setTime(recSleepH, recSleepM, "");
+    setTime(recWakeH, recWakeM, "");
+    updateForm();
     render();
   });
 
+  function findRec(id) {
+    for (var i = 0; i < state.records.length; i++) if (state.records[i].id === id) return state.records[i];
+    return null;
+  }
+
   function startEdit(id) {
-    var r = state.records.filter(function (x) { return x.id === id; })[0];
+    var r = findRec(id);
     if (!r) return;
     editingId = id;
     recChild.value = r.child;
     recDate.value = r.date;
-    recSleep.value = r.sleep;
-    recWake.value = r.wake;
+    setTime(recSleepH, recSleepM, r.sleep);
+    setTime(recWakeH, recWakeM, r.wake);
     recChild.querySelector('option[value="both"]').disabled = true;
     recSubmit.textContent = "儲存修改";
     recCancel.hidden = false;
-    updatePreview();
+    updateForm();
     recForm.scrollIntoView({ behavior: "smooth", block: "center" });
   }
   function exitEdit() {
     editingId = null;
     recChild.querySelector('option[value="both"]').disabled = false;
-    recSubmit.textContent = "新增紀錄";
     recCancel.hidden = true;
-    recSleep.value = ""; recWake.value = ""; updatePreview();
+    setTime(recSleepH, recSleepM, "");
+    setTime(recWakeH, recWakeM, "");
+    updateForm();
   }
   recCancel.addEventListener("click", exitEdit);
 
@@ -571,6 +667,25 @@
     var de = e.target.closest("[data-del]");
     if (ed) startEdit(ed.getAttribute("data-edit"));
     else if (de) delRecord(de.getAttribute("data-del"));
+  });
+
+  // ---------- pending: 補登起床時間 ----------
+  pendingEl.addEventListener("click", function (e) {
+    var done = e.target.closest("[data-complete]");
+    var cancel = e.target.closest("[data-cancel]");
+    if (done) {
+      var row = done.closest(".prow");
+      var h = row.querySelector(".ph").value;
+      var m = row.querySelector(".pm").value || "00";
+      if (!h) { alert("請選擇起床時間"); return; }
+      var r = findRec(done.getAttribute("data-complete"));
+      if (r) { r.wake = h + ":" + m; save(); render(); }
+    } else if (cancel) {
+      if (!confirm("刪除這筆入睡登記？")) return;
+      var id = cancel.getAttribute("data-cancel");
+      state.records = state.records.filter(function (x) { return x.id !== id; });
+      save(); render();
+    }
   });
 
   // ---------- usage form ----------
@@ -613,12 +728,12 @@
     var rw = parseInt($("setReward").value, 10);
     if (!(b >= 0) || !(st > 0) || !(rw > 0)) { alert("請輸入正確的數字（每超過、可換分鐘需大於 0）"); return; }
     state.settings = { baseline: Math.round(b * 60), step: st, reward: rw };
-    save(); fillSettings(); render(); updatePreview();
+    save(); fillSettings(); render(); updateForm();
     alert("設定已儲存");
   });
   $("setReset").addEventListener("click", function () {
     state.settings = Object.assign({}, DEFAULTS);
-    save(); fillSettings(); render(); updatePreview();
+    save(); fillSettings(); render(); updateForm();
   });
 
   // ---------- data backup ----------
@@ -645,7 +760,7 @@
           records: Array.isArray(d.records) ? d.records : [],
           usages: Array.isArray(d.usages) ? d.usages : []
         };
-        save(); fillSettings(); render(); updatePreview();
+        save(); fillSettings(); render(); updateForm();
         alert("匯入完成 ✓");
       } catch (err) { alert("檔案格式不正確，無法匯入。"); }
       e.target.value = "";
@@ -662,7 +777,10 @@
   // ---------- init ----------
   recDate.value = todayStr();
   $("useDate").value = todayStr();
+  setTime(recSleepH, recSleepM, "");
+  setTime(recWakeH, recWakeM, "");
   fillSettings();
+  updateForm();
   render();
 })();
 </script>
