@@ -205,8 +205,9 @@
     .tabbar { display: none; }
     #views { display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr); gap: 22px; align-items: start; }
     #view-sleep, #view-pet { display: block !important; }
-    #view-pet .petstage { height: 320px; }
-    #view-pet .petstage .petart svg { width: 300px !important; height: 300px !important; }
+    #view-pet .petstage { height: 360px; }
+    #view-pet .petstage .petart svg { width: 344px !important; height: 344px !important; }
+    #view-pet .wardrobe { grid-template-columns: repeat(auto-fill, minmax(76px, 1fr)); }
     .modebar { justify-content: flex-end; }
   }
   @media (min-width: 2200px) {
@@ -439,7 +440,7 @@
   // ---------- state / persistence ----------
   function defaultPet() {
     return { name: "", species: "bunny", color: "theme",
-      wear: { hat: null, eyes: null, outfit: null, back: null, hand: null, bg: null },
+      wear: { hat: null, eyes: null, outfit: null, back: null, hand: null, bg: null, fx: null },
       stats: { happy: 70, full: 70, clean: 70, energy: 70 }, lastTick: Date.now() };
   }
   function normPet(o) {
@@ -641,7 +642,26 @@
     }
     return '<g stroke="' + K + '" stroke-width="2.2" stroke-linejoin="round"><ellipse cx="50" cy="95" rx="22" ry="3.6" fill="#3a2a4a" opacity=".08" stroke="none"/>' + ears + bodyCore(R) + behind + faceCore(R, expr) + front + "</g>";
   }
+  function petalShape(x, y, rot) { return '<ellipse cx="' + x + '" cy="' + y + '" rx="3.1" ry="1.8" fill="#ffc1e0" stroke="#ff9ad0" stroke-width="0.6" transform="rotate(' + rot + ' ' + x + ' ' + y + ')"/>'; }
+  function bubbleShape(x, y, r) { return '<circle cx="' + x + '" cy="' + y + '" r="' + r + '" fill="#bfe9ff" fill-opacity=".4" stroke="#9fd8f5" stroke-width="0.7"/><circle cx="' + (x - r * 0.3).toFixed(1) + '" cy="' + (y - r * 0.3).toFixed(1) + '" r="' + (r * 0.25).toFixed(1) + '" fill="#fff" opacity=".7"/>'; }
+  function fxHeart(x, y, r) { return '<circle cx="' + (x - r * 0.5).toFixed(1) + '" cy="' + (y - r * 0.3).toFixed(1) + '" r="' + (r * 0.55).toFixed(1) + '" fill="#ff7aa8"/><circle cx="' + (x + r * 0.5).toFixed(1) + '" cy="' + (y - r * 0.3).toFixed(1) + '" r="' + (r * 0.55).toFixed(1) + '" fill="#ff7aa8"/><path d="M' + (x - r).toFixed(1) + ' ' + (y - r * 0.1).toFixed(1) + ' L' + x + ' ' + (y + r).toFixed(1) + ' L' + (x + r).toFixed(1) + ' ' + (y - r * 0.1).toFixed(1) + ' Z" fill="#ff7aa8"/>'; }
+  var FXP = [[12, 16], [32, 9], [52, 20], [72, 10], [88, 24], [18, 46], [82, 50], [14, 74], [38, 66], [60, 82], [88, 70], [46, 38]];
+  function drawFx(id) {
+    if (id === "sakura") return FXP.map(function (p, i) { return petalShape(p[0], p[1], (i * 53) % 360); }).join("");
+    if (id === "bubbles") return FXP.map(function (p, i) { return bubbleShape(p[0], p[1], 2.4 + (i % 3)); }).join("");
+    if (id === "snow") return FXP.map(function (p) { return '<circle cx="' + p[0] + '" cy="' + p[1] + '" r="1.9" fill="#fff" opacity=".92"/>'; }).join("");
+    if (id === "hearts") return FXP.map(function (p, i) { return fxHeart(p[0], p[1], 2.2 + (i % 2) * 0.9); }).join("");
+    if (id === "stars") return FXP.map(function (p, i) { return (i % 2) ? sparkle(p[0], p[1], 2.6) : star5(p[0], p[1], 3, "#ffe066", "#e0a500"); }).join("");
+    if (id === "confetti") { var cs = ["#ff5fa2", "#ffd23f", "#5fd0ff", "#8be3a0", "#c193ff"]; return FXP.map(function (p, i) { return '<rect x="' + p[0] + '" y="' + p[1] + '" width="3" height="4.4" rx="1" fill="' + cs[i % cs.length] + '" transform="rotate(' + ((i * 47) % 360) + ' ' + p[0] + ' ' + p[1] + ')"/>'; }).join(""); }
+    return "";
+  }
+  function treeBg(x, y) { return '<rect x="' + (x - 1.6) + '" y="' + y + '" width="3.2" height="9" fill="#9a6638"/><polygon points="' + (x - 8) + ',' + y + ' ' + x + ',' + (y - 17) + ' ' + (x + 8) + ',' + y + '" fill="#6fc46f"/><polygon points="' + (x - 6) + ',' + (y - 7) + ' ' + x + ',' + (y - 22) + ' ' + (x + 6) + ',' + (y - 7) + '" fill="#80d080"/>'; }
   function drawBg(id) {
+    if (id === "castle") { var gc = "bgc" + (++svgSeq); return '<linearGradient id="' + gc + '" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#bcd0ff"/><stop offset="1" stop-color="#ead9ff"/></linearGradient><rect width="100" height="100" fill="url(#' + gc + ')"/><g fill="#b29ce0" stroke="#9a85cc" stroke-width="1" stroke-linejoin="round"><rect x="13" y="42" width="13" height="40"/><rect x="74" y="42" width="13" height="40"/><rect x="38" y="34" width="24" height="48"/><polygon points="10,42 19.5,30 29,42"/><polygon points="71,42 80.5,30 90,42"/><polygon points="34,34 50,18 66,34"/></g><g fill="#8f78c4"><rect x="46" y="60" width="8" height="22" rx="3"/><rect x="17" y="52" width="5" height="6"/><rect x="78" y="52" width="5" height="6"/></g><circle cx="84" cy="16" r="7" fill="#fff3b0"/>'; }
+    if (id === "forest") return '<rect width="100" height="100" fill="#dff3df"/><circle cx="20" cy="16" r="8" fill="#ffe08a"/><path d="M0 84 Q50 76 100 84 V100 H0 Z" fill="#a8e0a8"/>' + treeBg(16, 80) + treeBg(40, 84) + treeBg(64, 82) + treeBg(86, 80);
+    if (id === "sakura") return '<rect width="100" height="100" fill="#ffe6f2"/><circle cx="82" cy="16" r="7" fill="#fff3b0"/><path d="M0 66 Q22 48 46 56 Q32 62 26 78" fill="none" stroke="#9a6b4a" stroke-width="3.2" stroke-linecap="round"/>' + [[10, 60], [20, 50], [31, 57], [41, 53], [16, 70], [37, 66]].map(function (p) { return '<circle cx="' + p[0] + '" cy="' + p[1] + '" r="4.2" fill="#ffb3d9"/><circle cx="' + p[0] + '" cy="' + p[1] + '" r="1.6" fill="#ff7eb6"/>'; }).join("");
+    if (id === "candy") { var gd = "bgd" + (++svgSeq); return '<linearGradient id="' + gd + '" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffe0f0"/><stop offset="1" stop-color="#fff1d6"/></linearGradient><rect width="100" height="100" fill="url(#' + gd + ')"/><g opacity=".45" stroke="#ffb3d9" stroke-width="3.4" fill="none"><path d="M0 18 Q25 10 50 18 T100 18"/><path d="M0 32 Q25 24 50 32 T100 32"/></g><g stroke="#caa15a" stroke-width="2.4"><line x1="14" y1="86" x2="14" y2="70"/><line x1="86" y1="88" x2="86" y2="72"/></g><circle cx="14" cy="66" r="6" fill="#ff8fc2" stroke="#e25f9b" stroke-width="1.4"/><circle cx="86" cy="68" r="6" fill="#8be3a0" stroke="#4fb87a" stroke-width="1.4"/>'; }
+    if (id === "sea") { var gs2 = "bgs" + (++svgSeq); return '<linearGradient id="' + gs2 + '" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#aee6ff"/><stop offset="1" stop-color="#4fb8e0"/></linearGradient><rect width="100" height="100" fill="url(#' + gs2 + ')"/><g fill="#cdeeff" opacity=".5"><circle cx="14" cy="28" r="3"/><circle cx="22" cy="40" r="2"/><circle cx="84" cy="24" r="3"/><circle cx="90" cy="38" r="2"/><circle cx="58" cy="84" r="2.5"/></g><g stroke="#e07e4f" stroke-width="1"><ellipse cx="20" cy="58" rx="6.5" ry="4.2" fill="#ffb38a"/><polygon points="26,58 32,54 32,62" fill="#ffb38a"/></g><circle cx="18" cy="57" r="1" fill="#3a2b2b"/><path d="M0 90 Q50 84 100 90 V100 H0 Z" fill="#ffe9b0"/>'; }
     if (id === "rainbow") {
       var bands = ["#ff8fa3", "#ffd36e", "#fff27a", "#9be59b", "#8fd0ff", "#c9a3ff"];
       var s = '<rect x="0" y="0" width="100" height="100" fill="#eef7ff"/>';
@@ -699,6 +719,14 @@
     return "";
   }
   function drawOutfit(id, R) {
+    if (id === "gown") {
+      var gc2 = R.cheek, gs3 = R.strokeC;
+      return '<path d="M34 76 C16 80,8 88,8 95 Q20 100 30 95 Q40 100 50 95 Q60 100 70 95 Q80 100 92 95 C92 88,84 80,66 76 Z" fill="' + gc2 + '" stroke="' + gs3 + '" stroke-width="1.6" stroke-linejoin="round"/>' +
+        '<path d="M35 82 Q50 87 65 82 Q70 90 50 93 Q30 90 35 82 Z" fill="#fff" opacity=".22"/>' +
+        '<rect x="34" y="74.5" width="32" height="4.2" rx="2.1" fill="#fff" opacity=".9"/>' +
+        '<g fill="#fff"><circle cx="24" cy="90" r="2"/><circle cx="38" cy="93" r="2"/><circle cx="50" cy="94" r="2"/><circle cx="62" cy="93" r="2"/><circle cx="76" cy="90" r="2"/></g>' +
+        sparkle(18, 86, 2.2) + sparkle(82, 86, 2.2);
+    }
     if (id === "dress") {
       var dc = R.cheek, ds = R.strokeC;
       return '<path d="M34 78 C19 81,12 86,12 91 Q22 95 31 91 Q40 95 50 91 Q60 95 69 91 Q78 95 88 91 C88 86,81 81,66 78 Z" fill="' + dc + '" stroke="' + ds + '" stroke-width="1.6" stroke-linejoin="round"/>' +
@@ -729,6 +757,7 @@
     return "";
   }
   function drawEyes(id) {
+    if (id === "mask") return '<path d="M27 52 Q50 45 73 52 Q72 64 59 62 Q54 55 50 55 Q46 55 41 62 Q28 64 27 52 Z" fill="#7c5cff" stroke="#5a3fd6" stroke-width="1.3" stroke-linejoin="round"/><ellipse cx="40" cy="55.5" rx="5.4" ry="6" fill="#1f1838"/><ellipse cx="60" cy="55.5" rx="5.4" ry="6" fill="#1f1838"/><g fill="#ffd23f"><circle cx="30" cy="50" r="1.6"/><circle cx="70" cy="50" r="1.6"/></g>' + sparkle(74, 47, 2);
     if (id === "glasses") return '<g fill="#cdeeff" fill-opacity=".55" stroke="#6b5a48" stroke-width="2"><circle cx="40" cy="56" r="7.5"/><circle cx="60" cy="56" r="7.5"/></g><path d="M47.5 55 H52.5 M32.5 54 L27 50 M67.5 54 L73 50" fill="none" stroke="#6b5a48" stroke-width="2" stroke-linecap="round"/>';
     if (id === "heart") return '<g fill="#2b2b3d" stroke="#1a1a26" stroke-width="0.8" stroke-linejoin="round"><path d="M40 51 C36.5 46.5,30.5 48.5,30.5 53.5 C30.5 57.5,36 60.5,40 64 C44 60.5,49.5 57.5,49.5 53.5 C49.5 48.5,43.5 46.5,40 51 Z"/><path d="M60 51 C56.5 46.5,50.5 48.5,50.5 53.5 C50.5 57.5,56 60.5,60 64 C64 60.5,69.5 57.5,69.5 53.5 C69.5 48.5,63.5 46.5,60 51 Z"/></g><path d="M49.5 53 H50.5" stroke="#2b2b3d" stroke-width="2.6"/><path d="M35 52.5 q2.5 -1.5 5 -0.3 M55 52.5 q2.5 -1.5 5 -0.3" stroke="#ff9ad6" stroke-width="1.5" fill="none" stroke-linecap="round" opacity=".85"/>';
     if (id === "star") return star5(40, 56, 7.5, "#cdeeff", "#5a9fd0") + star5(60, 56, 7.5, "#cdeeff", "#5a9fd0") + '<path d="M47.5 56 H52.5" stroke="#5a9fd0" stroke-width="2"/>';
@@ -736,6 +765,8 @@
     return "";
   }
   function drawHat(id, R) {
+    if (id === "bunnyears") return '<rect x="33" y="22" width="34" height="4" rx="2" fill="#ff8fc2" stroke="#e0699a" stroke-width="1"/><ellipse cx="40" cy="11" rx="4.6" ry="13" fill="#ff8fc2" stroke="#e0699a" stroke-width="1.2"/><ellipse cx="60" cy="11" rx="4.6" ry="13" fill="#ff8fc2" stroke="#e0699a" stroke-width="1.2"/><ellipse cx="40" cy="12" rx="2" ry="8" fill="#ffd9ec"/><ellipse cx="60" cy="12" rx="2" ry="8" fill="#ffd9ec"/>';
+    if (id === "antlers") return '<g fill="none" stroke="#9a6630" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M41 22 Q36 10 38 3 M40 14 Q33 12 30 7 M40 17 Q34 16 31 21"/><path d="M59 22 Q64 10 62 3 M60 14 Q67 12 70 7 M60 17 Q66 16 69 21"/></g>';
     if (id === "crown") return '<path d="M38 23 L40 11 L46 18 L50 8 L54 18 L60 11 L62 23 Z" fill="#ffd24a" stroke="#e0a500" stroke-width="2" stroke-linejoin="round"/>' +
       '<rect x="37" y="22" width="26" height="4.6" rx="1.6" fill="#ffd24a" stroke="#e0a500" stroke-width="1.6"/>' +
       '<circle cx="40" cy="11" r="2" fill="#ff5277" stroke="#e0a500" stroke-width="0.7"/><circle cx="50" cy="8" r="2.5" fill="#5fd0ff" stroke="#e0a500" stroke-width="0.7"/><circle cx="60" cy="11" r="2" fill="#ff5277" stroke="#e0a500" stroke-width="0.7"/>' +
@@ -756,6 +787,8 @@
     return "";
   }
   function drawHand(id, R) {
+    if (id === "scepter") return '<line x1="80" y1="92" x2="80" y2="56" stroke="#caa15a" stroke-width="3.4" stroke-linecap="round"/><circle cx="80" cy="50" r="6.8" fill="#b15cff" stroke="#7d3fd0" stroke-width="1.5"/><circle cx="77.6" cy="47.6" r="2" fill="#fff" opacity=".6"/>' + sparkle(89, 46, 2.4) + sparkle(72, 52, 2);
+    if (id === "teddy") return '<g stroke="#a06b3a" stroke-width="1.2" stroke-linejoin="round"><circle cx="82" cy="76" r="8" fill="#caa06a"/><circle cx="82" cy="65" r="6" fill="#caa06a"/><circle cx="77.5" cy="61" r="2.4" fill="#caa06a"/><circle cx="86.5" cy="61" r="2.4" fill="#caa06a"/></g><circle cx="80" cy="64" r="0.9" fill="#3a2b2b"/><circle cx="84" cy="64" r="0.9" fill="#3a2b2b"/><circle cx="82" cy="66.5" r="1.2" fill="#3a2b2b"/>';
     if (id === "balloon") return '<path d="M76 74 Q84 58 86 44" fill="none" stroke="#c9c9d6" stroke-width="1.3"/><ellipse cx="86" cy="38" rx="9" ry="11" fill="#ff5277" stroke="#d83a5c" stroke-width="1.6"/><polygon points="' + pts([[84, 48], [88, 48], [86, 51]]) + '" fill="#ff5277" stroke="#d83a5c" stroke-width="1"/><ellipse cx="82.5" cy="34" rx="2.4" ry="3.4" fill="#fff" opacity=".55"/>';
     if (id === "icecream") return '<polygon points="' + pts([[80, 95], [72, 74], [88, 74]]) + '" fill="#e6b15c" stroke="#c8923a" stroke-width="1.6" stroke-linejoin="round"/><path d="M75 77 L78 82 M80 76 L81 82 M85 77 L83 82" stroke="#c8923a" stroke-width="0.8"/><circle cx="80" cy="71" r="7.5" fill="#ffb3d9" stroke="#e58cc0" stroke-width="1.5"/><circle cx="80" cy="62" r="6.5" fill="#bfe9ff" stroke="#8fd0f0" stroke-width="1.5"/><circle cx="80" cy="54.5" r="2.6" fill="#ff5277"/><circle cx="77.5" cy="60" r="1.6" fill="#fff" opacity=".6"/>';
     if (id === "wand") return '<line x1="73" y1="86" x2="89" y2="56" stroke="#caa15a" stroke-width="3" stroke-linecap="round"/>' + star5(90, 52, 8.5, "#ffd23f", "#e0a500") + '<circle cx="90" cy="52" r="2.2" fill="#fff7c0"/>' + sparkle(79, 64, 2.6) + sparkle(96, 60, 2.2) + sparkle(84, 49, 2);
@@ -784,6 +817,7 @@
     if (wear.hand) s += drawHand(wear.hand, R);
     if (p.color === "galaxy") s += sparkle(15, 38, 3.6) + sparkle(86, 44, 4) + sparkle(74, 18, 3) + sparkle(24, 74, 3) + sparkle(50, 13, 2.6) + sparkle(91, 70, 2.8) + sparkle(9, 60, 2.4) + sparkle(62, 88, 2.4);
     else if (p.color === "rainbow") s += sparkle(16, 40, 2.8) + sparkle(85, 46, 3) + sparkle(72, 19, 2.4) + sparkle(26, 76, 2.2);
+    if (wear.fx) s += drawFx(wear.fx);
     s += "</svg>";
     return s;
   }
@@ -792,7 +826,7 @@
   var SLOTS = [
     { key: "species", name: "品種" }, { key: "color", name: "顏色" }, { key: "hat", name: "頭飾" },
     { key: "eyes", name: "眼鏡" }, { key: "outfit", name: "衣服" }, { key: "back", name: "背飾" },
-    { key: "hand", name: "手持" }, { key: "bg", name: "背景" }
+    { key: "hand", name: "手持" }, { key: "bg", name: "背景" }, { key: "fx", name: "特效" }
   ];
   var ITEMS = {
     species: [
@@ -825,20 +859,24 @@
       { id: "beanie", name: "毛帽", emoji: "🧢", price: 20 },
       { id: "tophat", name: "紳士帽", emoji: "🎩", price: 35 },
       { id: "cap", name: "鴨舌帽", emoji: "🧢", price: 25 },
-      { id: "halo", name: "光環", emoji: "😇", price: 40 }
+      { id: "halo", name: "光環", emoji: "😇", price: 40 },
+      { id: "bunnyears", name: "兔耳髮箍", emoji: "👂", price: 20 },
+      { id: "antlers", name: "鹿角", emoji: "🦌", price: 35 }
     ],
     eyes: [
       { id: "glasses", name: "圓眼鏡", emoji: "👓", price: 0 },
       { id: "star", name: "星星眼鏡", emoji: "🤩", price: 25 },
       { id: "heart", name: "愛心墨鏡", emoji: "😍", price: 30 },
-      { id: "shades", name: "太陽眼鏡", emoji: "😎", price: 30 }
+      { id: "shades", name: "太陽眼鏡", emoji: "😎", price: 30 },
+      { id: "mask", name: "華麗面具", emoji: "🎭", price: 45 }
     ],
     outfit: [
       { id: "dress", name: "小洋裝", emoji: "👗", price: 0 },
       { id: "overalls", name: "吊帶褲", emoji: "👖", price: 25 },
       { id: "scarf", name: "圍巾", emoji: "🧣", price: 20 },
       { id: "tutu", name: "蓬蓬裙", emoji: "🩰", price: 30 },
-      { id: "cape", name: "英雄斗篷", emoji: "🦸", price: 45 }
+      { id: "cape", name: "英雄斗篷", emoji: "🦸", price: 45 },
+      { id: "gown", name: "公主蓬裙", emoji: "👸", price: 70 }
     ],
     back: [
       { id: "wings", name: "天使翅膀", emoji: "😇", price: 60 },
@@ -851,15 +889,30 @@
       { id: "icecream", name: "冰淇淋", emoji: "🍦", price: 20 },
       { id: "bouquet", name: "花束", emoji: "💐", price: 25 },
       { id: "wand", name: "魔法棒", emoji: "🪄", price: 35 },
-      { id: "sword", name: "寶劍", emoji: "⚔️", price: 40 }
+      { id: "sword", name: "寶劍", emoji: "⚔️", price: 40 },
+      { id: "teddy", name: "小熊", emoji: "🧸", price: 30 },
+      { id: "scepter", name: "權杖", emoji: "🔮", price: 60 }
     ],
     bg: [
       { id: "rainbow", name: "彩虹", emoji: "🌈", price: 0 },
       { id: "garden", name: "花園", emoji: "🌷", price: 0 },
+      { id: "forest", name: "森林", emoji: "🌳", price: 30 },
       { id: "room", name: "房間", emoji: "🏠", price: 30 },
+      { id: "sakura", name: "櫻花樹", emoji: "🌸", price: 40 },
+      { id: "candy", name: "糖果屋", emoji: "🍬", price: 40 },
       { id: "night", name: "星空夜", emoji: "🌌", price: 40 },
       { id: "beach", name: "海灘", emoji: "🏖️", price: 40 },
+      { id: "sea", name: "海底", emoji: "🐠", price: 45 },
+      { id: "castle", name: "城堡", emoji: "🏰", price: 50 },
       { id: "space", name: "太空", emoji: "🚀", price: 50 }
+    ],
+    fx: [
+      { id: "sakura", name: "落櫻", emoji: "🌸", price: 0 },
+      { id: "bubbles", name: "泡泡", emoji: "🫧", price: 15 },
+      { id: "snow", name: "雪花", emoji: "❄️", price: 20 },
+      { id: "confetti", name: "彩帶", emoji: "🎊", price: 20 },
+      { id: "hearts", name: "愛心雨", emoji: "💕", price: 25 },
+      { id: "stars", name: "星星雨", emoji: "✨", price: 30 }
     ]
   };
   function findItem(slot, id) { var l = ITEMS[slot] || []; for (var i = 0; i < l.length; i++) if (l[i].id === id) return l[i]; return null; }
