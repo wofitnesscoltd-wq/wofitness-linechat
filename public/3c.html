@@ -45,6 +45,8 @@
   header.top h1 .emo { font-style: normal; }
   header.top .rules { margin-top: 8px; font-size: .9rem; opacity: .95; background: rgba(255,255,255,.16); padding: 8px 12px; border-radius: 10px; }
   header.top .rules b { font-weight: 700; }
+  header.top .appver { display: inline-block; margin-top: 8px; background: rgba(255,255,255,.2); color: #fff; font-size: .72rem; font-weight: 800; padding: 4px 11px; border-radius: 999px; letter-spacing: .3px; }
+  footer .appver-foot { margin-top: 6px; font-size: .74rem; opacity: .8; }
 
   /* Tabs */
   .tabbar { display: flex; gap: 8px; margin: 16px 0 0; }
@@ -333,6 +335,7 @@
   <header class="top">
     <h1 id="appTitle"><i class="emo">⭐</i> Mia &amp; Tia 的 3C 時間銀行</h1>
     <div class="rules" id="rulesLine"></div>
+    <span class="appver" id="appVer"></span>
   </header>
 
   <div class="tabbar">
@@ -499,6 +502,7 @@
 
   <footer>
     睡飽飽，換 3C ⭐ · 24 小時制 · 睡好賺 3C，3C 可看螢幕、也能幫小怪獸買裝扮 🐾
+    <div class="appver-foot" id="appVerFoot"></div>
   </footer>
 </div>
 
@@ -506,6 +510,7 @@
 (function () {
   "use strict";
 
+  var APP_VER = "v1.2 · 狀態表情版 · 2026-06-20";
   var STORAGE_KEY = "mt-3c-panel-v1";
   var HISTORY_KEY = "mt-3c-history-v1";
   var HISTORY_MAX = 30;
@@ -2027,7 +2032,7 @@
     if (!host) { host = document.createElement("div"); host.id = "stategallery"; document.body.appendChild(host); }
     var TIERS = [["輕", 42], ["中", 26], ["急", 12]];
     var h = '<div class="gwrap"><button class="gclose">✕ 關閉</button>' +
-      "<h1>🎭 寵物狀態圖鑑</h1><p class=\"ghint\">同一隻兔兔，肚子餓／口渴／想睡／髒了／想尿尿／寂寞時會有不同表情；越嚴重（輕→中→急）臉和身上的變化越明顯。</p>";
+      "<h1>🎭 寵物狀態圖鑑</h1><p class=\"ghint\">目前版本：" + APP_VER + "。同一隻兔兔，肚子餓／口渴／想睡／髒了／想尿尿／寂寞時會有不同表情；越嚴重（輕→中→急）臉和身上的變化越明顯。</p>";
     h += '<div class="ggrid">' + galleryCard("😊 健康", "全部充足", null) + "</div>";
     NEEDS.forEach(function (n) {
       h += "<h3>" + n.emoji + " " + n.name + "（" + n.low + "）</h3><div class=\"ggrid\">";
@@ -2053,6 +2058,7 @@
   $("profileSel").value = state.profile;
   if (lockedChild()) petWho = lockedChild();
   applyProfile();
+  $("appVer").textContent = APP_VER; $("appVerFoot").textContent = "版本 " + APP_VER;
   fillSettings(); updateForm(); render(); showTab("sleep");
   refreshLockSection(); applyLock(); renderHistory();
   if (window.matchMedia) { try { window.matchMedia("(min-width:1024px)").addEventListener("change", function () { render(); }); } catch (e) {} }
