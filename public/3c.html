@@ -519,7 +519,7 @@
 (function () {
   "use strict";
 
-  var APP_VER = "v1.4 · 真實連鎖互動 · 2026-06-20";
+  var APP_VER = "v1.5 · 真實生活版 · 2026-06-20";
   var STORAGE_KEY = "mt-3c-panel-v1";
   var HISTORY_KEY = "mt-3c-history-v1";
   var HISTORY_MAX = 30;
@@ -565,12 +565,12 @@
   var SPECIES_IDS = ["bunny", "cat", "bear", "puppy", "fox", "panda", "dino", "unicorn"];
   var STAGE_NAME = ["幼年", "小童", "少年", "成年"];
   var NEEDS = [
-    { key: "hunger", name: "肚子", emoji: "🍎", low: "肚子餓", rate: 5 },
-    { key: "thirst", name: "喝水", emoji: "💧", low: "口渴", rate: 6 },
-    { key: "energy", name: "精神", emoji: "⚡", low: "好累", rate: 4 },
-    { key: "clean", name: "清潔", emoji: "🫧", low: "好髒", rate: 3 },
-    { key: "bladder", name: "如廁", emoji: "🚽", low: "想上廁所", rate: 7 },
-    { key: "happy", name: "心情", emoji: "💛", low: "想討抱", rate: 4 }
+    { key: "hunger", name: "肚子", emoji: "🍎", low: "肚子餓", rate: 10 },
+    { key: "thirst", name: "喝水", emoji: "💧", low: "口渴", rate: 12 },
+    { key: "energy", name: "精神", emoji: "⚡", low: "好累", rate: 8 },
+    { key: "clean", name: "清潔", emoji: "🫧", low: "好髒", rate: 7 },
+    { key: "bladder", name: "如廁", emoji: "🚽", low: "想上廁所", rate: 14 },
+    { key: "happy", name: "心情", emoji: "💛", low: "想討抱", rate: 8 }
   ];
   var NEED_MAP = {}; NEEDS.forEach(function (n) { NEED_MAP[n.key] = n; });
   // 需求嚴重等級：0 健康 ／ 1 輕 ／ 2 中 ／ 3 急（越低越嚴重）
@@ -1324,7 +1324,8 @@
   function tickPet(p) {
     var now = Date.now(), last = p.lastTick || now, hrs = (now - last) / 3600000; p.lastTick = now;
     if (hrs <= 0) return;
-    NEEDS.forEach(function (n) { var v = (p.needs[n.key] == null) ? 80 : p.needs[n.key]; p.needs[n.key] = Math.max(8, Math.round(v - n.rate * hrs)); });
+    // 不取整，零頭也會累積，這樣即使每幾秒 tick 一次也會慢慢下降（顯示時才四捨五入）
+    NEEDS.forEach(function (n) { var v = (p.needs[n.key] == null) ? 80 : p.needs[n.key]; p.needs[n.key] = Math.max(8, v - n.rate * hrs); });
   }
   var petExpr = "auto", exprTimer = null, petFlash = null;
   var GROWTH_PER_CARE = 2, DAILY_GROWTH_CAP = 12, NEED_LOW = 90;
@@ -1747,6 +1748,17 @@
       '<section class="block"><div class="wallet ' + (bal < 0 ? "neg" : "") + '">👛 ' + ch.name + " 的 3C 存摺：<b>" + walletStr + "</b></div>" +
         '<h2 style="margin-top:12px">🛍️ 換裝小舖</h2>' + slotTabs + wardrobeHTML(petWho, petSlot) +
         '<p class="hint">到「🐾夥伴」可以領養新朋友（每一隻都要從小養大、分開計算）；基本款免費，有標價的用 3C 點數換；🔒限定款要連續睡飽才解鎖，或用 3C 換。</p></section>';
+    liveSig = petLiveSig(p);
+  }
+  // 寵物會「自己」隨時間變化：每隔一段時間就讓需求下降，狀態有變才重畫畫面
+  function petLiveSig(p) { var s = ""; for (var i = 0; i < NEEDS.length; i++) s += needTier(p.needs[NEEDS[i].key] == null ? 80 : p.needs[NEEDS[i].key]); return s + (petThriving(p) ? "T" : ""); }
+  var liveSig = null;
+  function liveTick(force) {
+    if (sceneRunning) return;
+    ["mia", "tia", "self"].forEach(function (c) { var r = state.pets[c].roster; Object.keys(r).forEach(function (sp) { tickPet(r[sp]); }); });
+    if (!$("view-pet") || $("view-pet").style.display === "none" || petExpr !== "auto") { liveSig = null; return; }
+    var sig = petLiveSig(activePet(petWho));
+    if (force || sig !== liveSig) { liveSig = sig; renderPet(); }
   }
   function renamePet() {
     var p = activePet(petWho);
@@ -2107,6 +2119,9 @@
   if (window.matchMedia) { try { window.matchMedia("(min-width:1024px)").addEventListener("change", function () { render(); }); } catch (e) {} }
   startSync();
   renderStateGallery();
+  setInterval(liveTick, 12000);
+  document.addEventListener("visibilitychange", function () { if (!document.hidden) liveTick(true); });
+  window.addEventListener("focus", function () { liveTick(true); });
 })();
 </script>
 </body>
