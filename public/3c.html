@@ -597,6 +597,53 @@
     try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); }
     catch (e) { alert("無法儲存資料，瀏覽器可能停用了本機儲存空間。"); }
     snapshot();
+    syncPush();
+  }
+
+  // ---------- 線上同步（Cloudflare Durable Object，從 Worker 開啟才會生效）----------
+  var SYNC_ROOM = "wofitmt";                 // 一家人共用同一個「房間」
+  var SYNC_URL = "/api/state?room=" + SYNC_ROOM;
+  var syncReady = false, syncWatermark = 0, syncPushTimer = null, syncTimer = null;
+  function applyCloudState(d) {
+    try {
+      state = fromData(d);
+      lastSig = null;
+      try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); } catch (e) { }
+      fillSettings(); $("profileSel").value = state.profile; applyProfile();
+      render(); updateForm(); renderPet(); refreshLockSection(); applyLock();
+    } catch (e) { }
+  }
+  function syncPull(mode) {
+    fetch(SYNC_URL, { cache: "no-store" })
+      .then(function (r) { return r.ok ? r.json() : null; })
+      .then(function (rec) {
+        if (!rec) return;                    // 沒有 /api（例如直接用檔案或純 GitHub Pages）→ 不同步
+        syncReady = true;
+        if (rec.data && rec.updatedAt && rec.updatedAt > syncWatermark) {
+          if (sceneRunning) return;          // 動畫播放中先不打斷，下一輪再抓
+          syncWatermark = rec.updatedAt;
+          applyCloudState(rec.data);
+        } else if (mode === "seed" && (!rec.data || !rec.updatedAt)) {
+          syncPush(true);                    // 雲端是空的 → 把本機資料當起始上傳
+        }
+      })
+      .catch(function () { });
+  }
+  function syncPush(immediate) {
+    if (!syncReady) return;                  // 還沒抓過雲端前不上傳，避免蓋掉別台較新的資料
+    clearTimeout(syncPushTimer);
+    syncPushTimer = setTimeout(function () {
+      fetch(SYNC_URL, { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ data: state }) })
+        .then(function (r) { return r.ok ? r.json() : null; })
+        .then(function (res) { if (res && res.updatedAt) syncWatermark = res.updatedAt; })
+        .catch(function () { });
+    }, immediate ? 60 : 1500);
+  }
+  function startSync() {
+    syncPull("seed");
+    syncTimer = setInterval(function () { syncPull(); }, 15000);
+    window.addEventListener("focus", function () { syncPull(); });
+    document.addEventListener("visibilitychange", function () { if (!document.hidden) syncPull(); });
   }
   function loadHistory() { try { var r = localStorage.getItem(HISTORY_KEY); var a = r ? JSON.parse(r) : []; return Array.isArray(a) ? a : []; } catch (e) { return []; } }
   function saveHistory(h) { try { localStorage.setItem(HISTORY_KEY, JSON.stringify(h)); } catch (e) { } }
@@ -1419,7 +1466,7 @@
       return '<div class="uitem"><div><span class="tag ' + ch.cls + '">' + ch.emoji + " " + ch.name + '</span> <b>−' + u.minutes + ' 分</b>' + (u.note ? ' <span class="meta">· ' + escapeHtml(u.note) + "</span>" : "") + '<div class="meta">' + fmtDate(u.date) + '</div></div><button class="btn ghost" data-uden="' + u.id + '">刪除</button></div>';
     }).join("");
   }
-  function isWide() { return !!(window.matchMedia && window.matchMedia("(min-width:1500px)").matches); }
+  function isWide() { return !!(window.matchMedia && window.matchMedia("(min-width:1024px)").matches); }
   function render() { renderRules(); renderMonth(); renderCards(); renderPending(); renderRecords(); renderUsages(); if (isWide()) renderPet(); }
 
   // ================= render: 寵物 =================
@@ -1794,7 +1841,8 @@
   applyProfile();
   fillSettings(); updateForm(); render(); showTab("sleep");
   refreshLockSection(); applyLock(); renderHistory();
-  if (window.matchMedia) { try { window.matchMedia("(min-width:1500px)").addEventListener("change", function () { render(); }); } catch (e) {} }
+  if (window.matchMedia) { try { window.matchMedia("(min-width:1024px)").addEventListener("change", function () { render(); }); } catch (e) {} }
+  startSync();
 })();
 </script>
 </body>

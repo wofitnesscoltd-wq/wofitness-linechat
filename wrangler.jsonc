@@ -17,5 +17,9 @@
   "ai": {
     "binding": "AI"
   },
+  "durable_objects": {
+    "bindings": [{ "name": "SYNC", "class_name": "SyncRoom" }]
+  },
+  "migrations": [{ "tag": "v1", "new_sqlite_classes": ["SyncRoom"] }],
   "upload_source_maps": true
 }
