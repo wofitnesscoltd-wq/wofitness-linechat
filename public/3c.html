@@ -616,9 +616,15 @@
   var SYNC_ROOM = "wofitmt";                 // 一家人共用同一個「房間」
   var SYNC_URL = "/api/state?room=" + SYNC_ROOM;
   var syncReady = false, syncWatermark = 0, syncPushTimer = null, syncTimer = null;
+  // 只同步「家庭共享」資料；profile（這台給誰看）與 lock（家長密碼鎖）屬於各裝置自己，不上雲、不被別台覆蓋
+  function cloudShared(st) {
+    return { settings: st.settings, records: st.records, usages: st.usages, pets: st.pets, inventory: st.inventory };
+  }
   function applyCloudState(d) {
     try {
+      var keepProfile = state.profile, keepLock = state.lock;   // 保留本機的「專屬機 / 家長鎖」設定
       state = fromData(d);
+      state.profile = keepProfile; state.lock = keepLock;
       lastSig = null;
       try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); } catch (e) { }
       fillSettings(); $("profileSel").value = state.profile; applyProfile();
@@ -645,7 +651,7 @@
     if (!syncReady) return;                  // 還沒抓過雲端前不上傳，避免蓋掉別台較新的資料
     clearTimeout(syncPushTimer);
     syncPushTimer = setTimeout(function () {
-      fetch(SYNC_URL, { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ data: state }) })
+      fetch(SYNC_URL, { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ data: cloudShared(state) }) })
         .then(function (r) { return r.ok ? r.json() : null; })
         .then(function (res) { if (res && res.updatedAt) syncWatermark = res.updatedAt; })
         .catch(function () { });
