@@ -188,8 +188,13 @@
   .carebtn { flex: 0 0 auto; width: 58px; height: 58px; border-radius: 50%; border: 3px solid rgba(255,255,255,.95); background: var(--c, #7c5cff); color: #fff; cursor: pointer; font-size: 1.7rem; display: grid; place-items: center; box-shadow: 0 5px 12px rgba(0,0,0,.3); position: relative; padding: 0; }
   .carebtn:active { transform: translateY(2px) scale(.95); }
   .carebtn .cl { display: none; }
-  .carebtn .urgent { position: absolute; top: -3px; right: -3px; min-width: 20px; height: 20px; padding: 0 4px; border-radius: 999px; background: var(--bad); color: #fff; border: 2px solid #fff; font-size: .72rem; font-weight: 800; display: grid; place-items: center; animation: urgentpulse 1s ease-in-out infinite; }
+  .carebtn .urgent { position: absolute; top: -3px; right: -3px; min-width: 20px; height: 20px; padding: 0 4px; border-radius: 999px; background: var(--bad); color: #fff; border: 2px solid #fff; font-size: .72rem; font-weight: 800; display: grid; place-items: center; }
+  .carebtn .urgent.l1 { background: #ffb02e; }
+  .carebtn .urgent.l2 { background: #ff7a1a; animation: urgentpulse 1.2s ease-in-out infinite; }
+  .carebtn .urgent.l3 { background: var(--bad); animation: urgentpulse .7s ease-in-out infinite; }
   @keyframes urgentpulse { 0%,100% { transform: scale(1); } 50% { transform: scale(1.18); } }
+  .petstage .petart.distress { animation: distresswob .55s ease-in-out infinite; }
+  @keyframes distresswob { 0%,100% { transform: translateX(0) rotate(0); } 25% { transform: translateX(-2px) rotate(-1.6deg); } 75% { transform: translateX(2px) rotate(1.6deg); } }
   .carebtns.busy { opacity: .3; pointer-events: none; }
   #view-pet > .petstage { position: sticky; top: 6px; z-index: 30; }
   @media (max-width: 1023px) {
@@ -228,6 +233,26 @@
   .growbar i { display: block; height: 100%; background: linear-gradient(90deg, #ffd23f, #ff8f1f); border-radius: 999px; transition: width .4s; }
   .growtxt { font-size: .74rem; color: var(--muted); font-weight: 600; white-space: nowrap; }
   .stat .bar i.lowbar { background: linear-gradient(90deg, #ff8f1f, #e23b54); }
+  .stat .bar i.bl1 { background: linear-gradient(90deg, #ffd23f, #ffb15f); }
+  .stat .bar i.bl2 { background: linear-gradient(90deg, #ff9a3d, #ff7a1a); }
+  .stat .bar i.bl3 { background: linear-gradient(90deg, #ff7a3d, #e23b54); }
+  .stat .ntag { font-weight: 800; }
+  .stat .ntag.t1 { color: #e0930f; } .stat .ntag.t2 { color: #ff6a17; } .stat .ntag.t3 { color: var(--bad); }
+  .petstatus.need.urgent { background: #ffe3e3; color: var(--bad); }
+  /* 狀態圖鑑（家長預覽，網址加 #states 開啟） */
+  #stategallery { position: fixed; inset: 0; z-index: 9999; background: #fbf7ff; overflow: auto; padding: 16px; display: none; -webkit-overflow-scrolling: touch; }
+  #stategallery .gwrap { max-width: 820px; margin: 0 auto; }
+  #stategallery h1 { font-size: 1.16rem; margin: 4px 0 2px; }
+  #stategallery h2 { font-size: 1rem; margin: 20px 0 8px; }
+  #stategallery h3 { font-size: .94rem; color: var(--brand); margin: 14px 0 6px; }
+  #stategallery .gclose { position: sticky; top: 0; float: right; border: 0; background: var(--brand); color: #fff; font-weight: 800; border-radius: 999px; padding: 8px 14px; cursor: pointer; }
+  #stategallery .ggrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(118px, 1fr)); gap: 12px; }
+  .gcard { margin: 0; background: #fff; border-radius: 16px; padding: 8px 6px; text-align: center; box-shadow: 0 3px 9px rgba(0,0,0,.08); }
+  .gcard .gart { display: grid; place-items: center; }
+  .gcard .gart svg { width: 116px; height: 116px; }
+  .gcard figcaption { font-weight: 800; font-size: .8rem; margin-top: 2px; }
+  .gcard figcaption small { display: block; font-weight: 600; color: var(--muted); font-size: .68rem; }
+  #stategallery .ghint { color: var(--muted); font-size: .82rem; margin: 18px 0 8px; }
   .wardrobe.pets { grid-template-columns: repeat(auto-fill, minmax(88px, 1fr)); }
   .witem.petcard .wsub { display: block; font-size: .66rem; color: var(--muted); }
   .stats { display: grid; grid-template-columns: 1fr 1fr; gap: 8px 14px; margin: 10px 4px 2px; }
@@ -533,6 +558,10 @@
     { key: "bladder", name: "如廁", emoji: "🚽", low: "想上廁所", rate: 7 },
     { key: "happy", name: "心情", emoji: "💛", low: "想討抱", rate: 4 }
   ];
+  var NEED_MAP = {}; NEEDS.forEach(function (n) { NEED_MAP[n.key] = n; });
+  // 需求嚴重等級：0 健康 ／ 1 輕 ／ 2 中 ／ 3 急（越低越嚴重）
+  function needTier(v) { return v >= 50 ? 0 : v >= 34 ? 1 : v >= 18 ? 2 : 3; }
+  var TIER_TAG = ["", "·輕", "·中", "·急"];
   function defaultPet() {
     return { name: "", color: "theme",
       wear: { hat: null, eyes: null, outfit: null, back: null, hand: null, bg: null, fx: null },
@@ -761,39 +790,114 @@
       '<circle cx="42.4" cy="53" r="2.6" fill="#fff" stroke="none"/><circle cx="62.4" cy="53" r="2.6" fill="#fff" stroke="none"/>' +
       '<circle cx="38.2" cy="58.8" r="1.2" fill="#fff" opacity=".7" stroke="none"/><circle cx="58.2" cy="58.8" r="1.2" fill="#fff" opacity=".7" stroke="none"/>';
   }
-  function faceCore(R, expr) {
+  // 擔心／難過的眉毛（內側上揚），越嚴重越明顯
+  function worryBrows(lv) {
+    var t = 0.6 + lv * 0.8, w = (1.5 + lv * 0.35).toFixed(1);
+    return '<path d="M33 49 Q39 ' + (47.4 - t).toFixed(1) + ' 45.5 ' + (45.6 - t).toFixed(1) + '" fill="none" stroke="#2b2b3d" stroke-width="' + w + '" stroke-linecap="round" opacity=".82"/>' +
+      '<path d="M54.5 ' + (45.6 - t).toFixed(1) + ' Q61 ' + (47.4 - t).toFixed(1) + ' 67 49" fill="none" stroke="#2b2b3d" stroke-width="' + w + '" stroke-linecap="round" opacity=".82"/>';
+  }
+  function zzz(x, y, sc) {
+    sc = sc || 1;
+    return '<g fill="#7c5cff" font-weight="800" font-family="system-ui,sans-serif">' +
+      '<text x="' + x + '" y="' + y + '" font-size="' + (4.6 * sc).toFixed(1) + '">z</text>' +
+      '<text x="' + (x + 3.2 * sc).toFixed(1) + '" y="' + (y - 4 * sc).toFixed(1) + '" font-size="' + (6.6 * sc).toFixed(1) + '">Z</text>' +
+      (sc >= 1.3 ? '<text x="' + (x + 7.6 * sc).toFixed(1) + '" y="' + (y - 9 * sc).toFixed(1) + '" font-size="' + (9 * sc).toFixed(1) + '">Z</text>' : '') + '</g>';
+  }
+  function tearStream(lv) {
+    var len = 4.4 + lv * 1.6;
+    var one = function (x) { return '<path d="M' + x + ' 62 q-1.7 ' + (len * 0.6).toFixed(1) + ' 0 ' + len.toFixed(1) + ' q1.7 -' + (len * 0.45).toFixed(1) + ' 0 -' + len.toFixed(1) + ' Z" fill="#9fd4ff" stroke="#6fb8ef" stroke-width="0.6"/>'; };
+    return one(37.5) + (lv >= 2 ? one(62.5) : '') + (lv >= 3 ? drop(33.5, 74, 1.9, "#9fd4ff", "#6fb8ef") + drop(66.5, 74, 1.9, "#9fd4ff", "#6fb8ef") : '');
+  }
+  // 嘴型隨等級加重
+  function faceMouth(expr, lv, K) {
+    if (expr === "eat") return '<ellipse cx="50" cy="72" rx="5" ry="4.5" fill="#b3406a" stroke="' + K + '" stroke-width="1.5"/>';
+    if (expr === "happy") return '<path d="M43 69 Q50 79 57 69 Z" fill="#fff" stroke="' + K + '" stroke-width="2.2" stroke-linejoin="round"/>';
+    if (expr === "sleep") return '<ellipse cx="50" cy="71" rx="2.6" ry="3" fill="' + K + '" opacity=".65"/>';
+    if (expr === "hungry") {
+      if (lv >= 3) return '<ellipse cx="50" cy="72" rx="4" ry="4.9" fill="#b3406a" stroke="' + K + '" stroke-width="1.4"/><path d="M46.6 73 Q50 77.4 53.4 73 Z" fill="#ff7a98"/><path d="M53.8 74.4 q2.4 2 0.6 4.6" fill="none" stroke="#7fd0ff" stroke-width="1.6" stroke-linecap="round"/>';
+      if (lv >= 2) return '<ellipse cx="50" cy="71.5" rx="3.4" ry="3.9" fill="#b3406a" stroke="' + K + '" stroke-width="1.3"/><path d="M53.4 73.4 q2 1.8 0.5 4" fill="none" stroke="#7fd0ff" stroke-width="1.5" stroke-linecap="round"/>';
+      return '<ellipse cx="50" cy="71.5" rx="2.6" ry="3" fill="#b3406a" stroke="' + K + '" stroke-width="1.2"/>';
+    }
+    if (expr === "thirsty") {
+      if (lv >= 3) return '<path d="M43.5 70 Q50 76.5 56.5 70 Z" fill="#b3406a" stroke="' + K + '" stroke-width="1.3" stroke-linejoin="round"/><path d="M48.4 72 Q50 80.5 53.6 72.8 Z" fill="#ff7a98" stroke="' + K + '" stroke-width="0.9"/>';
+      return '<path d="M44.5 70 Q50 75 55.5 70 Z" fill="#b3406a" stroke="' + K + '" stroke-width="1.3" stroke-linejoin="round"/><path d="M49 72 Q50 79.5 53 73 Z" fill="#ff7a98" stroke="' + K + '" stroke-width="0.9"/>';
+    }
+    if (expr === "tired") {
+      if (lv >= 3) return '<ellipse cx="50" cy="73" rx="3.5" ry="4.4" fill="#b3406a" stroke="' + K + '" stroke-width="1.3"/>';
+      return '<path d="M45 72 Q50 75 55 72" fill="none" stroke="' + K + '" stroke-width="2.2" stroke-linecap="round"/>';
+    }
+    if (expr === "dirty") {
+      if (lv >= 3) return '<path d="M43 72 q3.5 3.4 7 0 q3.5 -3.4 7 0" fill="none" stroke="' + K + '" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"/><path d="M48 74.5 Q50 79 52 74.5 Z" fill="#9fd16a" stroke="' + K + '" stroke-width="0.7"/>';
+      if (lv >= 2) return '<path d="M44 72 q3 2.8 6 0 q3 -2.8 6 0" fill="none" stroke="' + K + '" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"/>';
+      return '<path d="M44 73.5 Q50 68.5 56 73.5" fill="none" stroke="' + K + '" stroke-width="2.4" stroke-linecap="round"/>';
+    }
+    if (expr === "toilet") {
+      if (lv >= 3) return '<path d="M44 73 H56" fill="none" stroke="' + K + '" stroke-width="2.5" stroke-linecap="round"/>';
+      return '<path d="M45 72 Q47.5 70 50 72 Q52.5 74 55 72" fill="none" stroke="' + K + '" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>';
+    }
+    if (expr === "sad") {
+      if (lv >= 3) return '<ellipse cx="50" cy="74" rx="3.6" ry="3.1" fill="#b3406a" stroke="' + K + '" stroke-width="1.3"/>';
+      return '<path d="M43 74.5 Q50 68.5 57 74.5" fill="none" stroke="' + K + '" stroke-width="2.4" stroke-linecap="round"/>';
+    }
+    return '<path d="M44 70 Q50 76 56 70" fill="none" stroke="' + K + '" stroke-width="2.4" stroke-linecap="round"/><rect x="47.3" y="70.4" width="2.6" height="3.6" rx="1" fill="#fff" stroke-width="0.8"/><rect x="50.1" y="70.4" width="2.6" height="3.6" rx="1" fill="#fff" stroke-width="0.8"/>';
+  }
+  // 臉旁的情緒符號（冷汗、肚子叫、Zzz…）隨等級增加
+  function faceMarks(expr, lv) {
+    if (!lv) return "";
+    var s = "";
+    if (expr === "hungry") {
+      if (lv >= 2) s += drop(70, 56, 2.2, "#bfe0ff", "#8ec2ea");
+      if (lv >= 3) s += drop(30, 56, 1.9, "#bfe0ff", "#8ec2ea") + '<path d="M40 84 q5 3.4 10 0 q5 3.4 10 0" fill="none" stroke="#c98a3a" stroke-width="1.3" stroke-linecap="round" opacity=".65"/>';
+    } else if (expr === "thirsty") {
+      if (lv >= 2) s += drop(70, 55, 2.4, "#bfe0ff", "#8ec2ea");
+      if (lv >= 3) s += drop(64, 49, 1.9, "#bfe0ff", "#8ec2ea") + sparkle(30, 56, 1.8);
+    } else if (expr === "tired") {
+      s += zzz(69, 44, lv >= 3 ? 1.45 : 1);
+    } else if (expr === "toilet") {
+      if (lv >= 2) s += drop(72, 52, 2.2, "#bfe0ff", "#8ec2ea") + drop(28, 52, 2, "#bfe0ff", "#8ec2ea");
+      if (lv >= 3) s += drop(76, 60, 1.7, "#bfe0ff", "#8ec2ea");
+    } else if (expr === "dirty") {
+      if (lv >= 3) s += stinkLine(72, 47, 12);
+    }
+    return s;
+  }
+  function faceCore(R, expr, lv) {
+    lv = lv || 0;
+    var worried = (expr === "hungry" || expr === "thirsty" || expr === "dirty" || expr === "sad");
     var s = '<circle cx="31" cy="64" r="5" fill="' + R.cheek + '" opacity=".4" stroke="none"/><circle cx="69" cy="64" r="5" fill="' + R.cheek + '" opacity=".4" stroke="none"/>';
+    // 噁心臉頰（清潔很差時泛綠）
+    if (expr === "dirty" && lv >= 2) { var go = (lv >= 3 ? .55 : .34); s += '<ellipse cx="31" cy="61.5" rx="5.4" ry="4.2" fill="#9fd16a" opacity="' + go + '" stroke="none"/><ellipse cx="69" cy="61.5" rx="5.4" ry="4.2" fill="#9fd16a" opacity="' + go + '" stroke="none"/>'; }
     // ----- eyes -----
     if (expr === "happy" || expr === "eat") {
       s += '<path d="M34 57 Q40 50 46 57" fill="none" stroke="#2b2b3d" stroke-width="2.6" stroke-linecap="round"/><path d="M54 57 Q60 50 66 57" fill="none" stroke="#2b2b3d" stroke-width="2.6" stroke-linecap="round"/>';
     } else if (expr === "sleep") {
       s += '<path d="M34 56 Q40 61 46 56 M54 56 Q60 61 66 56" fill="none" stroke="#2b2b3d" stroke-width="2.4" stroke-linecap="round"/>';
     } else if (expr === "tired") {
-      s += '<path d="M33 53.5 Q40 50.5 47 53.5" fill="none" stroke="#2b2b3d" stroke-width="1.7" stroke-linecap="round" opacity=".6"/><path d="M53 53.5 Q60 50.5 67 53.5" fill="none" stroke="#2b2b3d" stroke-width="1.7" stroke-linecap="round" opacity=".6"/>' +
-        '<path d="M34.5 56.5 A5.6 4.6 0 0 0 45.5 56.5 Z" fill="#2b2b3d"/><path d="M54.5 56.5 A5.6 4.6 0 0 0 65.5 56.5 Z" fill="#2b2b3d"/>';
+      if (lv >= 3) {
+        s += '<path d="M34 56.5 Q40 60.5 46 56.5 M54 56.5 Q60 60.5 66 56.5" fill="none" stroke="#2b2b3d" stroke-width="2.4" stroke-linecap="round"/>' +
+          '<path d="M35 60.6 Q40 62 45 60.6 M55 60.6 Q60 62 65 60.6" fill="none" stroke="#2b2b3d" stroke-width="1" stroke-linecap="round" opacity=".5"/>';
+      } else {
+        s += '<path d="M33 53.5 Q40 50.5 47 53.5" fill="none" stroke="#2b2b3d" stroke-width="1.7" stroke-linecap="round" opacity=".6"/><path d="M53 53.5 Q60 50.5 67 53.5" fill="none" stroke="#2b2b3d" stroke-width="1.7" stroke-linecap="round" opacity=".6"/>' +
+          '<path d="M34.5 56.5 A5.6 4.6 0 0 0 45.5 56.5 Z" fill="#2b2b3d"/><path d="M54.5 56.5 A5.6 4.6 0 0 0 65.5 56.5 Z" fill="#2b2b3d"/>';
+      }
     } else if (expr === "toilet") {
       s += '<path d="M35 53 L41.5 56.5 L35 60" fill="none" stroke="#2b2b3d" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/><path d="M65 53 L58.5 56.5 L65 60" fill="none" stroke="#2b2b3d" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/>';
     } else {
       s += eyeOpen() +
         '<g class="blink"><ellipse cx="40" cy="55" rx="6.8" ry="8" fill="' + R.belly + '" stroke="none"/><ellipse cx="60" cy="55" rx="6.8" ry="8" fill="' + R.belly + '" stroke="none"/><path d="M34 56.5 Q40 59.5 46 56.5 M54 56.5 Q60 59.5 66 56.5" fill="none" stroke="#2b2b3d" stroke-width="2" stroke-linecap="round"/></g>';
-      if (expr === "sad") s += '<path d="M37.5 62 q-1.6 3.6 0 6 q1.6 -2.4 0 -6 Z" fill="#9fd4ff" stroke="#6fb8ef" stroke-width="0.6"/>';
+      if (expr === "sad") s += tearStream(lv || 1);
     }
+    if (worried) s += worryBrows(lv || 1);
     // ----- nose -----
     s += '<path d="M50 63 C47 60,44 64,50 68 C56 64,53 60,50 63 Z" fill="' + R.cheek + '" stroke="none"/>';
-    // ----- mouth -----
-    if (expr === "eat") s += '<ellipse cx="50" cy="72" rx="5" ry="4.5" fill="#b3406a" stroke="' + R.strokeC + '" stroke-width="1.5"/>';
-    else if (expr === "happy") s += '<path d="M43 69 Q50 79 57 69 Z" fill="#fff" stroke="' + R.strokeC + '" stroke-width="2.2" stroke-linejoin="round"/>';
-    else if (expr === "sleep") s += '<ellipse cx="50" cy="71" rx="2.6" ry="3" fill="' + R.strokeC + '" opacity=".65"/>';
-    else if (expr === "hungry") s += '<ellipse cx="50" cy="71.5" rx="3.4" ry="3.9" fill="#b3406a" stroke="' + R.strokeC + '" stroke-width="1.3"/><path d="M53.4 73.4 q2 1.8 0.5 4" fill="none" stroke="#7fd0ff" stroke-width="1.5" stroke-linecap="round"/>';
-    else if (expr === "thirsty") s += '<path d="M44.5 70 Q50 75 55.5 70 Z" fill="#b3406a" stroke="' + R.strokeC + '" stroke-width="1.3" stroke-linejoin="round"/><path d="M49 72 Q50 79.5 53 73 Z" fill="#ff7a98" stroke="' + R.strokeC + '" stroke-width="0.9"/>';
-    else if (expr === "dirty") s += '<path d="M44 73.5 Q50 68.5 56 73.5" fill="none" stroke="' + R.strokeC + '" stroke-width="2.4" stroke-linecap="round"/>';
-    else if (expr === "toilet") s += '<path d="M45 72 Q47.5 70 50 72 Q52.5 74 55 72" fill="none" stroke="' + R.strokeC + '" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>';
-    else if (expr === "sad") s += '<path d="M43 74.5 Q50 68.5 57 74.5" fill="none" stroke="' + R.strokeC + '" stroke-width="2.4" stroke-linecap="round"/>';
-    else s += '<path d="M44 70 Q50 76 56 70" fill="none" stroke="' + R.strokeC + '" stroke-width="2.4" stroke-linecap="round"/><rect x="47.3" y="70.4" width="2.6" height="3.6" rx="1" fill="#fff" stroke-width="0.8"/><rect x="50.1" y="70.4" width="2.6" height="3.6" rx="1" fill="#fff" stroke-width="0.8"/>';
+    // ----- mouth (隨等級加重) -----
+    s += faceMouth(expr, lv, R.strokeC);
+    // ----- 情緒符號 -----
+    s += faceMarks(expr, lv);
     return s;
   }
   // 各品種（原創）
-  function drawCreature(species, R, expr) {
+  function drawCreature(species, R, expr, lv) {
     var ears = "", behind = "", front = "", F = R.furFill, I = R.inner, K = R.strokeC;
     if (species === "cat") {
       ears = '<polygon points="' + pts([[28, 31], [29, 9], [45, 25]]) + '" fill="' + F + '"/><polygon points="' + pts([[72, 31], [71, 9], [55, 25]]) + '" fill="' + F + '"/><polygon points="' + pts([[33, 26], [34, 15], [42, 25]]) + '" fill="' + I + '" stroke="none"/><polygon points="' + pts([[67, 26], [66, 15], [58, 25]]) + '" fill="' + I + '" stroke="none"/>';
@@ -822,7 +926,7 @@
     } else { // bunny
       ears = '<ellipse cx="35" cy="24" rx="11.5" ry="21" transform="rotate(-14 35 24)" fill="' + F + '"/><ellipse cx="65" cy="24" rx="11.5" ry="21" transform="rotate(14 65 24)" fill="' + F + '"/><ellipse cx="35" cy="27" rx="5.5" ry="12.5" transform="rotate(-14 35 27)" fill="' + I + '" stroke="none"/><ellipse cx="65" cy="27" rx="5.5" ry="12.5" transform="rotate(14 65 27)" fill="' + I + '" stroke="none"/>';
     }
-    return '<g stroke="' + K + '" stroke-width="2.2" stroke-linejoin="round"><ellipse cx="50" cy="95" rx="22" ry="3.6" fill="#3a2a4a" opacity=".08" stroke="none"/>' + ears + bodyCore(R) + behind + faceCore(R, expr) + front + "</g>";
+    return '<g stroke="' + K + '" stroke-width="2.2" stroke-linejoin="round"><ellipse cx="50" cy="95" rx="22" ry="3.6" fill="#3a2a4a" opacity=".08" stroke="none"/>' + ears + bodyCore(R) + behind + faceCore(R, expr, lv) + front + "</g>";
   }
   function petalShape(x, y, rot) { return '<ellipse cx="' + x + '" cy="' + y + '" rx="3.1" ry="1.8" fill="#ffc1e0" stroke="#ff9ad0" stroke-width="0.6" transform="rotate(' + rot + ' ' + x + ' ' + y + ')"/>'; }
   function bubbleShape(x, y, r) { return '<circle cx="' + x + '" cy="' + y + '" r="' + r + '" fill="#bfe9ff" fill-opacity=".4" stroke="#9fd8f5" stroke-width="0.7"/><circle cx="' + (x - r * 0.3).toFixed(1) + '" cy="' + (y - r * 0.3).toFixed(1) + '" r="' + (r * 0.25).toFixed(1) + '" fill="#fff" opacity=".7"/>'; }
@@ -986,13 +1090,13 @@
     if (color === "rainbow") return sparkle(16, 40, 2.8) + sparkle(85, 46, 3) + sparkle(72, 19, 2.4) + sparkle(26, 76, 2.2);
     return "";
   }
-  function petBody(childKey, p, species, expr, omit) {
+  function petBody(childKey, p, species, expr, omit, lv) {
     omit = omit || {};
     var R = resolveColor(childKey, p.color || "theme"), wear = p.wear || {}, inner = "";
     if (p.color === "galaxy") inner += galaxyAura();
     if (wear.back && !omit.back) inner += drawBack(wear.back);
     if (wear.outfit && !omit.outfit) inner += drawOutfitBehind(wear.outfit);
-    inner += drawCreature(species, R, expr);
+    inner += drawCreature(species, R, expr, lv);
     if (wear.outfit && !omit.outfit) inner += drawOutfit(wear.outfit, R);
     if (wear.eyes && !omit.eyes) inner += drawEyes(wear.eyes);
     if (wear.hat && !omit.hat) inner += drawHat(wear.hat, R);
@@ -1003,26 +1107,30 @@
 
   // ----- state-based mood (本尊不同樣貌) -----
   var MOOD_EXPR = { hunger: "hungry", thirst: "thirsty", energy: "tired", clean: "dirty", bladder: "toilet", happy: "sad" };
-  // 所有 < 45 的需求，依嚴重程度排序（最急的在前）→ 可同時呈現複數狀態
+  // 所有偏低的需求，依嚴重程度排序（最急的在前）→ 可同時呈現複數狀態，並各自帶嚴重等級 lv
   function lowNeeds(p) {
     var arr = [];
-    for (var i = 0; i < NEEDS.length; i++) { var k = NEEDS[i].key, v = (p.needs[k] == null) ? 80 : p.needs[k]; if (v < 45) arr.push({ key: k, v: v }); }
+    for (var i = 0; i < NEEDS.length; i++) { var k = NEEDS[i].key, v = (p.needs[k] == null) ? 80 : p.needs[k]; if (v < 50) arr.push({ key: k, v: v, lv: needTier(v) }); }
     arr.sort(function (a, b) { return a.v - b.v; });
     return arr;
   }
-  function petMood(p) { var l = lowNeeds(p); return l.length ? l[0].key : null; }   // 臉＝最急的那一項
+  function petMood(p) { var l = lowNeeds(p); return l.length ? l[0] : null; }   // 臉＝最急的那一項（{key,v,lv}）
   function drop(x, y, s, fill, stroke) { return '<path d="M' + x + ' ' + (y - s * 1.4) + ' C' + (x + s) + ' ' + (y - s * 0.2) + ',' + (x + s) + ' ' + (y + s) + ',' + x + ' ' + (y + s) + ' C' + (x - s) + ' ' + (y + s) + ',' + (x - s) + ' ' + (y - s * 0.2) + ',' + x + ' ' + (y - s * 1.4) + ' Z" fill="' + fill + '" stroke="' + stroke + '" stroke-width="0.7"/><ellipse cx="' + (x - s * 0.3).toFixed(1) + '" cy="' + (y + s * 0.1).toFixed(1) + '" rx="' + (s * 0.26).toFixed(1) + '" ry="' + (s * 0.42).toFixed(1) + '" fill="#fff" opacity=".6"/>'; }
   function smudge(x, y, r) { return '<g fill="#9c7a46" opacity=".72"><ellipse cx="' + x + '" cy="' + y + '" rx="' + r + '" ry="' + (r * 0.7).toFixed(1) + '"/><ellipse cx="' + (x + r * 0.7).toFixed(1) + '" cy="' + (y + r * 0.3).toFixed(1) + '" rx="' + (r * 0.6).toFixed(1) + '" ry="' + (r * 0.45).toFixed(1) + '"/><ellipse cx="' + (x - r * 0.6).toFixed(1) + '" cy="' + (y + r * 0.2).toFixed(1) + '" rx="' + (r * 0.5).toFixed(1) + '" ry="' + (r * 0.4).toFixed(1) + '"/></g><circle cx="' + (x - r * 0.2).toFixed(1) + '" cy="' + (y - r * 0.2).toFixed(1) + '" r="' + (r * 0.16).toFixed(1) + '" fill="#6f5630" opacity=".5"/>'; }
   function stinkLine(x, y, h) { return '<path d="M' + x + ' ' + y + ' q-3 -' + (h * 0.3).toFixed(1) + ' 0 -' + (h * 0.5).toFixed(1) + ' q3 -' + (h * 0.2).toFixed(1) + ' 0 -' + (h * 0.5).toFixed(1) + '" fill="none" stroke="#9bbf6a" stroke-width="1.4" stroke-linecap="round" opacity=".75"/>'; }
   function fly(x, y) { return '<g><ellipse cx="' + (x - 1.6) + '" cy="' + (y - 1.2) + '" rx="1.4" ry="0.8" fill="#cfe6ff" opacity=".85"/><ellipse cx="' + (x + 1.6) + '" cy="' + (y - 1.2) + '" rx="1.4" ry="0.8" fill="#cfe6ff" opacity=".85"/><ellipse cx="' + x + '" cy="' + y + '" rx="1.5" ry="1.1" fill="#3a3a44"/></g>'; }
-  function needBadge(x, y, key) {
+  function needBadge(x, y, key, lv) {
+    lv = lv || 1;
     var inner;
     if (key === "hunger") inner = miniApple(x, y);
     else if (key === "thirst") inner = drop(x, y + 1, 3, "#7fd0ff", "#4fb0e0");
     else if (key === "energy") inner = '<text x="' + (x - 1.5) + '" y="' + (y + 3) + '" font-size="8" fill="#7c5cff" font-weight="800">z</text><text x="' + (x + 2.6) + '" y="' + (y - 0.6) + '" font-size="5.5" fill="#7c5cff" font-weight="800">z</text>';
     else if (key === "bladder") inner = miniToilet(x, y + 0.5);
     else inner = drop(x, y, 3, "#9fd4ff", "#6fb8ef");   // happy(寂寞)＝淚滴
-    return '<g><circle cx="' + x + '" cy="' + (y + 0.6) + '" r="8.4" fill="#000" opacity=".06"/><circle cx="' + x + '" cy="' + y + '" r="8" fill="#fff" stroke="#e7e3f5" stroke-width="1"/>' + inner + '</g>';
+    var ring = (lv >= 3) ? '<circle cx="' + x + '" cy="' + y + '" r="9.6" fill="none" stroke="#ff5277" stroke-width="1.5"/>' : '';
+    var pipC = lv >= 3 ? '#ff5277' : lv >= 2 ? '#ff8f1f' : '#ffc14a', pip = '';
+    for (var d = 0; d < lv; d++) pip += '<circle cx="' + (x - (lv - 1) * 1.8 + d * 3.6).toFixed(1) + '" cy="' + (y + 10).toFixed(1) + '" r="1.3" fill="' + pipC + '"/>';
+    return '<g><circle cx="' + x + '" cy="' + (y + 0.6) + '" r="8.4" fill="#000" opacity=".06"/><circle cx="' + x + '" cy="' + y + '" r="8" fill="#fff" stroke="#e7e3f5" stroke-width="1"/>' + inner + ring + pip + '</g>';
   }
   function miniApple(x, y) { return '<circle cx="' + x + '" cy="' + (y + 0.5) + '" r="3.1" fill="#ff6b6b" stroke="#e0495f" stroke-width="0.6"/><path d="M' + x + ' ' + (y - 2.4) + ' q2 -1 3 0.6" fill="none" stroke="#5fa83f" stroke-width="1.1" stroke-linecap="round"/><ellipse cx="' + (x - 0.9) + '" cy="' + (y - 0.4) + '" rx="0.8" ry="1.1" fill="#fff" opacity=".6"/>'; }
   function miniToilet(x, y) { return '<g stroke="#9aa3c0" stroke-width="0.7"><ellipse cx="' + x + '" cy="' + (y - 1) + '" rx="3.6" ry="1.9" fill="#fff"/><path d="M' + (x - 3.3) + ' ' + (y - 1) + ' Q' + x + ' ' + (y + 3.4) + ' ' + (x + 3.3) + ' ' + (y - 1) + '" fill="#eef2fb"/></g>'; }
@@ -1030,14 +1138,24 @@
   var BADGE_SLOTS = [[84, 22], [88, 45], [15, 22], [12, 45]];
   function moodOverlay(p, R) {
     var lows = lowNeeds(p); if (!lows.length) return "";
-    var s = "", cleanLow = false, bladderLow = false, i;
-    for (i = 0; i < lows.length; i++) { if (lows[i].key === "clean") cleanLow = true; if (lows[i].key === "bladder") bladderLow = true; }
-    if (cleanLow) s += smudge(34, 67, 4) + smudge(64, 63, 3.4) + smudge(49, 80, 3.6) + stinkLine(32, 50, 15) + stinkLine(50, 45, 17) + stinkLine(68, 50, 15) + fly(80, 39) + fly(75, 45);
-    if (bladderLow) s += drop(72, 50, 2.4, "#bfe0ff", "#8ec2ea") + drop(28, 50, 2.2, "#bfe0ff", "#8ec2ea");
+    var lv = {}, i; for (i = 0; i < lows.length; i++) lv[lows[i].key] = lows[i].lv;
+    var s = "";
+    // 清潔差：污漬／臭味／蒼蠅，越髒越多
+    if (lv.clean) {
+      s += smudge(34, 67, 4);
+      if (lv.clean >= 2) s += smudge(63, 63, 3.4) + stinkLine(50, 46, 14) + fly(80, 39);
+      if (lv.clean >= 3) s += smudge(49, 80, 3.6) + stinkLine(32, 50, 15) + stinkLine(68, 50, 15) + fly(74, 45);
+    }
+    // 想上廁所：冒汗水滴，急到爆會有小水窪
+    if (lv.bladder) {
+      s += drop(72, 50, 2.4, "#bfe0ff", "#8ec2ea");
+      if (lv.bladder >= 2) s += drop(28, 50, 2.2, "#bfe0ff", "#8ec2ea");
+      if (lv.bladder >= 3) s += '<ellipse cx="50" cy="92" rx="11" ry="2.6" fill="#bfe0ff" opacity=".5" stroke="#8ec2ea" stroke-width="0.5"/>';
+    }
     var si = 0;
     for (i = 0; i < lows.length && si < BADGE_SLOTS.length; i++) {
       if (lows[i].key === "clean") continue;   // 髒污已畫在身上，不再掛圖示
-      s += needBadge(BADGE_SLOTS[si][0], BADGE_SLOTS[si][1], lows[i].key); si++;
+      s += needBadge(BADGE_SLOTS[si][0], BADGE_SLOTS[si][1], lows[i].key, lows[i].lv); si++;
     }
     return s;
   }
@@ -1046,16 +1164,16 @@
     var cp = state.pets && state.pets[childKey];
     var species = opts.species || (cp && cp.active) || "bunny";
     var p = opts.pet || (cp && cp.roster && cp.roster[species]) || defaultPet();
-    var moodKey = null;
-    if (expr === "auto") { if (opts.mood !== false) moodKey = petMood(p); expr = moodKey ? MOOD_EXPR[moodKey] : "normal"; }
+    var mood = null, moodLv = 0;
+    if (expr === "auto") { if (opts.mood !== false) mood = petMood(p); expr = mood ? MOOD_EXPR[mood.key] : "normal"; moodLv = mood ? mood.lv : 0; }
     var wear = p.wear || {};
-    var body = petBody(childKey, p, species, expr, opts.omit);
+    var body = petBody(childKey, p, species, expr, opts.omit, moodLv);
     var k = (opts.scale != null) ? opts.scale : stageScale(p.growth || 0);
     var s = '<svg viewBox="0 0 100 100" width="' + size + '" height="' + size + '" xmlns="http://www.w3.org/2000/svg" aria-label="小怪獸">';
     s += body.grad;
     if (showBg && wear.bg) s += drawBg(wear.bg);
     var inner = body.inner;
-    if (moodKey) inner += moodOverlay(p, body.R);
+    if (mood) inner += moodOverlay(p, body.R);
     if (k !== 1) s += '<g transform="translate(50 93) scale(' + k.toFixed(3) + ') translate(-50 -93)">' + inner + "</g>";
     else s += inner;
     if (wear.fx) s += drawFx(wear.fx);
@@ -1492,14 +1610,15 @@
   var petWho = "mia", petSlot = "species";
   function needsHTML(p) {
     return '<div class="stats">' + NEEDS.map(function (n) {
-      var v = Math.round(p.needs[n.key] == null ? 80 : p.needs[n.key]); var low = v < 35;
-      return '<div class="stat"><span class="sl">' + n.emoji + " " + n.name + (low ? ' <b style="color:var(--bad)">' + n.low + "</b>" : "") + '</span><div class="bar"><i class="' + (low ? "lowbar" : "") + '" style="width:' + v + '%"></i></div></div>';
+      var v = Math.round(p.needs[n.key] == null ? 80 : p.needs[n.key]); var lv = needTier(v);
+      var tag = lv ? ' <b class="ntag t' + lv + '">' + n.low + TIER_TAG[lv] + "</b>" : "";
+      return '<div class="stat"><span class="sl">' + n.emoji + " " + n.name + tag + '</span><div class="bar"><i class="bl' + lv + '" style="width:' + v + '%"></i></div></div>';
     }).join("") + "</div>";
   }
   function petStatusLine(p) {
-    var lows = NEEDS.filter(function (n) { return (p.needs[n.key] == null ? 80 : p.needs[n.key]) < 35; });
+    var lows = lowNeeds(p);
     if (!lows.length) return '<div class="petstatus ok">😊 心情很好，跟你玩得開心～</div>';
-    return '<div class="petstatus need">💬 ' + lows.map(function (n) { return n.low; }).join("、") + "！</div>";
+    return '<div class="petstatus need' + (lows[0].lv >= 3 ? " urgent" : "") + '">💬 ' + lows.map(function (n) { return NEED_MAP[n.key].low + TIER_TAG[n.lv]; }).join("、") + "！</div>";
   }
   function petAgeHTML(p) {
     var g = p.growth || 0, st = petStage(g), nx = nextStageAt(g), prev = [0, 15, 40, 80][st];
@@ -1559,9 +1678,9 @@
   var ACT_COLOR = { feed: "#ff8a3d", drink: "#3db4ef", bath: "#46c7e0", toilet: "#9b8cff", play: "#ff6fae", sleep: "#7c6cff", pat: "#ff5f8f" };
   function careRound(p) {
     return '<div class="carebtns">' + ACTION_ORDER.map(function (k) {
-      var a = ACTIONS[k], v = (p.needs[a.need] == null) ? 80 : p.needs[a.need], urgent = v < 45;
+      var a = ACTIONS[k], v = (p.needs[a.need] == null) ? 80 : p.needs[a.need], lv = needTier(v);
       return '<button class="carebtn" data-act="' + k + '" style="--c:' + ACT_COLOR[k] + '" aria-label="' + a.label + '" title="' + a.label + '">' +
-        a.emoji + (urgent ? '<span class="urgent">!</span>' : "") + '<span class="cl">' + a.label + "</span></button>";
+        a.emoji + (lv ? '<span class="urgent l' + lv + '">' + (lv >= 3 ? "!!" : "!") + "</span>" : "") + '<span class="cl">' + a.label + "</span></button>";
     }).join("") + "</div>";
   }
   function renderPet() {
@@ -1575,13 +1694,15 @@
     var walletStr = petWho === "self" ? "♾️ 無限" : fmtMin(bal);
     var swRow = lc ? "" : ('<div class="petsw-row">' + activeChildren().map(function (ck) { var c = childOf(ck); return '<button class="petsw ' + c.cls + (c.key === petWho ? " on" : "") + '" data-petwho="' + c.key + '">' + c.emoji + " " + c.name + "</button>"; }).join("") + "</div>");
     var slotTabs = '<div class="slottabs">' + SLOTS.map(function (sl) { return '<button class="slottab' + (sl.key === petSlot ? " on" : "") + '" data-slottab="' + sl.key + '">' + sl.name + "</button>"; }).join("") + "</div>";
+    var moodNow = (petExpr === "auto") ? petMood(p) : null;
+    var artCls = (moodNow && moodNow.lv >= 3) ? " distress" : "";
     $("view-pet").innerHTML =
       swRow +
       '<div class="petstage ' + ch.cls + '">' +
         '<div class="scenebg">' + sceneRoomSVG(p) + "</div>" +
         '<div class="scene-hud">' + levelBadge(p) + coinPill(petWho, bal) + "</div>" +
         (petFlash ? '<div class="scene-flash ' + petFlash.cls + '">' + petFlash.text + "</div>" : "") +
-        '<div class="petfloor"><div class="petart">' + petSVG(petWho, { size: 220, expr: petExpr, showBg: false }) + "</div></div>" +
+        '<div class="petfloor"><div class="petart' + artCls + '">' + petSVG(petWho, { size: 220, expr: petExpr, showBg: false }) + "</div></div>" +
         careRound(p) +
       "</div>" +
       '<section class="block petbox ' + ch.cls + '">' +
@@ -1893,6 +2014,37 @@
     }
   });
 
+  // ---------- 狀態圖鑑（家長預覽：把各種狀態 × 等級一次看完，網址加 #states 開啟） ----------
+  function galleryCard(label, sub, needs) {
+    var p = defaultPet(); p.growth = 34;
+    if (needs) Object.keys(needs).forEach(function (k) { p.needs[k] = needs[k]; });
+    return '<figure class="gcard"><div class="gart">' + petSVG("mia", { pet: p, species: "bunny", size: 116, showBg: false, expr: "auto" }) +
+      '</div><figcaption>' + label + (sub ? "<small>" + sub + "</small>" : "") + "</figcaption></figure>";
+  }
+  function renderStateGallery() {
+    var host = document.getElementById("stategallery");
+    if (location.hash !== "#states") { if (host) host.style.display = "none"; return; }
+    if (!host) { host = document.createElement("div"); host.id = "stategallery"; document.body.appendChild(host); }
+    var TIERS = [["輕", 42], ["中", 26], ["急", 12]];
+    var h = '<div class="gwrap"><button class="gclose">✕ 關閉</button>' +
+      "<h1>🎭 寵物狀態圖鑑</h1><p class=\"ghint\">同一隻兔兔，肚子餓／口渴／想睡／髒了／想尿尿／寂寞時會有不同表情；越嚴重（輕→中→急）臉和身上的變化越明顯。</p>";
+    h += '<div class="ggrid">' + galleryCard("😊 健康", "全部充足", null) + "</div>";
+    NEEDS.forEach(function (n) {
+      h += "<h3>" + n.emoji + " " + n.name + "（" + n.low + "）</h3><div class=\"ggrid\">";
+      TIERS.forEach(function (t) { var nd = {}; nd[n.key] = t[1]; h += galleryCard(t[0] + "（" + t[1] + "%）", "單一狀態", nd); });
+      h += "</div>";
+    });
+    h += '<h2>👯 複數狀態（同時好幾項）</h2><div class="ggrid">';
+    h += galleryCard("肚子餓＋好髒", "中＋急", { hunger: 24, clean: 14 });
+    h += galleryCard("口渴＋想尿＋寂寞", "三項同時", { thirst: 24, bladder: 20, happy: 28 });
+    h += galleryCard("全部都很急", "崩潰邊緣", { hunger: 12, thirst: 12, energy: 12, clean: 12, bladder: 12, happy: 12 });
+    h += "</div><p class=\"ghint\">這頁是給家長預覽用的。要回到 App，按右上「關閉」或把網址的 #states 去掉重新整理。</p></div>";
+    host.innerHTML = h;
+    var cb = host.querySelector(".gclose"); if (cb) cb.onclick = function () { location.hash = ""; };
+    host.style.display = "block"; host.scrollTop = 0;
+  }
+  window.addEventListener("hashchange", renderStateGallery);
+
   // ---------- init ----------
   (function () { var hh = loadHistory(); if (hh.length) { try { lastSig = snapSig(JSON.parse(hh[hh.length - 1].data)); } catch (e) { } } })();
   ["mia", "tia", "self"].forEach(function (c) { var r = state.pets[c].roster; Object.keys(r).forEach(function (sp) { tickPet(r[sp]); if (c !== "self") maybeDailyStory(r[sp]); }); }); save();
@@ -1905,6 +2057,7 @@
   refreshLockSection(); applyLock(); renderHistory();
   if (window.matchMedia) { try { window.matchMedia("(min-width:1024px)").addEventListener("change", function () { render(); }); } catch (e) {} }
   startSync();
+  renderStateGallery();
 })();
 </script>
 </body>
