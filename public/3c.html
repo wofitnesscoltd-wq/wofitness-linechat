@@ -174,7 +174,7 @@
   .petstage .scenebg { position: absolute; inset: 0; z-index: 0; }
   .petstage .scenebg svg { width: 100%; height: 100%; display: block; }
   .petstage .petfloor { position: absolute; left: 0; right: 0; bottom: 17%; display: flex; justify-content: center; z-index: 2; }
-  .petstage .petart { animation: bob 3.2s ease-in-out infinite; transform-origin: center bottom; will-change: transform; }
+  .petstage .petart { animation: idle 6s ease-in-out infinite; transform-origin: center bottom; will-change: transform; cursor: pointer; }
   .petstage.act .petart { animation: pop .5s ease; }
   .petart svg { display: block; filter: drop-shadow(0 12px 9px rgba(0,0,0,.22)); width: clamp(180px, 44vmin, 300px); height: auto; }
   .scene-hud { position: absolute; top: 0; left: 0; right: 0; z-index: 6; display: flex; justify-content: space-between; align-items: flex-start; padding: 10px 12px; pointer-events: none; }
@@ -197,6 +197,15 @@
   @keyframes urgentpulse { 0%,100% { transform: scale(1); } 50% { transform: scale(1.18); } }
   .petstage .petart.distress { animation: distresswob .55s ease-in-out infinite; }
   @keyframes distresswob { 0%,100% { transform: translateX(0) rotate(0); } 25% { transform: translateX(-2px) rotate(-1.6deg); } 75% { transform: translateX(2px) rotate(1.6deg); } }
+  .petstage .petart.tapped { animation: tapwiggle .55s ease; }
+  @keyframes tapwiggle { 0%,100% { transform: scale(1) rotate(0); } 20% { transform: scale(1.06,.95) rotate(-5deg); } 50% { transform: scale(.96,1.05) rotate(5deg); } 78% { transform: scale(1.02,.99) rotate(-2deg); } }
+  @keyframes idle { 0%,100% { transform: translateY(0) rotate(0); } 18% { transform: translateY(-6px) rotate(-1.2deg); } 38% { transform: translateY(0) rotate(0); } 50% { transform: translateY(-13px); } 57% { transform: translateY(0) scale(1.03,.95); } 64% { transform: translateY(0) scale(1); } 82% { transform: translateY(-6px) rotate(1.2deg); } }
+  .moodbubble { position: absolute; left: 50%; top: 25%; transform: translateX(-50%); z-index: 5; background: #fff; border: 2px solid #ffd23f; color: #8a6500; border-radius: 14px; padding: 6px 13px; font-weight: 800; font-size: .92rem; box-shadow: 0 5px 12px rgba(0,0,0,.18); white-space: nowrap; animation: bubblepop .4s ease; }
+  .moodbubble::after { content: ""; position: absolute; left: 50%; bottom: -8px; transform: translateX(-50%); border: 8px solid transparent; border-top-color: #fff; }
+  .moodbubble.t2 { border-color: #ff9a3d; color: #a8410a; }
+  .moodbubble.t3 { border-color: var(--bad); color: var(--bad); }
+  .moodbubble.happy { border-color: #ff8fc2; color: #d84f8f; }
+  @keyframes bubblepop { 0% { transform: translateX(-50%) scale(.5); opacity: 0; } 60% { transform: translateX(-50%) scale(1.06); } 100% { transform: translateX(-50%) scale(1); opacity: 1; } }
   .carebtns.busy { opacity: .3; pointer-events: none; }
   #view-pet > .petstage { position: sticky; top: 6px; z-index: 30; }
   @media (max-width: 1023px) {
@@ -510,7 +519,7 @@
 (function () {
   "use strict";
 
-  var APP_VER = "v1.2 · 狀態表情版 · 2026-06-20";
+  var APP_VER = "v1.3 · 互動生動版 · 2026-06-20";
   var STORAGE_KEY = "mt-3c-panel-v1";
   var HISTORY_KEY = "mt-3c-history-v1";
   var HISTORY_MAX = 30;
@@ -565,7 +574,8 @@
   ];
   var NEED_MAP = {}; NEEDS.forEach(function (n) { NEED_MAP[n.key] = n; });
   // 需求嚴重等級：0 健康 ／ 1 輕 ／ 2 中 ／ 3 急（越低越嚴重）
-  function needTier(v) { return v >= 50 ? 0 : v >= 34 ? 1 : v >= 18 ? 2 : 3; }
+  // 掉到剩約 2/3（<67）就開始有表情；剩一半（50）已是「中」，1/4 以下是「急」
+  function needTier(v) { return v >= 67 ? 0 : v >= 50 ? 1 : v >= 28 ? 2 : 3; }
   var TIER_TAG = ["", "·輕", "·中", "·急"];
   function defaultPet() {
     return { name: "", color: "theme",
@@ -1115,7 +1125,7 @@
   // 所有偏低的需求，依嚴重程度排序（最急的在前）→ 可同時呈現複數狀態，並各自帶嚴重等級 lv
   function lowNeeds(p) {
     var arr = [];
-    for (var i = 0; i < NEEDS.length; i++) { var k = NEEDS[i].key, v = (p.needs[k] == null) ? 80 : p.needs[k]; if (v < 50) arr.push({ key: k, v: v, lv: needTier(v) }); }
+    for (var i = 0; i < NEEDS.length; i++) { var k = NEEDS[i].key, v = (p.needs[k] == null) ? 80 : p.needs[k]; if (v < 67) arr.push({ key: k, v: v, lv: needTier(v) }); }
     arr.sort(function (a, b) { return a.v - b.v; });
     return arr;
   }
@@ -1164,13 +1174,24 @@
     }
     return s;
   }
+  // 照顧得很好（全部都高）／太久沒顧（多項很急）
+  function petThriving(p) { for (var i = 0; i < NEEDS.length; i++) { var v = (p.needs[NEEDS[i].key] == null) ? 80 : p.needs[NEEDS[i].key]; if (v < 86) return false; } return true; }
+  function severeCount(p) { var c = 0; for (var i = 0; i < NEEDS.length; i++) { var v = (p.needs[NEEDS[i].key] == null) ? 80 : p.needs[NEEDS[i].key]; if (v < 18) c++; } return c; }
+  function thrivingMarks() { return fxHeart(75, 30, 3.1) + fxHeart(24, 35, 2.5) + sparkle(83, 47, 2.4) + sparkle(17, 52, 2); }
+  function sickMarks() {
+    var th = '<g transform="rotate(20 50 74)"><rect x="42" y="72.6" width="16" height="3.2" rx="1.6" fill="#fff" stroke="#b9bccb" stroke-width="0.7"/><rect x="42.6" y="73" width="6" height="2.4" rx="1.2" fill="#ff5277"/><circle cx="58.6" cy="74.2" r="2.4" fill="#fff" stroke="#b9bccb" stroke-width="0.7"/><circle cx="58.6" cy="74.2" r="1.2" fill="#ff5277"/></g>';
+    return '<ellipse cx="50" cy="62" rx="30" ry="31" fill="#a9b6a2" opacity=".24" stroke="none"/>' + th;
+  }
   function petSVG(childKey, opts) {
     opts = opts || {}; var size = opts.size || 96; var showBg = opts.showBg !== false; var expr = opts.expr || "auto";
     var cp = state.pets && state.pets[childKey];
     var species = opts.species || (cp && cp.active) || "bunny";
     var p = opts.pet || (cp && cp.roster && cp.roster[species]) || defaultPet();
-    var mood = null, moodLv = 0;
-    if (expr === "auto") { if (opts.mood !== false) mood = petMood(p); expr = mood ? MOOD_EXPR[mood.key] : "normal"; moodLv = mood ? mood.lv : 0; }
+    var mood = null, moodLv = 0, sick = false, thriving = false;
+    if (expr === "auto") {
+      if (opts.mood !== false) { mood = petMood(p); if (mood) sick = severeCount(p) >= 3; else thriving = petThriving(p); }
+      expr = mood ? MOOD_EXPR[mood.key] : "normal"; moodLv = mood ? mood.lv : 0;
+    }
     var wear = p.wear || {};
     var body = petBody(childKey, p, species, expr, opts.omit, moodLv);
     var k = (opts.scale != null) ? opts.scale : stageScale(p.growth || 0);
@@ -1178,7 +1199,8 @@
     s += body.grad;
     if (showBg && wear.bg) s += drawBg(wear.bg);
     var inner = body.inner;
-    if (mood) inner += moodOverlay(p, body.R);
+    if (mood) inner += moodOverlay(p, body.R) + (sick ? sickMarks() : "");
+    else if (thriving) inner += thrivingMarks();
     if (k !== 1) s += '<g transform="translate(50 93) scale(' + k.toFixed(3) + ') translate(-50 -93)">' + inner + "</g>";
     else s += inner;
     if (wear.fx) s += drawFx(wear.fx);
@@ -1701,12 +1723,16 @@
     var slotTabs = '<div class="slottabs">' + SLOTS.map(function (sl) { return '<button class="slottab' + (sl.key === petSlot ? " on" : "") + '" data-slottab="' + sl.key + '">' + sl.name + "</button>"; }).join("") + "</div>";
     var moodNow = (petExpr === "auto") ? petMood(p) : null;
     var artCls = (moodNow && moodNow.lv >= 3) ? " distress" : "";
+    var bubble = "";
+    if (moodNow) { var nbb = NEED_MAP[moodNow.key]; bubble = '<div class="moodbubble t' + moodNow.lv + '">' + nbb.emoji + " " + nbb.low + TIER_TAG[moodNow.lv] + "！</div>"; }
+    else if (petExpr === "auto" && petThriving(p)) bubble = '<div class="moodbubble happy">🥰 好幸福～</div>';
     $("view-pet").innerHTML =
       swRow +
       '<div class="petstage ' + ch.cls + '">' +
         '<div class="scenebg">' + sceneRoomSVG(p) + "</div>" +
         '<div class="scene-hud">' + levelBadge(p) + coinPill(petWho, bal) + "</div>" +
         (petFlash ? '<div class="scene-flash ' + petFlash.cls + '">' + petFlash.text + "</div>" : "") +
+        bubble +
         '<div class="petfloor"><div class="petart' + artCls + '">' + petSVG(petWho, { size: 220, expr: petExpr, showBg: false }) + "</div></div>" +
         careRound(p) +
       "</div>" +
@@ -1725,6 +1751,17 @@
     var n = prompt("幫這隻「" + speciesName(state.pets[petWho].active) + "」取名字：", p.name || "");
     if (n === null) return;
     p.name = n.trim().slice(0, 12); save(); renderPet();
+  }
+  // 點兔兔本人：開心扭一下＋冒愛心，心情小加分
+  var TAP_FX = ["❤️", "💕", "✨", "⭐"];
+  function petTap() {
+    if (sceneRunning) return;
+    var p = activePet(petWho);
+    p.needs.happy = Math.min(100, (p.needs.happy || 80) + 3); save();
+    renderPet();
+    var stage = document.querySelector(".petstage"), art = stage ? stage.querySelector(".petart") : null;
+    if (art) { art.classList.add("tapped"); setTimeout(function () { if (art) art.classList.remove("tapped"); }, 600); }
+    if (stage) for (var i = 0; i < 4; i++) spawnParticle(stage, TAP_FX[i % TAP_FX.length], i);
   }
   function tryBuy(childKey, it) {
     if (it.unlockStreak && sleepStreak(childKey) >= it.unlockStreak) { state.inventory[childKey][it.id] = true; return true; }
@@ -1766,6 +1803,7 @@
     var t;
     if ((t = e.target.closest("[data-act]"))) { doAction(petWho, t.getAttribute("data-act")); return; }
     if (sceneRunning) return;   // 互動播放中，先別切換
+    if ((t = e.target.closest(".petart"))) { petTap(); return; }   // 點兔兔本人 → 開心反應
     if ((t = e.target.closest("[data-petwho]"))) { petWho = t.getAttribute("data-petwho"); petExpr = "auto"; clearTimeout(exprTimer); renderPet(); return; }
     if ((t = e.target.closest("[data-rename]"))) { renamePet(); return; }
     if ((t = e.target.closest("[data-slottab]"))) { petSlot = t.getAttribute("data-slottab"); renderPet(); return; }
@@ -2030,9 +2068,9 @@
     var host = document.getElementById("stategallery");
     if (location.hash !== "#states") { if (host) host.style.display = "none"; return; }
     if (!host) { host = document.createElement("div"); host.id = "stategallery"; document.body.appendChild(host); }
-    var TIERS = [["輕", 42], ["中", 26], ["急", 12]];
+    var TIERS = [["輕", 58], ["中", 38], ["急", 14]];
     var h = '<div class="gwrap"><button class="gclose">✕ 關閉</button>' +
-      "<h1>🎭 寵物狀態圖鑑</h1><p class=\"ghint\">目前版本：" + APP_VER + "。同一隻兔兔，肚子餓／口渴／想睡／髒了／想尿尿／寂寞時會有不同表情；越嚴重（輕→中→急）臉和身上的變化越明顯。</p>";
+      "<h1>🎭 寵物狀態圖鑑</h1><p class=\"ghint\">目前版本：" + APP_VER + "。掉到剩約 2/3 就開始有表情；同一隻兔兔，肚子餓／口渴／想睡／髒了／想尿尿／寂寞時會有不同表情，越嚴重（輕→中→急）臉和身上的變化越明顯。</p>";
     h += '<div class="ggrid">' + galleryCard("😊 健康", "全部充足", null) + "</div>";
     NEEDS.forEach(function (n) {
       h += "<h3>" + n.emoji + " " + n.name + "（" + n.low + "）</h3><div class=\"ggrid\">";
@@ -2040,9 +2078,12 @@
       h += "</div>";
     });
     h += '<h2>👯 複數狀態（同時好幾項）</h2><div class="ggrid">';
-    h += galleryCard("肚子餓＋好髒", "中＋急", { hunger: 24, clean: 14 });
-    h += galleryCard("口渴＋想尿＋寂寞", "三項同時", { thirst: 24, bladder: 20, happy: 28 });
+    h += galleryCard("肚子餓＋好髒", "中＋急", { hunger: 38, clean: 14 });
+    h += galleryCard("口渴＋想尿＋寂寞", "三項同時", { thirst: 40, bladder: 30, happy: 58 });
     h += galleryCard("全部都很急", "崩潰邊緣", { hunger: 12, thirst: 12, energy: 12, clean: 12, bladder: 12, happy: 12 });
+    h += '</div><h2>✨ 特別狀態</h2><div class="ggrid">';
+    h += galleryCard("🥰 幸福", "照顧滿分", { hunger: 95, thirst: 95, energy: 95, clean: 95, bladder: 95, happy: 95 });
+    h += galleryCard("🤒 生病", "太久沒顧", { hunger: 10, thirst: 10, clean: 10 });
     h += "</div><p class=\"ghint\">這頁是給家長預覽用的。要回到 App，按右上「關閉」或把網址的 #states 去掉重新整理。</p></div>";
     host.innerHTML = h;
     var cb = host.querySelector(".gclose"); if (cb) cb.onclick = function () { location.hash = ""; };
