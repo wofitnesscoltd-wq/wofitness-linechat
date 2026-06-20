@@ -519,7 +519,7 @@
 (function () {
   "use strict";
 
-  var APP_VER = "v1.5 · 真實生活版 · 2026-06-20";
+  var APP_VER = "v1.6 · 沉浸場景版 · 2026-06-20";
   var STORAGE_KEY = "mt-3c-panel-v1";
   var HISTORY_KEY = "mt-3c-history-v1";
   var HISTORY_MAX = 30;
@@ -1386,28 +1386,42 @@
   function pottyAt(x, y) { return '<g stroke="#b79ad6" stroke-width="1.4"><path d="M' + (x - 15) + ' ' + y + ' Q' + (x - 15) + ' ' + (y + 13) + ' ' + (x - 8) + ' ' + (y + 13) + ' H' + (x + 8) + ' Q' + (x + 15) + ' ' + (y + 13) + ' ' + (x + 15) + ' ' + y + ' Z" fill="#e9dcff"/><ellipse cx="' + x + '" cy="' + y + '" rx="15" ry="4.6" fill="#f4ecff"/><ellipse cx="' + x + '" cy="' + y + '" rx="9" ry="2.6" fill="#cdb6ec"/></g>'; }
   function bigHand(x, y) { return '<g stroke="#e7b58a" stroke-width="1.4" stroke-linejoin="round"><rect x="' + (x - 4) + '" y="' + (y - 20).toFixed(1) + '" width="8" height="14" rx="3" fill="#ffd9b8"/><ellipse cx="' + x + '" cy="' + (y - 4).toFixed(1) + '" rx="11" ry="8" fill="#ffe0c2"/><g fill="#ffe0c2"><ellipse cx="' + (x - 7) + '" cy="' + (y - 1).toFixed(1) + '" rx="2.6" ry="4"/><ellipse cx="' + (x - 2.5) + '" cy="' + (y + 1).toFixed(1) + '" rx="2.6" ry="4.4"/><ellipse cx="' + (x + 2.5) + '" cy="' + (y + 1).toFixed(1) + '" rx="2.6" ry="4.4"/><ellipse cx="' + (x + 7) + '" cy="' + (y - 1).toFixed(1) + '" rx="2.6" ry="4"/></g></g>'; }
   function sceneText(y, fill, txt) { return '<text x="50" y="' + y + '" font-size="9" text-anchor="middle" fill="' + fill + '" font-weight="800">' + txt + '</text>'; }
-  function sceneBack(key, fi, ending, sw, cw) {
-    if (key === "feed") return sceneBg("#fff3df", "#ffe6c4") + '<rect x="0" y="86" width="100" height="14" fill="#e7c89c"/><rect x="0" y="84" width="100" height="3" fill="#d8b27e"/>';
-    if (key === "drink") return sceneBg("#eafaff", "#cdeeff") + '<rect x="0" y="86" width="100" height="14" fill="#bfe0ef"/>';
-    if (key === "bath") {
-      var s = sceneBg("#dff3ff", "#bfe6f7");
-      s += '<g opacity=".5" fill="none" stroke="#cfe7f4" stroke-width="1"><path d="M0 30 H100 M0 44 H100 M20 30 V44 M50 30 V44 M80 30 V44"/></g>';
-      s += '<rect x="0" y="88" width="100" height="12" fill="#bcd6e6"/>';
-      s += '<ellipse cx="50" cy="73" rx="35" ry="8.5" fill="#eaf7ff" stroke="#9fc4dd" stroke-width="1.8"/><ellipse cx="50" cy="74" rx="30" ry="6.2" fill="#a9dcf0"/>';
-      return s;
+  // 完整切換的「場景環境」：直接鋪滿整個舞台（取代花園背景），地板帶讓兔兔站在上面
+  function sceneEnv(key) {
+    var inner;
+    if (key === "feed") {
+      inner = sceneBg("#fff7ea", "#ffe7c6") +
+        '<rect x="0" y="76" width="100" height="24" fill="#e7c89c"/><rect x="0" y="76" width="100" height="2.4" fill="#d8b27e"/>' +
+        '<g stroke="#d8b27e" stroke-width="0.8" opacity=".55"><path d="M24 78 V100 M50 78 V100 M76 78 V100"/></g>' +
+        '<rect x="60" y="28" width="24" height="19" rx="2" fill="#fff7e6" stroke="#e6cfa0" stroke-width="1.5"/><path d="M72 28 V47 M60 37.5 H84" stroke="#e6cfa0" stroke-width="1.2"/>';
+    } else if (key === "drink") {
+      inner = sceneBg("#eafaff", "#cdeeff") +
+        '<rect x="0" y="76" width="100" height="24" fill="#bfe0ef"/><rect x="0" y="76" width="100" height="2.4" fill="#9fc8da"/>' +
+        '<g stroke="#9fc8da" stroke-width="0.8" opacity=".5"><path d="M30 78 V100 M62 78 V100"/></g>';
+    } else if (key === "bath" || key === "toilet") {
+      var b = key === "bath";
+      var c1 = b ? "#dff3ff" : "#f3eaff", c2 = b ? "#bfe6f7" : "#e2d2f7", fl = b ? "#bcd6e6" : "#cdbce6", ln = b ? "#9fc4dd" : "#b9a3da";
+      inner = sceneBg(c1, c2) +
+        '<g opacity=".45" stroke="' + ln + '" stroke-width="0.9" fill="none"><path d="M0 28 H100 M0 42 H100 M0 56 H100 M22 28 V56 M44 28 V56 M66 28 V56 M88 28 V56"/></g>' +
+        '<rect x="0" y="77" width="100" height="23" fill="' + fl + '"/><rect x="0" y="77" width="100" height="2.4" fill="' + ln + '"/>';
+      if (b) inner += '<g stroke="' + ln + '" stroke-width="1.6" fill="none" stroke-linecap="round"><path d="M70 14 V22"/><ellipse cx="70" cy="24" rx="5.5" ry="2.4" fill="#eaf7ff"/><path d="M66 28 q1 3 0 5 M70 28.5 v5 M74 28 q-1 3 0 5"/></g>';
+      else inner += '<g stroke="' + ln + '" stroke-width="1.2"><rect x="63" y="34" width="13" height="9" rx="2" fill="#fff"/><rect x="67.5" y="30" width="4" height="4.5" rx="1.2" fill="#fff"/></g><path d="M65 43 q1.4 4 0 8" stroke="#fff" stroke-width="2.2" fill="none"/>';
+    } else if (key === "play") {
+      inner = sceneBg("#bfe9ff", "#dff7e8") + '<circle cx="78" cy="20" r="9" fill="#ffe08a"/>' +
+        '<g fill="#fff" opacity=".85"><circle cx="22" cy="24" r="6"/><circle cx="30" cy="25" r="8"/><circle cx="38" cy="24" r="6"/></g>' +
+        '<path d="M0 74 Q50 67 100 74 V100 H0 Z" fill="#a8e6bb"/><path d="M0 74 Q50 67 100 74" fill="none" stroke="#84d39c" stroke-width="1.4"/>';
+    } else if (key === "sleep") {
+      var g = "sng" + (++svgSeq);
+      inner = '<linearGradient id="' + g + '" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#2a2552"/><stop offset="1" stop-color="#4a3f86"/></linearGradient><rect width="100" height="100" fill="url(#' + g + ')"/>' +
+        '<circle cx="76" cy="20" r="9" fill="#ffe9a8"/><circle cx="72" cy="18" r="7.5" fill="url(#' + g + ')"/>';
+      var st = [[14, 16], [30, 28], [22, 46], [60, 14], [88, 34], [12, 64], [46, 22], [84, 58]];
+      for (var i = 0; i < st.length; i++) inner += sparkle(st[i][0], st[i][1], 1.7);
+      inner += '<rect x="0" y="78" width="100" height="22" fill="#37306a"/><rect x="0" y="78" width="100" height="2" fill="#2a2552"/>';
+    } else {
+      inner = sceneBg("#fff0f6", "#ffd9ea") + '<rect x="0" y="77" width="100" height="23" fill="#ffd0e4"/><rect x="0" y="77" width="100" height="2" fill="#f3b8d2"/>' +
+        '<g fill="#ffc1e0" opacity=".5"><circle cx="22" cy="30" r="3"/><circle cx="78" cy="26" r="3"/><circle cx="50" cy="20" r="2.6"/></g>';
     }
-    if (key === "toilet") return sceneBg("#f3eaff", "#e2d2f7") + '<rect x="0" y="88" width="100" height="12" fill="#cdbce6"/><g stroke="#cbb7e8" stroke-width="1.2" fill="#fff"><rect x="78" y="40" width="11" height="9" rx="1.5"/><rect x="82" y="36" width="3" height="4" rx="1"/></g>';
-    if (key === "play") return sceneBg("#eafff0", "#cdf3da") + '<path d="M0 84 Q50 76 100 84 V100 H0 Z" fill="#a8e6bb"/><circle cx="20" cy="18" r="8" fill="#ffe08a"/>';
-    if (key === "sleep") {
-      var g = "slg" + (++svgSeq);
-      var s3 = '<linearGradient id="' + g + '" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#2c2a55"/><stop offset="1" stop-color="#4a3f86"/></linearGradient><rect width="100" height="100" fill="url(#' + g + ')"/>';
-      s3 += '<circle cx="78" cy="20" r="9" fill="#ffe9a8"/><circle cx="74" cy="18" r="7.5" fill="url(#' + g + ')"/>';
-      var stz = [[14, 16], [30, 28], [22, 46], [62, 14], [88, 36], [12, 70]];
-      for (var i = 0; i < stz.length; i++) s3 += sparkle(stz[i][0], stz[i][1], 1.7);
-      return s3;
-    }
-    if (key === "pat") return sceneBg("#fff0f6", "#ffd9ea");
-    return sceneBg("#eef0fb", "#dfe3f4");
+    return '<svg viewBox="0 0 100 100" preserveAspectRatio="xMidYMid slice" xmlns="http://www.w3.org/2000/svg">' + inner + '</svg>';
   }
   function sceneFront(key, fi, ending, sw, cw) {
     var s = "";
@@ -1488,8 +1502,9 @@
     var body = petBody(childKey, p, species, expr, omit);
     var inner = petTf ? ('<g transform="' + petTf + '">' + body.inner + "</g>") : body.inner;
     inner = '<g transform="translate(50 93) scale(' + k.toFixed(3) + ') translate(-50 -93)">' + inner + "</g>";
+    // 不再畫方框背景（背景已整片切換到 .scenebg），這層只剩兔兔＋前景道具，透明
     var s = '<svg viewBox="0 0 100 100" width="220" height="220" xmlns="http://www.w3.org/2000/svg" aria-label="互動場景">';
-    s += body.grad + sceneBack(key, fi, ending, sw, cw) + inner + sceneFront(key, fi, ending, sw, cw) + "</svg>";
+    s += body.grad + inner + sceneFront(key, fi, ending, sw, cw) + "</svg>";
     return s;
   }
   function doAction(childKey, key) {
@@ -1504,6 +1519,7 @@
     if (!art) { finishScene(childKey, key); return; }
     sceneRunning = true;
     stage.classList.add("scene-on");
+    var sbg = stage.querySelector(".scenebg"); if (sbg) sbg.innerHTML = sceneEnv(key);   // 整片切換場景背景
     var cb = document.querySelector(".carebtns"); if (cb) cb.classList.add("busy");
     var bar = document.createElement("div"); bar.className = "scenebar inscene"; bar.textContent = ACTIONS[key].emoji + " " + (SCENE_VERB[key] || "互動中…");
     stage.appendChild(bar);
