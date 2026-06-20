@@ -181,6 +181,9 @@
   .petstatus { text-align: center; font-weight: 700; font-size: .92rem; margin: 6px 0 2px; padding: 7px 10px; border-radius: 12px; }
   .petstatus.ok { background: #eafaf0; color: var(--good); }
   .petstatus.need { background: #fff2e0; color: var(--warn); }
+  .petstatus.grow { background: #fff7e0; color: #e0930f; animation: growpop .5s ease; }
+  .petstatus.info { background: #eef0f6; color: var(--muted); }
+  @keyframes growpop { 0% { transform: scale(.8); opacity: 0; } 60% { transform: scale(1.06); } 100% { transform: scale(1); opacity: 1; } }
   .petage { display: flex; align-items: center; gap: 8px; margin: 8px 4px 2px; }
   .stagebadge { font-weight: 800; font-size: .8rem; padding: 3px 10px; border-radius: 999px; color: #fff; white-space: nowrap; }
   .stagebadge.s0 { background: #7ec8ff; } .stagebadge.s1 { background: #7fd07f; } .stagebadge.s2 { background: #ffb15f; } .stagebadge.s3 { background: #c07cff; }
@@ -198,6 +201,15 @@
   .carebtn { display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 10px 4px; border: none; border-radius: 14px; background: #f3f1ff; cursor: pointer; font-size: 1.6rem; }
   .carebtn span { font-size: .72rem; color: var(--muted); font-weight: 700; }
   .carebtn:active { transform: translateY(1px); background: #e9e5ff; }
+  .carebtns.busy { opacity: .5; pointer-events: none; }
+  .scene-on .petart { animation: none !important; }
+  .scene-on .petart svg { filter: drop-shadow(0 8px 12px rgba(0,0,0,.14)); }
+  .scenebar { text-align: center; font-weight: 800; font-size: .92rem; color: var(--brand); margin: 6px 0 2px; padding: 7px 10px; border-radius: 12px; background: #efeaff; }
+  .petstory { display: flex; align-items: center; gap: 9px; background: #fff8ef; border: 1px dashed #f0d6a8; border-radius: 12px; padding: 8px 10px; margin: 8px 2px 2px; font-size: .86rem; }
+  .petstory .se { font-size: 1.3rem; flex: 0 0 auto; line-height: 1; }
+  .petstory .st { flex: 1; color: var(--ink); line-height: 1.4; }
+  .petstory .stt { display: block; font-size: .68rem; color: var(--warn); font-weight: 800; letter-spacing: .5px; }
+  .petstory .btn { flex: 0 0 auto; padding: 6px 9px; }
   .wallet { font-weight: 700; background: #f6f4ff; border-radius: 12px; padding: 10px 12px; }
   .wallet b { color: var(--brand); }
   .wallet.neg b { color: var(--bad); }
@@ -471,8 +483,9 @@
   function defaultPet() {
     return { name: "", color: "theme",
       wear: { hat: null, eyes: null, outfit: null, back: null, hand: null, bg: null, fx: null },
-      growth: 0,
+      growth: 0, growthDay: "", growthToday: 0,
       needs: { hunger: 80, thirst: 80, energy: 80, clean: 80, bladder: 80, happy: 80 },
+      storyDay: "", storyIdx: -1,
       lastTick: Date.now() };
   }
   function defaultChildPets() { return { active: "bunny", roster: { bunny: defaultPet() } }; }
@@ -483,6 +496,10 @@
     if (o.color) dp.color = o.color; else if (o.base === "rainbow") dp.color = "rainbow"; else if (o.base === "galaxy") dp.color = "galaxy";
     if (o.wear && typeof o.wear === "object") Object.keys(dp.wear).forEach(function (k) { dp.wear[k] = o.wear[k] || null; });
     if (typeof o.growth === "number" && o.growth >= 0) dp.growth = o.growth;
+    if (typeof o.growthDay === "string") dp.growthDay = o.growthDay;
+    if (typeof o.growthToday === "number" && o.growthToday >= 0) dp.growthToday = o.growthToday;
+    if (typeof o.storyDay === "string") dp.storyDay = o.storyDay;
+    if (typeof o.storyIdx === "number") dp.storyIdx = o.storyIdx;
     if (o.needs && typeof o.needs === "object") Object.keys(dp.needs).forEach(function (k) { var v = +o.needs[k]; dp.needs[k] = isNaN(v) ? 80 : clamp(v); });
     else if (o.stats && typeof o.stats === "object") { dp.needs.happy = isNaN(+o.stats.happy) ? 80 : clamp(+o.stats.happy); dp.needs.hunger = isNaN(+o.stats.full) ? 80 : clamp(+o.stats.full); dp.needs.clean = isNaN(+o.stats.clean) ? 80 : clamp(+o.stats.clean); dp.needs.energy = isNaN(+o.stats.energy) ? 80 : clamp(+o.stats.energy); }
     dp.lastTick = +o.lastTick || Date.now();
@@ -632,22 +649,39 @@
       '<ellipse cx="24" cy="64" rx="6.5" ry="8.5" transform="rotate(20 24 64)" fill="' + R.furFill + '"/>' +
       '<ellipse cx="76" cy="64" rx="6.5" ry="8.5" transform="rotate(-20 76 64)" fill="' + R.furFill + '"/>';
   }
+  function eyeOpen() {
+    return '<ellipse cx="40" cy="56" rx="6.2" ry="7.5" fill="#2b2b3d" stroke="none"/><ellipse cx="60" cy="56" rx="6.2" ry="7.5" fill="#2b2b3d" stroke="none"/>' +
+      '<circle cx="42.4" cy="53" r="2.6" fill="#fff" stroke="none"/><circle cx="62.4" cy="53" r="2.6" fill="#fff" stroke="none"/>' +
+      '<circle cx="38.2" cy="58.8" r="1.2" fill="#fff" opacity=".7" stroke="none"/><circle cx="58.2" cy="58.8" r="1.2" fill="#fff" opacity=".7" stroke="none"/>';
+  }
   function faceCore(R, expr) {
     var s = '<circle cx="31" cy="64" r="5" fill="' + R.cheek + '" opacity=".4" stroke="none"/><circle cx="69" cy="64" r="5" fill="' + R.cheek + '" opacity=".4" stroke="none"/>';
+    // ----- eyes -----
     if (expr === "happy" || expr === "eat") {
       s += '<path d="M34 57 Q40 50 46 57" fill="none" stroke="#2b2b3d" stroke-width="2.6" stroke-linecap="round"/><path d="M54 57 Q60 50 66 57" fill="none" stroke="#2b2b3d" stroke-width="2.6" stroke-linecap="round"/>';
     } else if (expr === "sleep") {
       s += '<path d="M34 56 Q40 61 46 56 M54 56 Q60 61 66 56" fill="none" stroke="#2b2b3d" stroke-width="2.4" stroke-linecap="round"/>';
+    } else if (expr === "tired") {
+      s += '<path d="M33 53.5 Q40 50.5 47 53.5" fill="none" stroke="#2b2b3d" stroke-width="1.7" stroke-linecap="round" opacity=".6"/><path d="M53 53.5 Q60 50.5 67 53.5" fill="none" stroke="#2b2b3d" stroke-width="1.7" stroke-linecap="round" opacity=".6"/>' +
+        '<path d="M34.5 56.5 A5.6 4.6 0 0 0 45.5 56.5 Z" fill="#2b2b3d"/><path d="M54.5 56.5 A5.6 4.6 0 0 0 65.5 56.5 Z" fill="#2b2b3d"/>';
+    } else if (expr === "toilet") {
+      s += '<path d="M35 53 L41.5 56.5 L35 60" fill="none" stroke="#2b2b3d" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/><path d="M65 53 L58.5 56.5 L65 60" fill="none" stroke="#2b2b3d" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/>';
     } else {
-      s += '<ellipse cx="40" cy="56" rx="6.2" ry="7.5" fill="#2b2b3d" stroke="none"/><ellipse cx="60" cy="56" rx="6.2" ry="7.5" fill="#2b2b3d" stroke="none"/>' +
-        '<circle cx="42.4" cy="53" r="2.6" fill="#fff" stroke="none"/><circle cx="62.4" cy="53" r="2.6" fill="#fff" stroke="none"/>' +
-        '<circle cx="38.2" cy="58.8" r="1.2" fill="#fff" opacity=".7" stroke="none"/><circle cx="58.2" cy="58.8" r="1.2" fill="#fff" opacity=".7" stroke="none"/>' +
+      s += eyeOpen() +
         '<g class="blink"><ellipse cx="40" cy="55" rx="6.8" ry="8" fill="' + R.belly + '" stroke="none"/><ellipse cx="60" cy="55" rx="6.8" ry="8" fill="' + R.belly + '" stroke="none"/><path d="M34 56.5 Q40 59.5 46 56.5 M54 56.5 Q60 59.5 66 56.5" fill="none" stroke="#2b2b3d" stroke-width="2" stroke-linecap="round"/></g>';
+      if (expr === "sad") s += '<path d="M37.5 62 q-1.6 3.6 0 6 q1.6 -2.4 0 -6 Z" fill="#9fd4ff" stroke="#6fb8ef" stroke-width="0.6"/>';
     }
+    // ----- nose -----
     s += '<path d="M50 63 C47 60,44 64,50 68 C56 64,53 60,50 63 Z" fill="' + R.cheek + '" stroke="none"/>';
+    // ----- mouth -----
     if (expr === "eat") s += '<ellipse cx="50" cy="72" rx="5" ry="4.5" fill="#b3406a" stroke="' + R.strokeC + '" stroke-width="1.5"/>';
     else if (expr === "happy") s += '<path d="M43 69 Q50 79 57 69 Z" fill="#fff" stroke="' + R.strokeC + '" stroke-width="2.2" stroke-linejoin="round"/>';
     else if (expr === "sleep") s += '<ellipse cx="50" cy="71" rx="2.6" ry="3" fill="' + R.strokeC + '" opacity=".65"/>';
+    else if (expr === "hungry") s += '<ellipse cx="50" cy="71.5" rx="3.4" ry="3.9" fill="#b3406a" stroke="' + R.strokeC + '" stroke-width="1.3"/><path d="M53.4 73.4 q2 1.8 0.5 4" fill="none" stroke="#7fd0ff" stroke-width="1.5" stroke-linecap="round"/>';
+    else if (expr === "thirsty") s += '<path d="M44.5 70 Q50 75 55.5 70 Z" fill="#b3406a" stroke="' + R.strokeC + '" stroke-width="1.3" stroke-linejoin="round"/><path d="M49 72 Q50 79.5 53 73 Z" fill="#ff7a98" stroke="' + R.strokeC + '" stroke-width="0.9"/>';
+    else if (expr === "dirty") s += '<path d="M44 73.5 Q50 68.5 56 73.5" fill="none" stroke="' + R.strokeC + '" stroke-width="2.4" stroke-linecap="round"/>';
+    else if (expr === "toilet") s += '<path d="M45 72 Q47.5 70 50 72 Q52.5 74 55 72" fill="none" stroke="' + R.strokeC + '" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>';
+    else if (expr === "sad") s += '<path d="M43 74.5 Q50 68.5 57 74.5" fill="none" stroke="' + R.strokeC + '" stroke-width="2.4" stroke-linecap="round"/>';
     else s += '<path d="M44 70 Q50 76 56 70" fill="none" stroke="' + R.strokeC + '" stroke-width="2.4" stroke-linecap="round"/><rect x="47.3" y="70.4" width="2.6" height="3.6" rx="1" fill="#fff" stroke-width="0.8"/><rect x="50.1" y="70.4" width="2.6" height="3.6" rx="1" fill="#fff" stroke-width="0.8"/>';
     return s;
   }
@@ -838,30 +872,67 @@
     if (id === "sword") return '<line x1="72" y1="88" x2="92" y2="52" stroke="#dfe6ef" stroke-width="4.4" stroke-linecap="round"/><line x1="92" y1="52" x2="94" y2="48" stroke="#fff" stroke-width="2.2"/><line x1="66" y1="82" x2="80" y2="74" stroke="#caa15a" stroke-width="3.6" stroke-linecap="round"/><circle cx="70" cy="84" r="2.8" fill="#ffd23f" stroke="#e0a500" stroke-width="1"/>';
     return "";
   }
-  function avgStat(p) { var s = p.stats; return (s.happy + s.full + s.clean + s.energy) / 4; }
+  // ----- shared body builder (creature + worn items) -----
+  function galaxyAura() { var ag = "ag" + (++svgSeq); return '<radialGradient id="' + ag + '" cx="50%" cy="52%" r="58%"><stop offset="0" stop-color="#c89bff" stop-opacity=".55"/><stop offset=".6" stop-color="#b15cff" stop-opacity=".18"/><stop offset="1" stop-color="#b15cff" stop-opacity="0"/></radialGradient><ellipse cx="50" cy="58" rx="54" ry="54" fill="url(#' + ag + ')"/>'; }
+  function colorSparkles(color) {
+    if (color === "galaxy") return sparkle(15, 38, 3.6) + sparkle(86, 44, 4) + sparkle(74, 18, 3) + sparkle(24, 74, 3) + sparkle(50, 13, 2.6) + sparkle(91, 70, 2.8) + sparkle(9, 60, 2.4) + sparkle(62, 88, 2.4);
+    if (color === "rainbow") return sparkle(16, 40, 2.8) + sparkle(85, 46, 3) + sparkle(72, 19, 2.4) + sparkle(26, 76, 2.2);
+    return "";
+  }
+  function petBody(childKey, p, species, expr, omit) {
+    omit = omit || {};
+    var R = resolveColor(childKey, p.color || "theme"), wear = p.wear || {}, inner = "";
+    if (p.color === "galaxy") inner += galaxyAura();
+    if (wear.back && !omit.back) inner += drawBack(wear.back);
+    if (wear.outfit && !omit.outfit) inner += drawOutfitBehind(wear.outfit);
+    inner += drawCreature(species, R, expr);
+    if (wear.outfit && !omit.outfit) inner += drawOutfit(wear.outfit, R);
+    if (wear.eyes && !omit.eyes) inner += drawEyes(wear.eyes);
+    if (wear.hat && !omit.hat) inner += drawHat(wear.hat, R);
+    if (wear.hand && !omit.hand) inner += drawHand(wear.hand, R);
+    inner += colorSparkles(p.color);
+    return { R: R, grad: R.grad, inner: inner };
+  }
+
+  // ----- state-based mood (本尊不同樣貌) -----
+  var MOOD_EXPR = { hunger: "hungry", thirst: "thirsty", energy: "tired", clean: "dirty", bladder: "toilet", happy: "sad" };
+  function lowestNeed(p) { var worst = null, wv = 101; for (var i = 0; i < NEEDS.length; i++) { var k = NEEDS[i].key, v = (p.needs[k] == null) ? 80 : p.needs[k]; if (v < wv) { wv = v; worst = k; } } return { key: worst, v: wv }; }
+  function petMood(p) { var lo = lowestNeed(p); return lo.v < 45 ? lo.key : null; }
+  function drop(x, y, s, fill, stroke) { return '<path d="M' + x + ' ' + (y - s * 1.4) + ' C' + (x + s) + ' ' + (y - s * 0.2) + ',' + (x + s) + ' ' + (y + s) + ',' + x + ' ' + (y + s) + ' C' + (x - s) + ' ' + (y + s) + ',' + (x - s) + ' ' + (y - s * 0.2) + ',' + x + ' ' + (y - s * 1.4) + ' Z" fill="' + fill + '" stroke="' + stroke + '" stroke-width="0.7"/><ellipse cx="' + (x - s * 0.3).toFixed(1) + '" cy="' + (y + s * 0.1).toFixed(1) + '" rx="' + (s * 0.26).toFixed(1) + '" ry="' + (s * 0.42).toFixed(1) + '" fill="#fff" opacity=".6"/>'; }
+  function smudge(x, y, r) { return '<g fill="#9c7a46" opacity=".72"><ellipse cx="' + x + '" cy="' + y + '" rx="' + r + '" ry="' + (r * 0.7).toFixed(1) + '"/><ellipse cx="' + (x + r * 0.7).toFixed(1) + '" cy="' + (y + r * 0.3).toFixed(1) + '" rx="' + (r * 0.6).toFixed(1) + '" ry="' + (r * 0.45).toFixed(1) + '"/><ellipse cx="' + (x - r * 0.6).toFixed(1) + '" cy="' + (y + r * 0.2).toFixed(1) + '" rx="' + (r * 0.5).toFixed(1) + '" ry="' + (r * 0.4).toFixed(1) + '"/></g><circle cx="' + (x - r * 0.2).toFixed(1) + '" cy="' + (y - r * 0.2).toFixed(1) + '" r="' + (r * 0.16).toFixed(1) + '" fill="#6f5630" opacity=".5"/>'; }
+  function stinkLine(x, y, h) { return '<path d="M' + x + ' ' + y + ' q-3 -' + (h * 0.3).toFixed(1) + ' 0 -' + (h * 0.5).toFixed(1) + ' q3 -' + (h * 0.2).toFixed(1) + ' 0 -' + (h * 0.5).toFixed(1) + '" fill="none" stroke="#9bbf6a" stroke-width="1.4" stroke-linecap="round" opacity=".75"/>'; }
+  function fly(x, y) { return '<g><ellipse cx="' + (x - 1.6) + '" cy="' + (y - 1.2) + '" rx="1.4" ry="0.8" fill="#cfe6ff" opacity=".85"/><ellipse cx="' + (x + 1.6) + '" cy="' + (y - 1.2) + '" rx="1.4" ry="0.8" fill="#cfe6ff" opacity=".85"/><ellipse cx="' + x + '" cy="' + y + '" rx="1.5" ry="1.1" fill="#3a3a44"/></g>'; }
+  function zzz(x, y) { return '<g fill="none" stroke="#7c5cff" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M' + x + ' ' + y + ' h4 l-4 4 h4"/><path d="M' + (x + 5) + ' ' + (y - 6) + ' h3 l-3 3 h3"/><path d="M' + (x + 9) + ' ' + (y - 11) + ' h2.4 l-2.4 2.4 h2.4"/></g>'; }
+  function thought(x, y, content) {
+    return '<g><circle cx="' + (x - 6) + '" cy="' + (y + 10) + '" r="1.5" fill="#fff" opacity=".95"/><circle cx="' + (x - 4) + '" cy="' + (y + 6) + '" r="2.1" fill="#fff" opacity=".95"/>' +
+      '<g fill="#fff" stroke="#e3e6f2" stroke-width="0.8"><circle cx="' + x + '" cy="' + y + '" r="6.2"/><circle cx="' + (x + 6) + '" cy="' + (y - 2) + '" r="4.6"/><circle cx="' + (x - 6) + '" cy="' + (y - 1) + '" r="4.2"/><circle cx="' + (x + 1) + '" cy="' + (y - 6) + '" r="4.4"/></g>' + content + '</g>';
+  }
+  function miniApple(x, y) { return '<circle cx="' + x + '" cy="' + (y + 0.5) + '" r="3.1" fill="#ff6b6b" stroke="#e0495f" stroke-width="0.6"/><path d="M' + x + ' ' + (y - 2.4) + ' q2 -1 3 0.6" fill="none" stroke="#5fa83f" stroke-width="1.1" stroke-linecap="round"/><ellipse cx="' + (x - 0.9) + '" cy="' + (y - 0.4) + '" rx="0.8" ry="1.1" fill="#fff" opacity=".6"/>'; }
+  function miniToilet(x, y) { return '<g stroke="#9aa3c0" stroke-width="0.7"><ellipse cx="' + x + '" cy="' + (y - 1) + '" rx="3.6" ry="1.9" fill="#fff"/><path d="M' + (x - 3.3) + ' ' + (y - 1) + ' Q' + x + ' ' + (y + 3.4) + ' ' + (x + 3.3) + ' ' + (y - 1) + '" fill="#eef2fb"/></g>'; }
+  function moodOverlay(mood, R) {
+    if (mood === "clean") return smudge(34, 67, 4) + smudge(64, 63, 3.4) + smudge(49, 80, 3.6) + stinkLine(32, 50, 15) + stinkLine(50, 45, 17) + stinkLine(68, 50, 15) + fly(80, 39) + fly(75, 45);
+    if (mood === "hunger") return thought(82, 27, miniApple(82, 27)) + drop(28, 60, 2.4, "#cfe6ff", "#9fc6e8");
+    if (mood === "thirst") return thought(82, 27, drop(82, 28, 2.6, "#7fd0ff", "#4fb0e0")) + drop(72, 64, 2.2, "#cfe6ff", "#9fc6e8");
+    if (mood === "energy") return zzz(70, 30);
+    if (mood === "bladder") return drop(74, 52, 2.6, "#bfe0ff", "#8ec2ea") + drop(26, 52, 2.4, "#bfe0ff", "#8ec2ea") + thought(82, 26, miniToilet(82, 26));
+    if (mood === "happy") return '<g fill="#c2cfe2"><ellipse cx="26" cy="22" rx="8" ry="4.6"/><circle cx="21" cy="21" r="3.6"/><circle cx="31" cy="21" r="4.2"/></g>' + drop(23, 28, 1.6, "#9fd4ff", "#6fb8ef") + drop(30, 30, 1.6, "#9fd4ff", "#6fb8ef");
+    return "";
+  }
   function petSVG(childKey, opts) {
     opts = opts || {}; var size = opts.size || 96; var showBg = opts.showBg !== false; var expr = opts.expr || "auto";
     var cp = state.pets && state.pets[childKey];
     var species = opts.species || (cp && cp.active) || "bunny";
     var p = opts.pet || (cp && cp.roster && cp.roster[species]) || defaultPet();
-    if (expr === "auto") expr = "normal";
+    var moodKey = null;
+    if (expr === "auto") { if (opts.mood !== false) moodKey = petMood(p); expr = moodKey ? MOOD_EXPR[moodKey] : "normal"; }
     var wear = p.wear || {};
-    var R = resolveColor(childKey, p.color || "theme");
+    var body = petBody(childKey, p, species, expr, opts.omit);
     var k = (opts.scale != null) ? opts.scale : stageScale(p.growth || 0);
     var s = '<svg viewBox="0 0 100 100" width="' + size + '" height="' + size + '" xmlns="http://www.w3.org/2000/svg" aria-label="小怪獸">';
-    s += R.grad;
+    s += body.grad;
     if (showBg && wear.bg) s += drawBg(wear.bg);
-    var inner = "";
-    if (p.color === "galaxy") { var ag = "ag" + (++svgSeq); inner += '<radialGradient id="' + ag + '" cx="50%" cy="52%" r="58%"><stop offset="0" stop-color="#c89bff" stop-opacity=".55"/><stop offset=".6" stop-color="#b15cff" stop-opacity=".18"/><stop offset="1" stop-color="#b15cff" stop-opacity="0"/></radialGradient><ellipse cx="50" cy="58" rx="54" ry="54" fill="url(#' + ag + ')"/>'; }
-    if (wear.back) inner += drawBack(wear.back);
-    if (wear.outfit) inner += drawOutfitBehind(wear.outfit);
-    inner += drawCreature(species, R, expr);
-    if (wear.outfit) inner += drawOutfit(wear.outfit, R);
-    if (wear.eyes) inner += drawEyes(wear.eyes);
-    if (wear.hat) inner += drawHat(wear.hat, R);
-    if (wear.hand) inner += drawHand(wear.hand, R);
-    if (p.color === "galaxy") inner += sparkle(15, 38, 3.6) + sparkle(86, 44, 4) + sparkle(74, 18, 3) + sparkle(24, 74, 3) + sparkle(50, 13, 2.6) + sparkle(91, 70, 2.8) + sparkle(9, 60, 2.4) + sparkle(62, 88, 2.4);
-    else if (p.color === "rainbow") inner += sparkle(16, 40, 2.8) + sparkle(85, 46, 3) + sparkle(72, 19, 2.4) + sparkle(26, 76, 2.2);
+    var inner = body.inner;
+    if (moodKey) inner += moodOverlay(moodKey, body.R);
     if (k !== 1) s += '<g transform="translate(50 93) scale(' + k.toFixed(3) + ') translate(-50 -93)">' + inner + "</g>";
     else s += inner;
     if (wear.fx) s += drawFx(wear.fx);
@@ -987,21 +1058,225 @@
     if (hrs <= 0) return;
     NEEDS.forEach(function (n) { var v = (p.needs[n.key] == null) ? 80 : p.needs[n.key]; p.needs[n.key] = Math.max(8, Math.round(v - n.rate * hrs)); });
   }
-  var petExpr = "auto", exprTimer = null;
-  function doAction(childKey, key) {
-    var a = ACTIONS[key], p = activePet(childKey); if (!a || !p) return;
-    p.needs[a.need] = 100;
-    if (key !== "pat" && key !== "play") p.needs.happy = Math.min(100, (p.needs.happy || 80) + 6);
-    p.growth = Math.min(160, (p.growth || 0) + 2);
-    save();
-    petExpr = key === "feed" ? "eat" : key === "sleep" ? "sleep" : "happy";
-    renderPet(); playFX(a);
-    clearTimeout(exprTimer); exprTimer = setTimeout(function () { petExpr = "auto"; renderPet(); }, key === "sleep" ? 2000 : 1500);
+  var petExpr = "auto", exprTimer = null, petFlash = null;
+  var GROWTH_PER_CARE = 2, DAILY_GROWTH_CAP = 12, NEED_LOW = 70;
+  var sceneRunning = false, sceneTimer = null, sceneBefore = 80;
+  var SCENE = { steps: 13, ms: 380, happyFrom: 10 };
+  var SCENE_VERB = { feed: "餵食中…大口吃！", drink: "喝水中…咕嚕咕嚕", bath: "洗香香…搓搓搓", toilet: "上廁所…噓～", play: "玩耍中…接球！", sleep: "哄睡中…晚安", pat: "摸摸頭…秀秀" };
+
+  // ---------- 今日故事（十幾種，解釋寵物為什麼餓了 / 髒了…） ----------
+  var STORIES = [
+    { need: "clean", e: "🦋", t: "追著蝴蝶跑進花園，一不小心撲進泥巴堆，全身髒兮兮～" },
+    { need: "clean", e: "🎨", t: "上美勞課畫水彩，畫得比畫紙還精彩，手腳都是顏料！" },
+    { need: "clean", e: "🐶", t: "和隔壁的狗狗玩你追我跑，滾得灰撲撲的。" },
+    { need: "clean", e: "🍝", t: "午餐吃義大利麵吃得好香，臉上也沾滿了醬汁！" },
+    { need: "hunger", e: "🏃", t: "參加運動會跑了好多圈，肚子餓得咕嚕咕嚕叫。" },
+    { need: "hunger", e: "👵", t: "在廚房幫奶奶打蛋，聞到香味肚子就餓了起來。" },
+    { need: "hunger", e: "🌱", t: "今天好像又長高了一點點，所以肚子特別餓！" },
+    { need: "thirst", e: "🏖️", t: "去海邊堆沙堡曬了一整天太陽，現在好渴好渴。" },
+    { need: "thirst", e: "💃", t: "跟著音樂跳舞跳個不停，跳到滿頭大汗。" },
+    { need: "thirst", e: "🥨", t: "偷偷吃了一片鹹餅乾，現在好想咕嚕咕嚕喝水～" },
+    { need: "energy", e: "🚀", t: "做了一場太空大冒險的夢，玩到電力快用光了。" },
+    { need: "energy", e: "📚", t: "聽故事聽到欲罷不能，現在有點想打瞌睡了。" },
+    { need: "energy", e: "🧩", t: "拼完一整盒大拼圖，動完腦袋好累喔～" },
+    { need: "bladder", e: "🧃", t: "在派對上喝了好多好多果汁，現在有點憋不住了！" },
+    { need: "bladder", e: "📺", t: "看卡通看得太入迷，差點忘記要去上廁所。" },
+    { need: "happy", e: "🥺", t: "想 {n} 想了一整天，好想被抱抱、被秀秀喔。" },
+    { need: "happy", e: "🧸", t: "最喜歡的小熊玩偶躲起來找不到，有點小難過。" }
+  ];
+  var STORY_DROP = 28;
+  function applyStoryDrop(p, s) {
+    p.needs[s.need] = clamp((p.needs[s.need] == null ? 80 : p.needs[s.need]) - STORY_DROP);
+    if (s.need !== "happy") p.needs.happy = clamp((p.needs.happy == null ? 80 : p.needs.happy) - 6);
   }
-  function playFX(a) {
-    var stage = document.querySelector(".petstage"); if (!stage) return;
-    stage.className = "petstage"; void stage.offsetWidth; stage.classList.add("fx-" + a.fx);
-    for (var i = 0; i < a.n; i++) spawnParticle(stage, a.parts[i % a.parts.length], i);
+  function maybeDailyStory(p) {
+    if (!p) return false;
+    var day = todayStr();
+    if (p.storyDay === day && p.storyIdx >= 0) return false;
+    var s = STORIES[Math.floor(Math.random() * STORIES.length)];
+    p.storyIdx = STORIES.indexOf(s); p.storyDay = day;
+    applyStoryDrop(p, s);
+    return true;
+  }
+  function rerollStory(p) {
+    var lo = lowestNeed(p).key || "happy";
+    var pool = STORIES.filter(function (s) { return s.need === lo; });
+    if (!pool.length) pool = STORIES;
+    p.storyIdx = STORIES.indexOf(pool[Math.floor(Math.random() * pool.length)]);
+  }
+
+  // ---------- 互動動畫場景（每個互動都有專屬畫面，數張圖輪播 ~5 秒，結束超開心） ----------
+  function sceneBg(c1, c2) { var g = "sg" + (++svgSeq); return '<linearGradient id="' + g + '" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="' + c1 + '"/><stop offset="1" stop-color="' + c2 + '"/></linearGradient><rect width="100" height="100" fill="url(#' + g + ')"/>'; }
+  function appleAt(x, y, r) { return '<circle cx="' + x + '" cy="' + y + '" r="' + r + '" fill="#ff6b6b" stroke="#e0495f" stroke-width="1"/><path d="M' + x + ' ' + (y - r * 0.9).toFixed(1) + ' q' + (r * 0.5).toFixed(1) + ' -' + (r * 0.45).toFixed(1) + ' ' + (r * 0.85).toFixed(1) + ' ' + (r * 0.3).toFixed(1) + '" fill="none" stroke="#5fa83f" stroke-width="1.6" stroke-linecap="round"/><ellipse cx="' + (x - r * 0.32).toFixed(1) + '" cy="' + (y - r * 0.25).toFixed(1) + '" rx="' + (r * 0.24).toFixed(1) + '" ry="' + (r * 0.4).toFixed(1) + '" fill="#fff" opacity=".55"/>'; }
+  function bowlAt(x, y) { return '<path d="M' + (x - 17) + ' ' + (y - 4) + ' Q' + x + ' ' + (y + 9) + ' ' + (x + 17) + ' ' + (y - 4) + ' Z" fill="#f4f7fc" stroke="#c7cede" stroke-width="1.5"/><ellipse cx="' + x + '" cy="' + (y - 4) + '" rx="17" ry="5" fill="#dfe6f2" stroke="#c7cede" stroke-width="1.5"/>'; }
+  function cupAt(x, y, level) {
+    var w = 12, h = 16, top = y - h / 2, bot = y + h / 2;
+    var s = '<path d="M' + (x - w / 2) + ' ' + top + ' L' + (x - w / 2 + 1.6) + ' ' + bot + ' L' + (x + w / 2 - 1.6) + ' ' + bot + ' L' + (x + w / 2) + ' ' + top + ' Z" fill="#eaf4ff" fill-opacity=".55" stroke="#9fc4dd" stroke-width="1.5"/>';
+    var wy = bot - 1.5 - level * (h - 3);
+    if (level > 0.02) s += '<path d="M' + (x - w / 2 + 1.5) + ' ' + wy.toFixed(1) + ' L' + (x - w / 2 + 1.7) + ' ' + (bot - 1) + ' L' + (x + w / 2 - 1.7) + ' ' + (bot - 1) + ' L' + (x + w / 2 - 1.5) + ' ' + wy.toFixed(1) + ' Z" fill="#8fd4f0"/>';
+    return s;
+  }
+  function ballAt(x, y, r) { return '<circle cx="' + x.toFixed(1) + '" cy="' + y.toFixed(1) + '" r="' + r + '" fill="#ff6b9d" stroke="#e04f86" stroke-width="1.4"/><path d="M' + (x - r).toFixed(1) + ' ' + y.toFixed(1) + ' Q' + x.toFixed(1) + ' ' + (y - r * 1.25).toFixed(1) + ' ' + (x + r).toFixed(1) + ' ' + y.toFixed(1) + ' M' + (x - r).toFixed(1) + ' ' + y.toFixed(1) + ' Q' + x.toFixed(1) + ' ' + (y + r * 1.25).toFixed(1) + ' ' + (x + r).toFixed(1) + ' ' + y.toFixed(1) + ' M' + x.toFixed(1) + ' ' + (y - r).toFixed(1) + ' V' + (y + r).toFixed(1) + '" fill="none" stroke="#fff" stroke-width="1.1" opacity=".85"/>'; }
+  function foamCloud(x, y) { return '<g fill="#ffffff" stroke="#e6eef6" stroke-width="0.8"><circle cx="' + (x - 9) + '" cy="' + y + '" r="6"/><circle cx="' + (x - 2) + '" cy="' + (y - 4) + '" r="7"/><circle cx="' + (x + 6) + '" cy="' + (y - 2) + '" r="6"/><circle cx="' + (x + 11) + '" cy="' + (y + 2) + '" r="5"/><circle cx="' + x + '" cy="' + (y + 2) + '" r="7"/></g>'; }
+  function duckAt(x, y) { return '<g stroke="#e0a500" stroke-width="0.8"><ellipse cx="' + x + '" cy="' + y + '" rx="6" ry="4.4" fill="#ffd23f"/><circle cx="' + (x + 4) + '" cy="' + (y - 3.6) + '" r="3.2" fill="#ffd23f"/></g><polygon points="' + (x + 6.6) + ',' + (y - 3.6) + ' ' + (x + 10) + ',' + (y - 2.9) + ' ' + (x + 6.6) + ',' + (y - 1.9) + '" fill="#ff8f1f"/><circle cx="' + (x + 5) + '" cy="' + (y - 4.2) + '" r="0.7" fill="#3a2b2b"/>'; }
+  function spongeAt(x, y) { return '<rect x="' + (x - 5).toFixed(1) + '" y="' + (y - 4) + '" width="10" height="8" rx="2" fill="#ffd36e" stroke="#e0a73f" stroke-width="1"/><g fill="#e8b94f"><circle cx="' + (x - 2).toFixed(1) + '" cy="' + (y - 1) + '" r="0.9"/><circle cx="' + (x + 2).toFixed(1) + '" cy="' + (y + 1) + '" r="0.9"/><circle cx="' + (x + 1).toFixed(1) + '" cy="' + (y - 2) + '" r="0.7"/></g>'; }
+  function pottyAt(x, y) { return '<g stroke="#b79ad6" stroke-width="1.4"><path d="M' + (x - 15) + ' ' + y + ' Q' + (x - 15) + ' ' + (y + 13) + ' ' + (x - 8) + ' ' + (y + 13) + ' H' + (x + 8) + ' Q' + (x + 15) + ' ' + (y + 13) + ' ' + (x + 15) + ' ' + y + ' Z" fill="#e9dcff"/><ellipse cx="' + x + '" cy="' + y + '" rx="15" ry="4.6" fill="#f4ecff"/><ellipse cx="' + x + '" cy="' + y + '" rx="9" ry="2.6" fill="#cdb6ec"/></g>'; }
+  function bigHand(x, y) { return '<g stroke="#e7b58a" stroke-width="1.4" stroke-linejoin="round"><rect x="' + (x - 4) + '" y="' + (y - 20).toFixed(1) + '" width="8" height="14" rx="3" fill="#ffd9b8"/><ellipse cx="' + x + '" cy="' + (y - 4).toFixed(1) + '" rx="11" ry="8" fill="#ffe0c2"/><g fill="#ffe0c2"><ellipse cx="' + (x - 7) + '" cy="' + (y - 1).toFixed(1) + '" rx="2.6" ry="4"/><ellipse cx="' + (x - 2.5) + '" cy="' + (y + 1).toFixed(1) + '" rx="2.6" ry="4.4"/><ellipse cx="' + (x + 2.5) + '" cy="' + (y + 1).toFixed(1) + '" rx="2.6" ry="4.4"/><ellipse cx="' + (x + 7) + '" cy="' + (y - 1).toFixed(1) + '" rx="2.6" ry="4"/></g></g>'; }
+  function sceneText(y, fill, txt) { return '<text x="50" y="' + y + '" font-size="9" text-anchor="middle" fill="' + fill + '" font-weight="800">' + txt + '</text>'; }
+  function sceneBack(key, fi, ending, sw, cw) {
+    if (key === "feed") return sceneBg("#fff3df", "#ffe6c4") + '<rect x="0" y="86" width="100" height="14" fill="#e7c89c"/><rect x="0" y="84" width="100" height="3" fill="#d8b27e"/>';
+    if (key === "drink") return sceneBg("#eafaff", "#cdeeff") + '<rect x="0" y="86" width="100" height="14" fill="#bfe0ef"/>';
+    if (key === "bath") {
+      var s = sceneBg("#dff3ff", "#bfe6f7");
+      s += '<g opacity=".5" fill="none" stroke="#cfe7f4" stroke-width="1"><path d="M0 30 H100 M0 44 H100 M20 30 V44 M50 30 V44 M80 30 V44"/></g>';
+      s += '<rect x="0" y="88" width="100" height="12" fill="#bcd6e6"/>';
+      s += '<ellipse cx="50" cy="73" rx="35" ry="8.5" fill="#eaf7ff" stroke="#9fc4dd" stroke-width="1.8"/><ellipse cx="50" cy="74" rx="30" ry="6.2" fill="#a9dcf0"/>';
+      return s;
+    }
+    if (key === "toilet") return sceneBg("#f3eaff", "#e2d2f7") + '<rect x="0" y="88" width="100" height="12" fill="#cdbce6"/><g stroke="#cbb7e8" stroke-width="1.2" fill="#fff"><rect x="78" y="40" width="11" height="9" rx="1.5"/><rect x="82" y="36" width="3" height="4" rx="1"/></g>';
+    if (key === "play") return sceneBg("#eafff0", "#cdf3da") + '<path d="M0 84 Q50 76 100 84 V100 H0 Z" fill="#a8e6bb"/><circle cx="20" cy="18" r="8" fill="#ffe08a"/>';
+    if (key === "sleep") {
+      var g = "slg" + (++svgSeq);
+      var s3 = '<linearGradient id="' + g + '" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#2c2a55"/><stop offset="1" stop-color="#4a3f86"/></linearGradient><rect width="100" height="100" fill="url(#' + g + ')"/>';
+      s3 += '<circle cx="78" cy="20" r="9" fill="#ffe9a8"/><circle cx="74" cy="18" r="7.5" fill="url(#' + g + ')"/>';
+      var stz = [[14, 16], [30, 28], [22, 46], [62, 14], [88, 36], [12, 70]];
+      for (var i = 0; i < stz.length; i++) s3 += sparkle(stz[i][0], stz[i][1], 1.7);
+      return s3;
+    }
+    if (key === "pat") return sceneBg("#fff0f6", "#ffd9ea");
+    return sceneBg("#eef0fb", "#dfe3f4");
+  }
+  function sceneFront(key, fi, ending, sw, cw) {
+    var s = "";
+    if (key === "feed") {
+      s += bowlAt(50, 90);
+      if (!ending) {
+        var step = Math.min(3, Math.floor(fi / 3)), ar = 6 - step * 1.4;
+        if (ar > 1.6) s += appleAt(50, 80 - (fi % 2 ? 1 : 0), ar);
+        if (fi % 2) s += '<circle cx="44" cy="84" r="1" fill="#ff9a9a"/><circle cx="57" cy="86" r="1.1" fill="#ff9a9a"/>';
+      } else { s += fxHeart(36, 40, 3) + fxHeart(66, 36, 3.4) + sparkle(50, 30, 2.6) + sceneText(25, "#e0930f", "吃飽飽！"); }
+      return s;
+    }
+    if (key === "drink") {
+      if (!ending) {
+        var lvl = Math.max(0, 1 - fi / SCENE.happyFrom);
+        s += '<g transform="rotate(-14 50 73)">' + cupAt(50, 69, lvl) + '</g>';
+        if (fi % 2) s += drop(44, 80, 1.8, "#8fd4f0", "#5ab0e0");
+      } else { s += '<g transform="rotate(14 66 62)">' + cupAt(66, 58, 0) + '</g>' + sparkle(34, 40, 2.6) + fxHeart(36, 52, 3) + sceneText(24, "#2f86d8", "好解渴～"); }
+      return s;
+    }
+    if (key === "bath") {
+      var wy = 80 + sw * 1.3;
+      s += '<path d="M17 ' + wy.toFixed(1) + ' Q33 ' + (wy - 2.6).toFixed(1) + ' 50 ' + wy.toFixed(1) + ' T83 ' + wy.toFixed(1) + ' V95 Q50 99 17 95 Z" fill="#7fcdec" opacity=".72"/>';
+      s += '<path d="M17 ' + wy.toFixed(1) + ' Q33 ' + (wy - 2.6).toFixed(1) + ' 50 ' + wy.toFixed(1) + ' T83 ' + wy.toFixed(1) + '" fill="none" stroke="#cdeeff" stroke-width="1.5"/>';
+      s += '<path d="M15 73 Q15 96 31 96 H69 Q85 96 85 73" fill="none" stroke="#9fc4dd" stroke-width="2.2"/>';
+      if (!ending) {
+        for (var i = 0; i < 6; i++) { var bx = 26 + i * 9 + sw * 2, by = 92 - ((fi * 6 + i * 11) % 30); s += bubbleShape(bx, by, 2 + (i % 3)); }
+        s += foamCloud(50, 36) + spongeAt(50 + Math.sin(fi * 1.3) * 15, 66) + duckAt(70, wy - 4);
+      } else { s += sparkle(28, 40, 3) + sparkle(72, 36, 3.2) + sparkle(50, 26, 2.8) + sparkle(20, 60, 2.4) + sparkle(82, 58, 2.4) + sceneText(22, "#2f86d8", "香噴噴亮晶晶！"); }
+      return s;
+    }
+    if (key === "toilet") {
+      s += pottyAt(50, 84);
+      if (!ending) { s += drop(36, 50, 2.2, "#bfe0ff", "#8ec2ea") + drop(64, 50, 2.2, "#bfe0ff", "#8ec2ea"); if (fi % 2) s += '<text x="67" y="44" font-size="8" fill="#7c5cff" font-weight="800">~</text>'; }
+      else { s += sparkle(34, 44, 2.6) + sparkle(66, 42, 2.8) + sceneText(26, "#9a5fd0", "舒服多了！"); }
+      return s;
+    }
+    if (key === "play") {
+      if (!ending) { var bx2 = 50 + Math.sin(fi * 1.1) * 26, by2 = 60 - Math.abs(Math.cos(fi * 1.1)) * 26; s += ballAt(bx2, by2, 7); }
+      else {
+        s += ballAt(50, 40, 7);
+        var cc = ["#ff5fa2", "#ffd23f", "#5fd0ff", "#8be3a0", "#c193ff"];
+        for (var j = 0; j < 8; j++) { var px = 14 + j * 10, py = 18 + (j % 3) * 8; s += '<rect x="' + px + '" y="' + py + '" width="3" height="4.4" rx="1" fill="' + cc[j % cc.length] + '" transform="rotate(' + (j * 47 % 360) + ' ' + px + ' ' + py + ')"/>'; }
+        s += sceneText(92, "#e25f9b", "玩得好開心！");
+      }
+      return s;
+    }
+    if (key === "sleep") {
+      s += '<ellipse cx="50" cy="84" rx="31" ry="8.5" fill="#ffe2ef" stroke="#f3b8d2" stroke-width="1.4"/>';
+      s += '<path d="M19 88 Q50 80 81 88 V99 H19 Z" fill="#9a86e0" stroke="#7d68c8" stroke-width="1.4"/><path d="M24 90 Q50 84 76 90" fill="none" stroke="#b6a6f0" stroke-width="1.2"/>';
+      if (!ending) { var zn = Math.min(3, Math.floor(fi / 3) + 1), zs = ""; for (var z = 0; z < zn; z++) zs += '<text x="' + (66 + z * 6) + '" y="' + (40 - z * 7) + '" font-size="' + (10 - z * 1.5) + '" fill="#fff" font-weight="800" opacity=".9">z</text>'; s += zs; }
+      else { s += sparkle(30, 36, 2.8) + sparkle(70, 32, 3) + sceneText(24, "#ffe9a8", "精神飽飽！"); }
+      return s;
+    }
+    if (key === "pat") {
+      if (!ending) { var hy = 30 + Math.abs(Math.sin(fi * 1.2)) * 8; s += bigHand(50, hy); if (fi % 2) s += fxHeart(30, 46, 3) + fxHeart(72, 44, 3.2); }
+      else { s += fxHeart(28, 42, 3.4) + fxHeart(72, 40, 3.6) + fxHeart(50, 30, 4) + sparkle(40, 52, 2.4) + sparkle(62, 54, 2.4) + sceneText(22, "#e25f9b", "最喜歡你了！"); }
+      return s;
+    }
+    return s;
+  }
+  function sceneSVG(childKey, key, fi, p, species) {
+    var ending = fi >= SCENE.happyFrom, sw = Math.sin(fi * 0.9), cw = Math.cos(fi * 0.8);
+    var expr = "happy", omit = { hand: true }, petTf = "";
+    if (key === "feed") expr = ending ? "happy" : (fi % 2 ? "eat" : "normal");
+    else if (key === "drink") expr = ending ? "happy" : "thirsty";
+    else if (key === "bath") { expr = ending ? "happy" : (fi % 3 === 0 ? "normal" : "happy"); omit.back = true; }
+    else if (key === "toilet") expr = ending ? "happy" : "toilet";
+    else if (key === "play") expr = "happy";
+    else if (key === "sleep") { expr = fi < 2 ? "tired" : ending ? "happy" : "sleep"; omit.back = true; }
+    else if (key === "pat") expr = "happy";
+    if (key === "play" && !ending) petTf = "translate(0," + (-Math.abs(Math.sin(fi * 1.1)) * 15).toFixed(1) + ")";
+    else if (key === "pat" && !ending) petTf = "translate(50 93) scale(1," + ((fi % 2) ? 0.94 : 1) + ") translate(-50 -93)";
+    else if (key === "bath") petTf = "translate(" + (sw * 1.4).toFixed(1) + ",0)";
+    else if (key === "feed" || key === "drink") petTf = "translate(0," + (Math.abs(sw) * 1.2).toFixed(1) + ")";
+    else if (key === "toilet" && !ending) petTf = "translate(0," + (1 + Math.abs(sw)).toFixed(1) + ")";
+    var k = stageScale(p.growth || 0);
+    var body = petBody(childKey, p, species, expr, omit);
+    var inner = petTf ? ('<g transform="' + petTf + '">' + body.inner + "</g>") : body.inner;
+    inner = '<g transform="translate(50 93) scale(' + k.toFixed(3) + ') translate(-50 -93)">' + inner + "</g>";
+    var s = '<svg viewBox="0 0 100 100" width="220" height="220" xmlns="http://www.w3.org/2000/svg" aria-label="互動場景">';
+    s += body.grad + sceneBack(key, fi, ending, sw, cw) + inner + sceneFront(key, fi, ending, sw, cw) + "</svg>";
+    return s;
+  }
+  function doAction(childKey, key) {
+    if (sceneRunning) return;
+    var a = ACTIONS[key], p = activePet(childKey); if (!a || !p) return;
+    sceneBefore = (p.needs[a.need] == null) ? 80 : p.needs[a.need];
+    runScene(childKey, key);
+  }
+  function runScene(childKey, key) {
+    var p = activePet(childKey), species = (state.pets[childKey] && state.pets[childKey].active) || "bunny";
+    var stage = document.querySelector(".petstage"), art = stage ? stage.querySelector(".petart") : null;
+    if (!art) { finishScene(childKey, key); return; }
+    sceneRunning = true;
+    stage.classList.add("scene-on");
+    var cb = document.querySelector(".carebtns"); if (cb) cb.classList.add("busy");
+    var bar = document.createElement("div"); bar.className = "scenebar"; bar.textContent = ACTIONS[key].emoji + " " + (SCENE_VERB[key] || "互動中…");
+    if (stage.parentNode) stage.parentNode.insertBefore(bar, stage);
+    var i = 0;
+    function frame() {
+      if (i >= SCENE.steps) { clearInterval(sceneTimer); sceneTimer = null; finishScene(childKey, key); return; }
+      art.innerHTML = sceneSVG(childKey, key, i, p, species);
+      if (i % 3 === 0) { var a = ACTIONS[key]; for (var j = 0; j < Math.min(3, a.n); j++) spawnParticle(stage, a.parts[(i + j) % a.parts.length], j); }
+      i++;
+    }
+    frame();
+    sceneTimer = setInterval(frame, SCENE.ms);
+  }
+  function finishScene(childKey, key) {
+    sceneRunning = false;
+    var a = ACTIONS[key], p = activePet(childKey), before = sceneBefore;
+    p.needs[a.need] = 100;
+    if (key === "sleep") p.needs.energy = 100;
+    if (key !== "pat" && key !== "play") p.needs.happy = Math.min(100, (p.needs.happy || 80) + 6);
+    petFlash = null;
+    if (before < NEED_LOW) {
+      var day = todayStr();
+      if (p.growthDay !== day) { p.growthDay = day; p.growthToday = 0; }
+      if ((p.growthToday || 0) < DAILY_GROWTH_CAP) {
+        var add = Math.min(GROWTH_PER_CARE, DAILY_GROWTH_CAP - (p.growthToday || 0));
+        var was = petStage(p.growth || 0);
+        p.growth = Math.min(160, (p.growth || 0) + add); p.growthToday = (p.growthToday || 0) + add;
+        if (petStage(p.growth) > was) petFlash = { cls: "grow", text: "🎉 長大了！變成「" + STAGE_NAME[petStage(p.growth)] + "」囉！" };
+      } else petFlash = { cls: "info", text: "今天已經長大很多囉，明天再來陪它 🌙" };
+    } else petFlash = { cls: "info", text: "它現在不太需要～不過心情更好了 😊" };
+    save();
+    petExpr = "happy"; renderPet();
+    var stage2 = document.querySelector(".petstage");
+    if (stage2) for (var n = 0; n < 6; n++) spawnParticle(stage2, ["✨", "💕", "⭐", "🎉"][n % 4], n);
+    clearTimeout(exprTimer);
+    exprTimer = setTimeout(function () { petExpr = "auto"; petFlash = null; renderPet(); }, 1500);
   }
   function spawnParticle(stage, emoji, i) {
     var sp = document.createElement("span"); sp.className = "floatfx"; sp.textContent = emoji;
@@ -1031,10 +1306,10 @@
     cardsEl.className = "cards" + (act.length === 1 ? " one" : "");
     cardsEl.innerHTML = act.map(function (ck) {
       var ch = childOf(ck);
-      if (ch.key === "self") return '<div class="card self"><div class="card-top"><div class="mascot">' + petSVG("self", { size: 78, showBg: false }) + '</div><div class="card-info"><div class="who">' + ch.emoji + " " + ch.name + '</div><div class="bignum">♾️ <span class="unit">無限 3C</span></div></div></div><div class="sub"><span>盡情換裝，全部配件免費解鎖</span></div></div>';
+      if (ch.key === "self") return '<div class="card self"><div class="card-top"><div class="mascot">' + petSVG("self", { size: 78, showBg: false, mood: false }) + '</div><div class="card-info"><div class="who">' + ch.emoji + " " + ch.name + '</div><div class="bignum">♾️ <span class="unit">無限 3C</span></div></div></div><div class="sub"><span>盡情換裝，全部配件免費解鎖</span></div></div>';
       var earned = monthlyEarned(ch.key, viewMonth), used = monthlyUsed(ch.key, viewMonth), bal = earned - used;
       return '<div class="card ' + ch.cls + '"><div class="card-top">' +
-        '<div class="mascot">' + petSVG(ch.key, { size: 78, showBg: false }) + "</div>" +
+        '<div class="mascot">' + petSVG(ch.key, { size: 78, showBg: false, mood: false }) + "</div>" +
         '<div class="card-info"><div class="who">' + ch.emoji + " " + ch.name + "</div>" +
         '<div class="bignum ' + (bal < 0 ? "neg" : "") + '">' + fmtMin(bal) + ' <span class="unit">可用</span></div></div></div>' +
         '<div class="sub"><span>本月賺到 <b>' + fmtMin(earned) + "</b></span><span>已使用 <b>" + fmtMin(used) + "</b></span></div></div>";
@@ -1119,7 +1394,7 @@
       var tag = (!inRoster && !owned) ? '<span class="price">' + (it.limited ? "🔒 " : "") + fmtMin(it.price) + "</span>" : (it.limited ? '<span class="price lim">限定</span>' : "");
       var sub = inRoster ? (STAGE_NAME[petStage(cp.roster[it.id].growth)] + (cp.roster[it.id].name ? " · " + escapeHtml(cp.roster[it.id].name) : "")) : "未領養";
       out += '<button class="witem petcard' + (sel ? " sel" : "") + (inRoster || owned ? "" : " locked") + '" data-wslot="species" data-witem="' + it.id + '">' +
-        petSVG(childKey, { species: it.id, pet: (cp.roster && cp.roster[it.id]) || defaultPet(), size: 50, showBg: false }) +
+        petSVG(childKey, { species: it.id, pet: (cp.roster && cp.roster[it.id]) || defaultPet(), size: 50, showBg: false, mood: false }) +
         '<span class="wname">' + it.name + '</span><span class="wsub">' + sub + "</span>" + tag + "</button>";
     });
     return '<div class="wardrobe pets">' + out + "</div>";
@@ -1134,11 +1409,17 @@
     return '<div class="wardrobe">' + out + "</div>";
   }
   function speciesName(id) { var it = findItem("species", id); return it ? it.name : "寵物"; }
+  function petStoryHTML(childName, p) {
+    var s = STORIES[p.storyIdx]; if (!s) return "";
+    return '<div class="petstory"><span class="se">' + s.e + '</span><span class="st"><span class="stt">📖 今天的故事</span>' + escapeHtml(s.t.replace(/\{n\}/g, childName)) + '</span><button class="btn ghost sm" data-story="1" title="換一個故事">🔄</button></div>';
+  }
   function renderPet() {
+    if (sceneRunning) return;
     var lc = lockedChild();
     if (lc) petWho = lc;
     else if (activeChildren().indexOf(petWho) < 0) petWho = activeChildren()[0];
     var ch = childOf(petWho), p = activePet(petWho), bal = balanceOf(petWho);
+    if (maybeDailyStory(p)) save();
     var nm = p.name || (ch.name + "的" + speciesName(state.pets[petWho].active));
     var walletStr = petWho === "self" ? "9,999,999,999,999 ♾️" : fmtMin(bal);
     var swRow = lc ? "" : ('<div class="petsw-row">' + activeChildren().map(function (ck) { var c = childOf(ck); return '<button class="petsw ' + c.cls + (c.key === petWho ? " on" : "") + '" data-petwho="' + c.key + '">' + c.emoji + " " + c.name + "</button>"; }).join("") + "</div>");
@@ -1148,7 +1429,8 @@
       swRow +
       '<section class="block petbox ' + ch.cls + '">' +
         '<div class="petname"><span>' + escapeHtml(nm) + '</span><button class="btn ghost sm" data-rename="1">✏️ 改名</button></div>' +
-        petAgeHTML(p) + petStatusLine(p) +
+        petAgeHTML(p) + (petFlash ? '<div class="petstatus ' + petFlash.cls + '">' + petFlash.text + "</div>" : petStatusLine(p)) +
+        petStoryHTML(ch.name, p) +
         '<div class="petstage"><div class="petart">' + petSVG(petWho, { size: 220, expr: petExpr }) + "</div></div>" +
         needsHTML(p) + care +
       "</section>" +
@@ -1200,9 +1482,11 @@
   }
   $("view-pet").addEventListener("click", function (e) {
     var t;
+    if ((t = e.target.closest("[data-act]"))) { doAction(petWho, t.getAttribute("data-act")); return; }
+    if (sceneRunning) return;   // 互動播放中，先別切換
     if ((t = e.target.closest("[data-petwho]"))) { petWho = t.getAttribute("data-petwho"); petExpr = "auto"; clearTimeout(exprTimer); renderPet(); return; }
     if ((t = e.target.closest("[data-rename]"))) { renamePet(); return; }
-    if ((t = e.target.closest("[data-act]"))) { doAction(petWho, t.getAttribute("data-act")); return; }
+    if ((t = e.target.closest("[data-story]"))) { rerollStory(activePet(petWho)); save(); renderPet(); return; }
     if ((t = e.target.closest("[data-slottab]"))) { petSlot = t.getAttribute("data-slottab"); renderPet(); return; }
     if ((t = e.target.closest("[data-witem]"))) { chooseItem(petWho, t.getAttribute("data-wslot"), t.getAttribute("data-witem")); return; }
   });
@@ -1438,7 +1722,7 @@
 
   // ---------- init ----------
   (function () { var hh = loadHistory(); if (hh.length) { try { lastSig = snapSig(JSON.parse(hh[hh.length - 1].data)); } catch (e) { } } })();
-  ["mia", "tia", "self"].forEach(function (c) { var r = state.pets[c].roster; Object.keys(r).forEach(function (sp) { tickPet(r[sp]); }); }); save();
+  ["mia", "tia", "self"].forEach(function (c) { var r = state.pets[c].roster; Object.keys(r).forEach(function (sp) { tickPet(r[sp]); if (c !== "self") maybeDailyStory(r[sp]); }); }); save();
   recDate.value = todayStr(); $("useDate").value = todayStr();
   setTime(recSleepH, recSleepM, ""); setTime(recWakeH, recWakeM, "");
   $("profileSel").value = state.profile;
