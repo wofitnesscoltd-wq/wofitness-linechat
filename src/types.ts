@@ -12,6 +12,11 @@ export interface Env {
    * Binding for static assets.
    */
   ASSETS: { fetch: (request: Request) => Promise<Response> };
+
+  /**
+   * Durable Object used to sync the Mia & Tia 3C panel across devices.
+   */
+  SYNC: DurableObjectNamespace;
 }
 
 /**
