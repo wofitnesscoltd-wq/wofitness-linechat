@@ -2,10 +2,16 @@
 <html lang="zh-Hant-TW">
 <head>
 <meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<meta name="theme-color" content="#7c5cff" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+<meta name="theme-color" content="#7c5cff" id="themeColor" />
+<meta name="mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="default" />
+<meta name="apple-mobile-web-app-title" content="3C 時間銀行" />
+<meta name="format-detection" content="telephone=no" />
 <title>Mia & Tia 的 3C 時間銀行</title>
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E⭐%3C/text%3E%3C/svg%3E" />
+<link rel="apple-touch-icon" href="apple-touch-icon.png" />
 <style>
   :root {
     --bg: #f4f5fb; --card: #ffffff; --ink: #1f2238; --muted: #6b7088; --line: #e7e8f2;
@@ -14,13 +20,22 @@
     --radius: 16px; --shadow: 0 6px 22px rgba(40, 40, 90, 0.08);
   }
   * { box-sizing: border-box; margin: 0; padding: 0; }
-  html, body { background: var(--bg); }
+  html { -webkit-text-size-adjust: 100%; }
+  html, body { background: var(--bg); overscroll-behavior-y: none; }
+  /* iPhone / iOS Safari friendliness */
+  * { -webkit-tap-highlight-color: transparent; }
+  button, .tab, .btn, .carebtn, .slottab, .petsw, .witem, select, input[type=date] { touch-action: manipulation; }
+  .tab, .btn, .carebtn, .slottab, .petsw, .witem, .petname, .modebar, .stagebadge, .petstatus, .scenebar, header.top {
+    -webkit-user-select: none; user-select: none; -webkit-touch-callout: none;
+  }
+  input, select, textarea { font-size: 16px; }   /* 防止 iOS 點輸入框時自動放大 */
   body {
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang TC",
       "Microsoft JhengHei", "Noto Sans TC", Roboto, sans-serif;
     color: var(--ink); line-height: 1.6; -webkit-font-smoothing: antialiased;
   }
-  .wrap { max-width: 760px; margin: 0 auto; padding: 16px 16px 48px; }
+  .wrap { max-width: 760px; margin: 0 auto;
+    padding: calc(16px + env(safe-area-inset-top)) calc(16px + env(safe-area-inset-right)) calc(48px + env(safe-area-inset-bottom)) calc(16px + env(safe-area-inset-left)); }
 
   header.top {
     background: linear-gradient(135deg, #7c5cff 0%, #ff5fa2 100%); color: #fff;
@@ -1315,14 +1330,14 @@
   }
   // 專屬機：標題、主題色、瀏覽器分頁名稱都跟著這台裝置的小孩
   function renderHeader() {
-    var lc = lockedChild(), h = $("appTitle"), hd = document.querySelector("header.top");
+    var lc = lockedChild(), h = $("appTitle"), hd = document.querySelector("header.top"), tc = $("themeColor");
     var T = {
-      mia: ["🌸", "Mia", "linear-gradient(135deg,#c45fd6 0%,#ff8fc2 100%)"],
-      tia: ["🐬", "Tia", "linear-gradient(135deg,#2f93ec 0%,#5fd0ff 100%)"],
-      self: ["👑", "速隨", "linear-gradient(135deg,#e0930f 0%,#ffd24a 100%)"]
+      mia: ["🌸", "Mia", "linear-gradient(135deg,#c45fd6 0%,#ff8fc2 100%)", "#c45fd6"],
+      tia: ["🐬", "Tia", "linear-gradient(135deg,#2f93ec 0%,#5fd0ff 100%)", "#2f93ec"],
+      self: ["👑", "速隨", "linear-gradient(135deg,#e0930f 0%,#ffd24a 100%)", "#e0930f"]
     };
-    if (lc && T[lc]) { h.innerHTML = '<i class="emo">' + T[lc][0] + '</i> ' + T[lc][1] + " 的 3C 時間銀行"; hd.style.background = T[lc][2]; document.title = T[lc][1] + " 的 3C 時間銀行"; }
-    else { h.innerHTML = '<i class="emo">⭐</i> Mia &amp; Tia 的 3C 時間銀行'; hd.style.background = ""; document.title = "Mia & Tia 的 3C 時間銀行"; }
+    if (lc && T[lc]) { h.innerHTML = '<i class="emo">' + T[lc][0] + '</i> ' + T[lc][1] + " 的 3C 時間銀行"; hd.style.background = T[lc][2]; document.title = T[lc][1] + " 的 3C 時間銀行"; if (tc) tc.setAttribute("content", T[lc][3]); }
+    else { h.innerHTML = '<i class="emo">⭐</i> Mia &amp; Tia 的 3C 時間銀行'; hd.style.background = ""; document.title = "Mia & Tia 的 3C 時間銀行"; if (tc) tc.setAttribute("content", "#7c5cff"); }
   }
   function renderMonth() { monthLabelEl.textContent = monthLabel(viewMonth); }
   function renderCards() {
