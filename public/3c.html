@@ -170,6 +170,26 @@
   .petstage.fx-pat .petart { animation: patsquish .7s ease; }
   .blink { transform-box: fill-box; transform-origin: center top; animation: blinkA 5.5s ease-in-out infinite; }
   @keyframes blinkA { 0%, 90%, 100% { transform: scaleY(0); } 93.5%, 96% { transform: scaleY(1); } }
+  @keyframes drinktilt { 0%,100% { transform: rotate(0); } 30% { transform: rotate(-10deg); } 60% { transform: rotate(-6deg) translateY(-2px); } }
+  @keyframes toiletsquat { 0%,100% { transform: translateY(0) scaleY(1); } 40% { transform: translateY(6px) scaleY(.9); } 70% { transform: translateY(0) scaleY(1.03); } }
+  @keyframes sleepsway { 0%,100% { transform: rotate(-3deg); } 50% { transform: rotate(3deg); } }
+  .petstage.fx-drink .petart { animation: drinktilt .9s ease; }
+  .petstage.fx-toilet .petart { animation: toiletsquat .8s ease; }
+  .petstage.fx-sleep .petart { animation: sleepsway 1.6s ease-in-out; }
+  .care7 { grid-template-columns: repeat(7, 1fr); }
+  @media (max-width: 560px) { .care7 { grid-template-columns: repeat(4, 1fr); } }
+  .petstatus { text-align: center; font-weight: 700; font-size: .92rem; margin: 6px 0 2px; padding: 7px 10px; border-radius: 12px; }
+  .petstatus.ok { background: #eafaf0; color: var(--good); }
+  .petstatus.need { background: #fff2e0; color: var(--warn); }
+  .petage { display: flex; align-items: center; gap: 8px; margin: 8px 4px 2px; }
+  .stagebadge { font-weight: 800; font-size: .8rem; padding: 3px 10px; border-radius: 999px; color: #fff; white-space: nowrap; }
+  .stagebadge.s0 { background: #7ec8ff; } .stagebadge.s1 { background: #7fd07f; } .stagebadge.s2 { background: #ffb15f; } .stagebadge.s3 { background: #c07cff; }
+  .growbar { flex: 1; height: 8px; background: #eee; border-radius: 999px; overflow: hidden; }
+  .growbar i { display: block; height: 100%; background: linear-gradient(90deg, #ffd23f, #ff8f1f); border-radius: 999px; transition: width .4s; }
+  .growtxt { font-size: .74rem; color: var(--muted); font-weight: 600; white-space: nowrap; }
+  .stat .bar i.lowbar { background: linear-gradient(90deg, #ff8f1f, #e23b54); }
+  .wardrobe.pets { grid-template-columns: repeat(auto-fill, minmax(88px, 1fr)); }
+  .witem.petcard .wsub { display: block; font-size: .66rem; color: var(--muted); }
   .stats { display: grid; grid-template-columns: 1fr 1fr; gap: 8px 14px; margin: 10px 4px 2px; }
   .stat .sl { font-size: .78rem; color: var(--muted); font-weight: 700; }
   .stat .bar { height: 10px; background: #eee; border-radius: 999px; overflow: hidden; }
@@ -438,50 +458,68 @@
   function escapeHtml(s) { return String(s).replace(/[&<>"']/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]; }); }
 
   // ---------- state / persistence ----------
+  var SPECIES_IDS = ["bunny", "cat", "bear", "puppy", "fox", "panda", "dino", "unicorn"];
+  var STAGE_NAME = ["幼年", "小童", "少年", "成年"];
+  var NEEDS = [
+    { key: "hunger", name: "肚子", emoji: "🍎", low: "肚子餓", rate: 5 },
+    { key: "thirst", name: "喝水", emoji: "💧", low: "口渴", rate: 6 },
+    { key: "energy", name: "精神", emoji: "⚡", low: "好累", rate: 4 },
+    { key: "clean", name: "清潔", emoji: "🫧", low: "好髒", rate: 3 },
+    { key: "bladder", name: "如廁", emoji: "🚽", low: "想上廁所", rate: 7 },
+    { key: "happy", name: "心情", emoji: "💛", low: "想討抱", rate: 4 }
+  ];
   function defaultPet() {
-    return { name: "", species: "bunny", color: "theme",
+    return { name: "", color: "theme",
       wear: { hat: null, eyes: null, outfit: null, back: null, hand: null, bg: null, fx: null },
-      stats: { happy: 70, full: 70, clean: 70, energy: 70 }, lastTick: Date.now() };
+      growth: 0,
+      needs: { hunger: 80, thirst: 80, energy: 80, clean: 80, bladder: 80, happy: 80 },
+      lastTick: Date.now() };
   }
+  function defaultChildPets() { return { active: "bunny", roster: { bunny: defaultPet() } }; }
   function normPet(o) {
     var dp = defaultPet();
     if (!o || typeof o !== "object") return dp;
     if (typeof o.name === "string") dp.name = o.name;
-    if (o.species) dp.species = o.species;
-    if (o.color) dp.color = o.color;
-    else if (o.base === "rainbow") dp.color = "rainbow";
-    else if (o.base === "galaxy") dp.color = "galaxy";
+    if (o.color) dp.color = o.color; else if (o.base === "rainbow") dp.color = "rainbow"; else if (o.base === "galaxy") dp.color = "galaxy";
     if (o.wear && typeof o.wear === "object") Object.keys(dp.wear).forEach(function (k) { dp.wear[k] = o.wear[k] || null; });
-    if (o.stats && typeof o.stats === "object") ["happy", "full", "clean", "energy"].forEach(function (k) { var v = +o.stats[k]; dp.stats[k] = isNaN(v) ? 70 : clamp(v); });
+    if (typeof o.growth === "number" && o.growth >= 0) dp.growth = o.growth;
+    if (o.needs && typeof o.needs === "object") Object.keys(dp.needs).forEach(function (k) { var v = +o.needs[k]; dp.needs[k] = isNaN(v) ? 80 : clamp(v); });
+    else if (o.stats && typeof o.stats === "object") { dp.needs.happy = isNaN(+o.stats.happy) ? 80 : clamp(+o.stats.happy); dp.needs.hunger = isNaN(+o.stats.full) ? 80 : clamp(+o.stats.full); dp.needs.clean = isNaN(+o.stats.clean) ? 80 : clamp(+o.stats.clean); dp.needs.energy = isNaN(+o.stats.energy) ? 80 : clamp(+o.stats.energy); }
     dp.lastTick = +o.lastTick || Date.now();
     return dp;
   }
+  function normChildPets(o, inv) {
+    if (o && o.roster && typeof o.roster === "object") {
+      var roster = {}; Object.keys(o.roster).forEach(function (sp) { roster[sp] = normPet(o.roster[sp]); });
+      if (!Object.keys(roster).length) roster.bunny = defaultPet();
+      return { active: (o.active && roster[o.active]) ? o.active : Object.keys(roster)[0], roster: roster };
+    }
+    if (o && typeof o === "object" && (o.species || o.wear || o.stats || o.color)) {
+      var sp0 = o.species || "bunny", r = {}; r[sp0] = normPet(o);
+      if (inv) Object.keys(inv).forEach(function (id) { if (SPECIES_IDS.indexOf(id) >= 0 && !r[id]) r[id] = defaultPet(); });
+      return { active: sp0, roster: r };
+    }
+    return defaultChildPets();
+  }
   function buildPetsFromStyles(styles) {
-    var pets = { mia: defaultPet(), tia: defaultPet(), self: defaultPet() }, inv = { mia: {}, tia: {}, self: {} };
-    ["mia", "tia"].forEach(function (c) {
-      var st = styles && styles[c]; if (!st) return;
-      if (st === "rainbow") { pets[c].color = "rainbow"; inv[c].rainbow = true; }
-      else if (st === "galaxy") { pets[c].color = "galaxy"; inv[c].galaxy = true; }
-      else if (st === "bow") { pets[c].wear.hat = "bow"; }
-      else if (st === "crown") { pets[c].wear.hat = "crown"; }
-    });
-    return { pets: pets, inventory: inv };
+    var mk = function (c) { var p = defaultChildPets(); var st = styles && styles[c]; if (st === "rainbow") p.roster.bunny.color = "rainbow"; else if (st === "galaxy") p.roster.bunny.color = "galaxy"; else if (st === "bow") p.roster.bunny.wear.hat = "bow"; else if (st === "crown") p.roster.bunny.wear.hat = "crown"; return p; };
+    return { pets: { mia: mk("mia"), tia: mk("tia"), self: defaultChildPets() }, inventory: { mia: {}, tia: {}, self: {} } };
   }
   function normPetsBlock(d) {
-    if (d.pets && typeof d.pets === "object") {
-      var pets = { mia: normPet(d.pets.mia), tia: normPet(d.pets.tia), self: normPet(d.pets.self) };
-      var inv = { mia: {}, tia: {}, self: {} };
-      if (d.inventory && typeof d.inventory === "object")
-        ["mia", "tia", "self"].forEach(function (c) { if (d.inventory[c] && typeof d.inventory[c] === "object") inv[c] = Object.assign({}, d.inventory[c]); });
-      return { pets: pets, inventory: inv };
-    }
+    var inv = { mia: {}, tia: {}, self: {} };
+    if (d.inventory && typeof d.inventory === "object") ["mia", "tia", "self"].forEach(function (c) { if (d.inventory[c] && typeof d.inventory[c] === "object") inv[c] = Object.assign({}, d.inventory[c]); });
+    if (d.pets && typeof d.pets === "object") return { pets: { mia: normChildPets(d.pets.mia, inv.mia), tia: normChildPets(d.pets.tia, inv.tia), self: normChildPets(d.pets.self, inv.self) }, inventory: inv };
     return buildPetsFromStyles(d.styles);
   }
   function blank() {
     return { settings: Object.assign({}, DEFAULTS), records: [], usages: [],
-      pets: { mia: defaultPet(), tia: defaultPet(), self: defaultPet() }, inventory: { mia: {}, tia: {}, self: {} }, profile: "both",
+      pets: { mia: defaultChildPets(), tia: defaultChildPets(), self: defaultChildPets() }, inventory: { mia: {}, tia: {}, self: {} }, profile: "both",
       lock: { on: false, hash: "" } };
   }
+  function activePet(childKey) { var cp = state.pets && state.pets[childKey]; if (!cp || !cp.roster) return defaultPet(); return cp.roster[cp.active] || cp.roster[Object.keys(cp.roster)[0]] || defaultPet(); }
+  function petStage(g) { g = g || 0; return g >= 80 ? 3 : g >= 40 ? 2 : g >= 15 ? 1 : 0; }
+  function stageScale(g) { return [0.76, 0.86, 0.95, 1.04][petStage(g)]; }
+  function nextStageAt(g) { return [15, 40, 80, null][petStage(g)]; }
   function fromData(d) {
     var pb = normPetsBlock(d);
     return {
@@ -598,6 +636,8 @@
     var s = '<circle cx="31" cy="64" r="5" fill="' + R.cheek + '" opacity=".4" stroke="none"/><circle cx="69" cy="64" r="5" fill="' + R.cheek + '" opacity=".4" stroke="none"/>';
     if (expr === "happy" || expr === "eat") {
       s += '<path d="M34 57 Q40 50 46 57" fill="none" stroke="#2b2b3d" stroke-width="2.6" stroke-linecap="round"/><path d="M54 57 Q60 50 66 57" fill="none" stroke="#2b2b3d" stroke-width="2.6" stroke-linecap="round"/>';
+    } else if (expr === "sleep") {
+      s += '<path d="M34 56 Q40 61 46 56 M54 56 Q60 61 66 56" fill="none" stroke="#2b2b3d" stroke-width="2.4" stroke-linecap="round"/>';
     } else {
       s += '<ellipse cx="40" cy="56" rx="6.2" ry="7.5" fill="#2b2b3d" stroke="none"/><ellipse cx="60" cy="56" rx="6.2" ry="7.5" fill="#2b2b3d" stroke="none"/>' +
         '<circle cx="42.4" cy="53" r="2.6" fill="#fff" stroke="none"/><circle cx="62.4" cy="53" r="2.6" fill="#fff" stroke="none"/>' +
@@ -607,6 +647,7 @@
     s += '<path d="M50 63 C47 60,44 64,50 68 C56 64,53 60,50 63 Z" fill="' + R.cheek + '" stroke="none"/>';
     if (expr === "eat") s += '<ellipse cx="50" cy="72" rx="5" ry="4.5" fill="#b3406a" stroke="' + R.strokeC + '" stroke-width="1.5"/>';
     else if (expr === "happy") s += '<path d="M43 69 Q50 79 57 69 Z" fill="#fff" stroke="' + R.strokeC + '" stroke-width="2.2" stroke-linejoin="round"/>';
+    else if (expr === "sleep") s += '<ellipse cx="50" cy="71" rx="2.6" ry="3" fill="' + R.strokeC + '" opacity=".65"/>';
     else s += '<path d="M44 70 Q50 76 56 70" fill="none" stroke="' + R.strokeC + '" stroke-width="2.4" stroke-linecap="round"/><rect x="47.3" y="70.4" width="2.6" height="3.6" rx="1" fill="#fff" stroke-width="0.8"/><rect x="50.1" y="70.4" width="2.6" height="3.6" rx="1" fill="#fff" stroke-width="0.8"/>';
     return s;
   }
@@ -800,23 +841,29 @@
   function avgStat(p) { var s = p.stats; return (s.happy + s.full + s.clean + s.energy) / 4; }
   function petSVG(childKey, opts) {
     opts = opts || {}; var size = opts.size || 96; var showBg = opts.showBg !== false; var expr = opts.expr || "auto";
-    var p = (state.pets && state.pets[childKey]) || defaultPet();
+    var cp = state.pets && state.pets[childKey];
+    var species = opts.species || (cp && cp.active) || "bunny";
+    var p = opts.pet || (cp && cp.roster && cp.roster[species]) || defaultPet();
     if (expr === "auto") expr = "normal";
-    var species = p.species || "bunny", wear = p.wear || {};
+    var wear = p.wear || {};
     var R = resolveColor(childKey, p.color || "theme");
+    var k = (opts.scale != null) ? opts.scale : stageScale(p.growth || 0);
     var s = '<svg viewBox="0 0 100 100" width="' + size + '" height="' + size + '" xmlns="http://www.w3.org/2000/svg" aria-label="小怪獸">';
     s += R.grad;
     if (showBg && wear.bg) s += drawBg(wear.bg);
-    if (p.color === "galaxy") { var ag = "ag" + (++svgSeq); s += '<radialGradient id="' + ag + '" cx="50%" cy="52%" r="58%"><stop offset="0" stop-color="#c89bff" stop-opacity=".55"/><stop offset=".6" stop-color="#b15cff" stop-opacity=".18"/><stop offset="1" stop-color="#b15cff" stop-opacity="0"/></radialGradient><ellipse cx="50" cy="58" rx="54" ry="54" fill="url(#' + ag + ')"/>'; }
-    if (wear.back) s += drawBack(wear.back);
-    if (wear.outfit) s += drawOutfitBehind(wear.outfit);
-    s += drawCreature(species, R, expr);
-    if (wear.outfit) s += drawOutfit(wear.outfit, R);
-    if (wear.eyes) s += drawEyes(wear.eyes);
-    if (wear.hat) s += drawHat(wear.hat, R);
-    if (wear.hand) s += drawHand(wear.hand, R);
-    if (p.color === "galaxy") s += sparkle(15, 38, 3.6) + sparkle(86, 44, 4) + sparkle(74, 18, 3) + sparkle(24, 74, 3) + sparkle(50, 13, 2.6) + sparkle(91, 70, 2.8) + sparkle(9, 60, 2.4) + sparkle(62, 88, 2.4);
-    else if (p.color === "rainbow") s += sparkle(16, 40, 2.8) + sparkle(85, 46, 3) + sparkle(72, 19, 2.4) + sparkle(26, 76, 2.2);
+    var inner = "";
+    if (p.color === "galaxy") { var ag = "ag" + (++svgSeq); inner += '<radialGradient id="' + ag + '" cx="50%" cy="52%" r="58%"><stop offset="0" stop-color="#c89bff" stop-opacity=".55"/><stop offset=".6" stop-color="#b15cff" stop-opacity=".18"/><stop offset="1" stop-color="#b15cff" stop-opacity="0"/></radialGradient><ellipse cx="50" cy="58" rx="54" ry="54" fill="url(#' + ag + ')"/>'; }
+    if (wear.back) inner += drawBack(wear.back);
+    if (wear.outfit) inner += drawOutfitBehind(wear.outfit);
+    inner += drawCreature(species, R, expr);
+    if (wear.outfit) inner += drawOutfit(wear.outfit, R);
+    if (wear.eyes) inner += drawEyes(wear.eyes);
+    if (wear.hat) inner += drawHat(wear.hat, R);
+    if (wear.hand) inner += drawHand(wear.hand, R);
+    if (p.color === "galaxy") inner += sparkle(15, 38, 3.6) + sparkle(86, 44, 4) + sparkle(74, 18, 3) + sparkle(24, 74, 3) + sparkle(50, 13, 2.6) + sparkle(91, 70, 2.8) + sparkle(9, 60, 2.4) + sparkle(62, 88, 2.4);
+    else if (p.color === "rainbow") inner += sparkle(16, 40, 2.8) + sparkle(85, 46, 3) + sparkle(72, 19, 2.4) + sparkle(26, 76, 2.2);
+    if (k !== 1) s += '<g transform="translate(50 93) scale(' + k.toFixed(3) + ') translate(-50 -93)">' + inner + "</g>";
+    else s += inner;
     if (wear.fx) s += drawFx(wear.fx);
     s += "</svg>";
     return s;
@@ -824,7 +871,7 @@
 
   // ---------- catalog ----------
   var SLOTS = [
-    { key: "species", name: "品種" }, { key: "color", name: "顏色" }, { key: "hat", name: "頭飾" },
+    { key: "species", name: "🐾 寵物" }, { key: "color", name: "顏色" }, { key: "hat", name: "頭飾" },
     { key: "eyes", name: "眼鏡" }, { key: "outfit", name: "衣服" }, { key: "back", name: "背飾" },
     { key: "hand", name: "手持" }, { key: "bg", name: "背景" }, { key: "fx", name: "特效" }
   ];
@@ -926,36 +973,35 @@
 
   // ---------- pet care ----------
   var ACTIONS = {
-    feed: { emoji: "🍎", fx: "😋", label: "餵食", boost: { full: 28, happy: 8 } },
-    bath: { emoji: "🛁", fx: "🫧", label: "洗澡", boost: { clean: 32, happy: 6 } },
-    play: { emoji: "🎈", fx: "😆", label: "玩耍", boost: { happy: 26, energy: 6 } },
-    pat: { emoji: "🫶", fx: "❤️", label: "摸摸", boost: { happy: 16 } }
+    feed: { emoji: "🍎", label: "餵食", need: "hunger", fx: "feed", parts: ["🍎", "😋", "✨"], n: 5 },
+    drink: { emoji: "🥤", label: "喝水", need: "thirst", fx: "drink", parts: ["💧", "💧", "😋"], n: 6 },
+    bath: { emoji: "🛁", label: "洗澡", need: "clean", fx: "bath", parts: ["🫧", "🫧", "✨", "💧"], n: 9 },
+    toilet: { emoji: "🚽", label: "如廁", need: "bladder", fx: "toilet", parts: ["💨", "😌", "✨"], n: 4 },
+    play: { emoji: "🎈", label: "玩耍", need: "happy", fx: "play", parts: ["🎈", "⭐", "🎉", "😆"], n: 7 },
+    sleep: { emoji: "😴", label: "哄睡", need: "energy", fx: "sleep", parts: ["💤", "💤", "✨"], n: 5 },
+    pat: { emoji: "🫶", label: "摸摸", need: "happy", fx: "pat", parts: ["❤️", "💕", "✨"], n: 6 }
   };
+  var ACTION_ORDER = ["feed", "drink", "bath", "toilet", "play", "sleep", "pat"];
   function tickPet(p) {
     var now = Date.now(), last = p.lastTick || now, hrs = (now - last) / 3600000; p.lastTick = now;
     if (hrs <= 0) return;
-    var rate = 4;
-    ["happy", "full", "clean", "energy"].forEach(function (k) { var v = p.stats[k], t = 60, d = rate * hrs; p.stats[k] = Math.round(v > t ? Math.max(t, v - d) : Math.min(t, v + d)); });
+    NEEDS.forEach(function (n) { var v = (p.needs[n.key] == null) ? 80 : p.needs[n.key]; p.needs[n.key] = Math.max(8, Math.round(v - n.rate * hrs)); });
   }
   var petExpr = "auto", exprTimer = null;
-  var FX_PARTS = {
-    feed: { emo: ["🍎", "😋", "✨", "🍎"], n: 5 },
-    bath: { emo: ["🫧", "🫧", "✨", "🫧", "💧"], n: 9 },
-    play: { emo: ["🎈", "⭐", "🎉", "😆", "🎊"], n: 7 },
-    pat: { emo: ["❤️", "💕", "✨", "❤️"], n: 6 }
-  };
   function doAction(childKey, key) {
-    var a = ACTIONS[key], p = state.pets[childKey]; if (!a || !p) return;
-    Object.keys(a.boost).forEach(function (k) { p.stats[k] = clamp(p.stats[k] + a.boost[k]); });
+    var a = ACTIONS[key], p = activePet(childKey); if (!a || !p) return;
+    p.needs[a.need] = 100;
+    if (key !== "pat" && key !== "play") p.needs.happy = Math.min(100, (p.needs.happy || 80) + 6);
+    p.growth = Math.min(160, (p.growth || 0) + 2);
     save();
-    petExpr = (key === "feed") ? "eat" : "happy"; renderPet(); playFX(key);
-    clearTimeout(exprTimer); exprTimer = setTimeout(function () { petExpr = "auto"; renderPet(); }, 1500);
+    petExpr = key === "feed" ? "eat" : key === "sleep" ? "sleep" : "happy";
+    renderPet(); playFX(a);
+    clearTimeout(exprTimer); exprTimer = setTimeout(function () { petExpr = "auto"; renderPet(); }, key === "sleep" ? 2000 : 1500);
   }
-  function playFX(key) {
+  function playFX(a) {
     var stage = document.querySelector(".petstage"); if (!stage) return;
-    stage.className = "petstage"; void stage.offsetWidth; stage.classList.add("fx-" + key);
-    var conf = FX_PARTS[key] || FX_PARTS.pat;
-    for (var i = 0; i < conf.n; i++) spawnParticle(stage, conf.emo[i % conf.emo.length], i);
+    stage.className = "petstage"; void stage.offsetWidth; stage.classList.add("fx-" + a.fx);
+    for (var i = 0; i < a.n; i++) spawnParticle(stage, a.parts[i % a.parts.length], i);
   }
   function spawnParticle(stage, emoji, i) {
     var sp = document.createElement("span"); sp.className = "floatfx"; sp.textContent = emoji;
@@ -1041,11 +1087,23 @@
 
   // ================= render: 寵物 =================
   var petWho = "mia", petSlot = "species";
-  function statsHTML(p) {
-    var defs = [["happy", "開心", "💛"], ["full", "飽足", "🍙"], ["clean", "清潔", "🫧"], ["energy", "精神", "⚡"]];
-    return '<div class="stats">' + defs.map(function (d) {
-      return '<div class="stat"><span class="sl">' + d[2] + " " + d[1] + '</span><div class="bar"><i style="width:' + Math.round(p.stats[d[0]]) + '%"></i></div></div>';
+  function needsHTML(p) {
+    return '<div class="stats">' + NEEDS.map(function (n) {
+      var v = Math.round(p.needs[n.key] == null ? 80 : p.needs[n.key]); var low = v < 35;
+      return '<div class="stat"><span class="sl">' + n.emoji + " " + n.name + (low ? ' <b style="color:var(--bad)">' + n.low + "</b>" : "") + '</span><div class="bar"><i class="' + (low ? "lowbar" : "") + '" style="width:' + v + '%"></i></div></div>';
     }).join("") + "</div>";
+  }
+  function petStatusLine(p) {
+    var lows = NEEDS.filter(function (n) { return (p.needs[n.key] == null ? 80 : p.needs[n.key]) < 35; });
+    if (!lows.length) return '<div class="petstatus ok">😊 心情很好，跟你玩得開心～</div>';
+    return '<div class="petstatus need">💬 ' + lows.map(function (n) { return n.low; }).join("、") + "！</div>";
+  }
+  function petAgeHTML(p) {
+    var g = p.growth || 0, st = petStage(g), nx = nextStageAt(g), prev = [0, 15, 40, 80][st];
+    var pct = nx ? Math.round((g - prev) / ((nx || 80) - prev) * 100) : 100;
+    return '<div class="petage"><span class="stagebadge s' + st + '">' + STAGE_NAME[st] + '</span>' +
+      '<div class="growbar"><i style="width:' + pct + '%"></i></div>' +
+      '<span class="growtxt">' + (nx ? "再照顧 " + Math.ceil((nx - g) / 2) + " 次長大" : "已長大成年 🎉") + "</span></div>";
   }
   function itemBtn(childKey, slotKey, it, sel) {
     var none = it.id === null, owned = none ? true : isOwned(childKey, it), tag = "";
@@ -1054,38 +1112,55 @@
     return '<button class="witem' + (sel ? " sel" : "") + (owned ? "" : " locked") + '" data-wslot="' + slotKey + '" data-witem="' + (none ? "" : it.id) + '">' +
       '<span class="wemoji">' + (it.emoji || "⭐") + '</span><span class="wname">' + it.name + "</span>" + tag + "</button>";
   }
+  function speciesWardrobe(childKey) {
+    var cp = state.pets[childKey], out = "";
+    (ITEMS.species || []).forEach(function (it) {
+      var inRoster = !!(cp.roster && cp.roster[it.id]), sel = cp.active === it.id, owned = inRoster || isOwned(childKey, it);
+      var tag = (!inRoster && !owned) ? '<span class="price">' + (it.limited ? "🔒 " : "") + fmtMin(it.price) + "</span>" : (it.limited ? '<span class="price lim">限定</span>' : "");
+      var sub = inRoster ? (STAGE_NAME[petStage(cp.roster[it.id].growth)] + (cp.roster[it.id].name ? " · " + escapeHtml(cp.roster[it.id].name) : "")) : "未領養";
+      out += '<button class="witem petcard' + (sel ? " sel" : "") + (inRoster || owned ? "" : " locked") + '" data-wslot="species" data-witem="' + it.id + '">' +
+        petSVG(childKey, { species: it.id, pet: (cp.roster && cp.roster[it.id]) || defaultPet(), size: 50, showBg: false }) +
+        '<span class="wname">' + it.name + '</span><span class="wsub">' + sub + "</span>" + tag + "</button>";
+    });
+    return '<div class="wardrobe pets">' + out + "</div>";
+  }
   function wardrobeHTML(childKey, slotKey) {
-    var p = state.pets[childKey];
-    var worn = (slotKey === "species") ? p.species : (slotKey === "color") ? p.color : p.wear[slotKey];
-    var noNone = (slotKey === "species" || slotKey === "color"), out = "";
-    if (!noNone) out += itemBtn(childKey, slotKey, { id: null, name: "不戴", emoji: "🚫", price: 0 }, worn == null);
+    if (slotKey === "species") return speciesWardrobe(childKey);
+    var p = activePet(childKey);
+    var worn = (slotKey === "color") ? p.color : p.wear[slotKey];
+    var out = "";
+    if (slotKey !== "color") out += itemBtn(childKey, slotKey, { id: null, name: "不戴", emoji: "🚫", price: 0 }, worn == null);
     (ITEMS[slotKey] || []).forEach(function (it) { out += itemBtn(childKey, slotKey, it, worn === it.id); });
     return '<div class="wardrobe">' + out + "</div>";
   }
+  function speciesName(id) { var it = findItem("species", id); return it ? it.name : "寵物"; }
   function renderPet() {
     var lc = lockedChild();
     if (lc) petWho = lc;
     else if (activeChildren().indexOf(petWho) < 0) petWho = activeChildren()[0];
-    var ch = childOf(petWho), p = state.pets[petWho], bal = balanceOf(petWho), nm = p.name || ch.name;
+    var ch = childOf(petWho), p = activePet(petWho), bal = balanceOf(petWho);
+    var nm = p.name || (ch.name + "的" + speciesName(state.pets[petWho].active));
     var walletStr = petWho === "self" ? "9,999,999,999,999 ♾️" : fmtMin(bal);
-    var swRow = lc ? "" : ('<div class="petsw-row">' + activeChildren().map(function (ck) { var c = childOf(ck); return '<button class="petsw ' + c.cls + (c.key === petWho ? " on" : "") + '" data-petwho="' + c.key + '">' + c.emoji + " " + (state.pets[c.key].name || c.name) + "</button>"; }).join("") + "</div>");
-    var care = '<div class="carebtns">' + Object.keys(ACTIONS).map(function (k) { return '<button class="carebtn" data-act="' + k + '">' + ACTIONS[k].emoji + "<span>" + ACTIONS[k].label + "</span></button>"; }).join("") + "</div>";
+    var swRow = lc ? "" : ('<div class="petsw-row">' + activeChildren().map(function (ck) { var c = childOf(ck); return '<button class="petsw ' + c.cls + (c.key === petWho ? " on" : "") + '" data-petwho="' + c.key + '">' + c.emoji + " " + c.name + "</button>"; }).join("") + "</div>");
+    var care = '<div class="carebtns care7">' + ACTION_ORDER.map(function (k) { return '<button class="carebtn" data-act="' + k + '">' + ACTIONS[k].emoji + "<span>" + ACTIONS[k].label + "</span></button>"; }).join("") + "</div>";
     var slotTabs = '<div class="slottabs">' + SLOTS.map(function (sl) { return '<button class="slottab' + (sl.key === petSlot ? " on" : "") + '" data-slottab="' + sl.key + '">' + sl.name + "</button>"; }).join("") + "</div>";
     $("view-pet").innerHTML =
       swRow +
       '<section class="block petbox ' + ch.cls + '">' +
         '<div class="petname"><span>' + escapeHtml(nm) + '</span><button class="btn ghost sm" data-rename="1">✏️ 改名</button></div>' +
+        petAgeHTML(p) + petStatusLine(p) +
         '<div class="petstage"><div class="petart">' + petSVG(petWho, { size: 220, expr: petExpr }) + "</div></div>" +
-        statsHTML(p) + care +
+        needsHTML(p) + care +
       "</section>" +
       '<section class="block"><div class="wallet ' + (bal < 0 ? "neg" : "") + '">👛 ' + ch.name + " 的 3C 錢包：<b>" + walletStr + "</b></div>" +
         '<h2 style="margin-top:12px">🛍️ 衣櫥 / 商店</h2>' + slotTabs + wardrobeHTML(petWho, petSlot) +
-        '<p class="hint">基本款免費換；標價的用 3C 兌換（會記一筆扣款）；🔒 限定款連續睡飽解鎖、或用 3C 兌換。</p></section>';
+        '<p class="hint">「🐾寵物」分頁可領養新寵物（每隻從幼年養大、分開計算）；基本免費，標價用 3C 兌換；🔒限定款連睡飽解鎖或用 3C。</p></section>';
   }
   function renamePet() {
-    var n = prompt("幫 " + childOf(petWho).name + " 的小怪獸取名字：", state.pets[petWho].name || "");
+    var p = activePet(petWho);
+    var n = prompt("幫這隻「" + speciesName(state.pets[petWho].active) + "」取名字：", p.name || "");
     if (n === null) return;
-    state.pets[petWho].name = n.trim().slice(0, 12); save(); renderPet();
+    p.name = n.trim().slice(0, 12); save(); renderPet();
   }
   function tryBuy(childKey, it) {
     if (it.unlockStreak && sleepStreak(childKey) >= it.unlockStreak) { state.inventory[childKey][it.id] = true; return true; }
@@ -1098,11 +1173,22 @@
     return true;
   }
   function chooseItem(childKey, slotKey, itemId) {
-    var p = state.pets[childKey];
-    if (slotKey === "species" || slotKey === "color") {
-      var b = findItem(slotKey, itemId); if (!b) return;
+    var cp = state.pets[childKey];
+    if (slotKey === "species") {
+      if (!cp.roster[itemId]) {
+        var sit = findItem("species", itemId); if (!sit) return;
+        if (!isOwned(childKey, sit) && !tryBuy(childKey, sit)) return;
+        cp.roster[itemId] = defaultPet();
+        if (childKey !== "self") { if (!state.inventory[childKey]) state.inventory[childKey] = {}; state.inventory[childKey][itemId] = true; }
+      }
+      cp.active = itemId;
+      save(); renderPet(); renderCards(); return;
+    }
+    var p = activePet(childKey);
+    if (slotKey === "color") {
+      var b = findItem("color", itemId); if (!b) return;
       if (!isOwned(childKey, b) && !tryBuy(childKey, b)) return;
-      if (slotKey === "species") p.species = itemId; else p.color = itemId;
+      p.color = itemId;
     } else if (itemId === "") {
       p.wear[slotKey] = null;
     } else {
@@ -1248,7 +1334,7 @@
       var row = done.closest(".prow"), h = row.querySelector(".ph").value, m = row.querySelector(".pm").value || "00";
       if (!h) { alert("請選擇起床時間"); return; }
       var r = findRec(done.getAttribute("data-complete"));
-      if (r) { r.wake = h + ":" + m; var pet = state.pets[r.child]; if (pet) pet.stats.energy = clamp(pet.stats.energy + 30); save(); render(); }
+      if (r) { r.wake = h + ":" + m; var pet = activePet(r.child); if (pet && pet.needs) pet.needs.energy = clamp(pet.needs.energy + 30); save(); render(); }
     } else if (cancel) {
       if (!confirm("刪除這筆入睡登記？")) return;
       var id = cancel.getAttribute("data-cancel");
@@ -1352,7 +1438,7 @@
 
   // ---------- init ----------
   (function () { var hh = loadHistory(); if (hh.length) { try { lastSig = snapSig(JSON.parse(hh[hh.length - 1].data)); } catch (e) { } } })();
-  tickPet(state.pets.mia); tickPet(state.pets.tia); save();
+  ["mia", "tia", "self"].forEach(function (c) { var r = state.pets[c].roster; Object.keys(r).forEach(function (sp) { tickPet(r[sp]); }); }); save();
   recDate.value = todayStr(); $("useDate").value = todayStr();
   setTime(recSleepH, recSleepM, ""); setTime(recWakeH, recWakeM, "");
   $("profileSel").value = state.profile;
