@@ -519,7 +519,7 @@
 (function () {
   "use strict";
 
-  var APP_VER = "v1.3 · 互動生動版 · 2026-06-20";
+  var APP_VER = "v1.4 · 真實連鎖互動 · 2026-06-20";
   var STORAGE_KEY = "mt-3c-panel-v1";
   var HISTORY_KEY = "mt-3c-history-v1";
   var HISTORY_MAX = 30;
@@ -576,7 +576,6 @@
   // 需求嚴重等級：0 健康 ／ 1 輕 ／ 2 中 ／ 3 急（越低越嚴重）
   // 掉到剩約 2/3（<67）就開始有表情；剩一半（50）已是「中」，1/4 以下是「急」
   function needTier(v) { return v >= 67 ? 0 : v >= 50 ? 1 : v >= 28 ? 2 : 3; }
-  var TIER_TAG = ["", "·輕", "·中", "·急"];
   function defaultPet() {
     return { name: "", color: "theme",
       wear: { hat: null, eyes: null, outfit: null, back: null, hand: null, bg: null, fx: null },
@@ -1311,14 +1310,15 @@
   }
 
   // ---------- pet care ----------
+  // side：真實連鎖反應（照顧完會牽動其他需求，模擬生理現實）；note：完成後的小提示
   var ACTIONS = {
-    feed: { emoji: "🍎", label: "餵食", need: "hunger", fx: "feed", parts: ["🍎", "😋", "✨"], n: 5 },
-    drink: { emoji: "🥤", label: "喝水", need: "thirst", fx: "drink", parts: ["💧", "💧", "😋"], n: 6 },
-    bath: { emoji: "🛁", label: "洗澡", need: "clean", fx: "bath", parts: ["🫧", "🫧", "✨", "💧"], n: 9 },
-    toilet: { emoji: "🚽", label: "如廁", need: "bladder", fx: "toilet", parts: ["💨", "😌", "✨"], n: 4 },
-    play: { emoji: "🎈", label: "玩耍", need: "happy", fx: "play", parts: ["🎈", "⭐", "🎉", "😆"], n: 7 },
-    sleep: { emoji: "😴", label: "哄睡", need: "energy", fx: "sleep", parts: ["💤", "💤", "✨"], n: 5 },
-    pat: { emoji: "🫶", label: "摸摸", need: "happy", fx: "pat", parts: ["❤️", "💕", "✨"], n: 6 }
+    feed: { emoji: "🍎", label: "餵食", need: "hunger", fx: "feed", parts: ["🍎", "😋", "✨"], n: 5, side: { bladder: -7, clean: -3, happy: 4 }, note: "吃飽飽～等一下可能會想上廁所 🚽" },
+    drink: { emoji: "🥤", label: "喝水", need: "thirst", fx: "drink", parts: ["💧", "💧", "😋"], n: 6, side: { bladder: -10, happy: 3 }, note: "水分補足～記得帶牠去尿尿 💧" },
+    bath: { emoji: "🛁", label: "洗澡", need: "clean", fx: "bath", parts: ["🫧", "🫧", "✨", "💧"], n: 9, side: { energy: -16, happy: 8 }, note: "洗香香～暖呼呼的有點想睡了 😴" },
+    toilet: { emoji: "🚽", label: "如廁", need: "bladder", fx: "toilet", parts: ["💨", "😌", "✨"], n: 4, side: { clean: -7, happy: 3 }, note: "上完廁所～手手要洗乾淨喔 🧼" },
+    play: { emoji: "🎈", label: "玩耍", need: "happy", fx: "play", parts: ["🎈", "⭐", "🎉", "😆"], n: 7, side: { clean: -16, hunger: -12, thirst: -12, energy: -10 }, note: "玩得超開心！但流汗弄髒了，肚子也餓、口也渴了 💦" },
+    sleep: { emoji: "😴", label: "哄睡", need: "energy", fx: "sleep", parts: ["💤", "💤", "✨"], n: 5, side: { hunger: -10, bladder: -12, thirst: -5, happy: 5 }, note: "睡飽飽～醒來肚子餓、也想尿尿 🌅" },
+    pat: { emoji: "🫶", label: "摸摸", need: "happy", fx: "pat", parts: ["❤️", "💕", "✨"], n: 6, note: "秀秀～心情變好了 💕" }
   };
   var ACTION_ORDER = ["feed", "drink", "bath", "toilet", "play", "sleep", "pat"];
   function tickPet(p) {
@@ -1521,7 +1521,8 @@
     var a = ACTIONS[key], p = activePet(childKey), before = sceneBefore;
     p.needs[a.need] = 100;
     if (key === "sleep") p.needs.energy = 100;
-    if (key !== "pat" && key !== "play") p.needs.happy = Math.min(100, (p.needs.happy || 80) + 6);
+    // 真實連鎖反應：玩完會髒會餓會渴、洗完澡想睡、吃喝完想上廁所…
+    if (a.side) Object.keys(a.side).forEach(function (k) { p.needs[k] = Math.max(8, Math.min(100, (p.needs[k] == null ? 80 : p.needs[k]) + a.side[k])); });
     petFlash = null;
     if (before < NEED_LOW) {
       var day = todayStr();
@@ -1532,7 +1533,8 @@
         p.growth = Math.min(160, (p.growth || 0) + add); p.growthToday = (p.growthToday || 0) + add;
         if (petStage(p.growth) > was) petFlash = { cls: "grow", text: "🎉 長大了！變成「" + STAGE_NAME[petStage(p.growth)] + "」囉！" };
       } else petFlash = { cls: "info", text: "今天已經長大很多囉，明天再來陪它 🌙" };
-    } else petFlash = { cls: "info", text: "它現在不太需要～不過心情更好了 😊" };
+    }
+    if (!petFlash) petFlash = { cls: "info", text: a.note || "它現在心情更好了 😊" };
     save();
     petExpr = "happy"; renderPet();
     var stage2 = document.querySelector(".petstage");
@@ -1638,14 +1640,14 @@
   function needsHTML(p) {
     return '<div class="stats">' + NEEDS.map(function (n) {
       var v = Math.round(p.needs[n.key] == null ? 80 : p.needs[n.key]); var lv = needTier(v);
-      var tag = lv ? ' <b class="ntag t' + lv + '">' + n.low + TIER_TAG[lv] + "</b>" : "";
+      var tag = lv ? ' <b class="ntag t' + lv + '">' + n.low + "</b>" : "";
       return '<div class="stat"><span class="sl">' + n.emoji + " " + n.name + tag + '</span><div class="bar"><i class="bl' + lv + '" style="width:' + v + '%"></i></div></div>';
     }).join("") + "</div>";
   }
   function petStatusLine(p) {
     var lows = lowNeeds(p);
     if (!lows.length) return '<div class="petstatus ok">😊 心情很好，跟你玩得開心～</div>';
-    return '<div class="petstatus need' + (lows[0].lv >= 3 ? " urgent" : "") + '">💬 ' + lows.map(function (n) { return NEED_MAP[n.key].low + TIER_TAG[n.lv]; }).join("、") + "！</div>";
+    return '<div class="petstatus need' + (lows[0].lv >= 3 ? " urgent" : "") + '">💬 ' + lows.map(function (n) { return NEED_MAP[n.key].low; }).join("、") + "！</div>";
   }
   function petAgeHTML(p) {
     var g = p.growth || 0, st = petStage(g), nx = nextStageAt(g), prev = [0, 15, 40, 80][st];
@@ -1724,7 +1726,7 @@
     var moodNow = (petExpr === "auto") ? petMood(p) : null;
     var artCls = (moodNow && moodNow.lv >= 3) ? " distress" : "";
     var bubble = "";
-    if (moodNow) { var nbb = NEED_MAP[moodNow.key]; bubble = '<div class="moodbubble t' + moodNow.lv + '">' + nbb.emoji + " " + nbb.low + TIER_TAG[moodNow.lv] + "！</div>"; }
+    if (moodNow) { var nbb = NEED_MAP[moodNow.key]; bubble = '<div class="moodbubble t' + moodNow.lv + '">' + nbb.emoji + " " + nbb.low + "！</div>"; }
     else if (petExpr === "auto" && petThriving(p)) bubble = '<div class="moodbubble happy">🥰 好幸福～</div>';
     $("view-pet").innerHTML =
       swRow +
@@ -2068,19 +2070,19 @@
     var host = document.getElementById("stategallery");
     if (location.hash !== "#states") { if (host) host.style.display = "none"; return; }
     if (!host) { host = document.createElement("div"); host.id = "stategallery"; document.body.appendChild(host); }
-    var TIERS = [["輕", 58], ["中", 38], ["急", 14]];
+    var TIERS = [58, 38, 14];
     var h = '<div class="gwrap"><button class="gclose">✕ 關閉</button>' +
-      "<h1>🎭 寵物狀態圖鑑</h1><p class=\"ghint\">目前版本：" + APP_VER + "。掉到剩約 2/3 就開始有表情；同一隻兔兔，肚子餓／口渴／想睡／髒了／想尿尿／寂寞時會有不同表情，越嚴重（輕→中→急）臉和身上的變化越明顯。</p>";
-    h += '<div class="ggrid">' + galleryCard("😊 健康", "全部充足", null) + "</div>";
+      "<h1>🎭 寵物狀態圖鑑</h1><p class=\"ghint\">目前版本：" + APP_VER + "。掉到剩約 2/3 就開始有表情；同一隻兔兔，肚子餓／口渴／想睡／髒了／想尿尿／寂寞時會有不同表情，越低變化越明顯。</p>";
+    h += '<div class="ggrid">' + galleryCard("😊 健康", "", null) + "</div>";
     NEEDS.forEach(function (n) {
       h += "<h3>" + n.emoji + " " + n.name + "（" + n.low + "）</h3><div class=\"ggrid\">";
-      TIERS.forEach(function (t) { var nd = {}; nd[n.key] = t[1]; h += galleryCard(t[0] + "（" + t[1] + "%）", "單一狀態", nd); });
+      TIERS.forEach(function (v) { var nd = {}; nd[n.key] = v; h += galleryCard("剩 " + v + "%", "", nd); });
       h += "</div>";
     });
     h += '<h2>👯 複數狀態（同時好幾項）</h2><div class="ggrid">';
-    h += galleryCard("肚子餓＋好髒", "中＋急", { hunger: 38, clean: 14 });
-    h += galleryCard("口渴＋想尿＋寂寞", "三項同時", { thirst: 40, bladder: 30, happy: 58 });
-    h += galleryCard("全部都很急", "崩潰邊緣", { hunger: 12, thirst: 12, energy: 12, clean: 12, bladder: 12, happy: 12 });
+    h += galleryCard("肚子餓＋好髒", "", { hunger: 38, clean: 14 });
+    h += galleryCard("口渴＋想尿＋寂寞", "", { thirst: 40, bladder: 30, happy: 58 });
+    h += galleryCard("全部都很低", "", { hunger: 12, thirst: 12, energy: 12, clean: 12, bladder: 12, happy: 12 });
     h += '</div><h2>✨ 特別狀態</h2><div class="ggrid">';
     h += galleryCard("🥰 幸福", "照顧滿分", { hunger: 95, thirst: 95, energy: 95, clean: 95, bladder: 95, happy: 95 });
     h += galleryCard("🤒 生病", "太久沒顧", { hunger: 10, thirst: 10, clean: 10 });
