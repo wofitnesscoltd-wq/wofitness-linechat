@@ -167,10 +167,16 @@
   .petbox.mia { border-top: 5px solid var(--mia); }
   .petbox.tia { border-top: 5px solid var(--tia); }
   .petname { display: flex; align-items: center; justify-content: center; gap: 8px; font-weight: 800; font-size: 1.2rem; }
-  .petstage { position: relative; display: flex; justify-content: center; align-items: center; height: 244px; margin: 4px 0; }
+  .petstage { position: relative; display: flex; justify-content: center; align-items: center; height: clamp(244px, 56vmin, 400px); margin: 4px 0; }
   .petstage .petart { animation: bob 3.2s ease-in-out infinite; transform-origin: center bottom; }
   .petstage.act .petart { animation: pop .5s ease; }
-  .petart svg { display: block; border-radius: 18px; filter: drop-shadow(0 8px 10px rgba(0,0,0,.10)); }
+  .petart svg { display: block; border-radius: 18px; filter: drop-shadow(0 8px 10px rgba(0,0,0,.10)); width: clamp(220px, 52vmin, 380px); height: auto; }
+  /* 寵物吸附在最上面：往下逛商店、換裝時也一直看得到寵物的變化 */
+  #view-pet > .petstage { position: sticky; top: 6px; z-index: 30; }
+  @media (max-width: 1023px) {
+    #view-pet > .petstage { top: 0; margin: 10px -16px 2px; padding: 2px 16px 8px; background: var(--bg); box-shadow: 0 10px 12px -10px rgba(40,40,90,.30); height: auto; }
+    #view-pet > .petstage .petart svg { width: auto; height: min(31vh, 300px); }
+  }
   .floatfx { position: absolute; top: 28%; font-size: 30px; pointer-events: none; animation: floatup 1.4s ease-out forwards; }
   @keyframes bob { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-6px); } }
   @keyframes pop { 0% { transform: scale(1); } 30% { transform: scale(1.08); } 60% { transform: scale(.97); } 100% { transform: scale(1); } }
@@ -248,22 +254,39 @@
   .modebar .mb-tip b { color: var(--brand); }
   .cards.one { grid-template-columns: 1fr; }
 
-  /* ===== wide / ultrawide (e.g. 49" Samsung) ===== */
-  @media (min-width: 1500px) {
-    .wrap { max-width: 1500px; }
+  /* ===== 響應式：手機 → iPad → 超寬，自動縮放 ===== */
+  /* iPad 直立：單欄但整體放大，填滿大螢幕（寵物已用 vmin 自動放大） */
+  @media (min-width: 700px) and (max-width: 1023px) {
+    header.top h1 { font-size: 1.7rem; }
+    header.top .rules { font-size: 1rem; }
+    .card .mascot svg { width: 98px; height: 98px; }
+    .card .bignum { font-size: 2.3rem; }
+    .card .who { font-size: 1.3rem; }
+    .carebtn { font-size: 2.1rem; }
+    .wardrobe { grid-template-columns: repeat(auto-fill, minmax(96px, 1fr)); }
+  }
+  /* iPad 橫放 / 小桌機：睡眠＋寵物 左右兩欄一起看 */
+  @media (min-width: 1024px) {
+    html { font-size: 17px; }
+    .wrap { max-width: 1180px; }
     .tabbar { display: none; }
-    #views { display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr); gap: 22px; align-items: start; }
+    #views { display: grid; grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr); gap: 22px; align-items: start; }
     #view-sleep, #view-pet { display: block !important; }
-    #view-pet .petstage { height: 360px; }
-    #view-pet .petstage .petart svg { width: 344px !important; height: 344px !important; }
-    #view-pet .wardrobe { grid-template-columns: repeat(auto-fill, minmax(76px, 1fr)); }
+    #view-pet .wardrobe { grid-template-columns: repeat(auto-fill, minmax(84px, 1fr)); }
     .modebar { justify-content: flex-end; }
+  }
+  /* 超寬（49" Samsung 等） */
+  @media (min-width: 1500px) {
+    html { font-size: 18px; }
+    .wrap { max-width: 1500px; }
+    #views { grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr); gap: 26px; }
+    #view-pet .wardrobe { grid-template-columns: repeat(auto-fill, minmax(78px, 1fr)); }
   }
   @media (min-width: 2200px) {
     .wrap { max-width: 1980px; padding-left: 28px; padding-right: 28px; }
     #views { grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr); gap: 32px; }
-    header.top h1 { font-size: 1.7rem; }
-    .card .bignum { font-size: 2.3rem; }
+    header.top h1 { font-size: 1.9rem; }
+    .card .bignum { font-size: 2.4rem; }
   }
 </style>
 </head>
@@ -1470,9 +1493,9 @@
         '<div class="petname"><span>' + escapeHtml(nm) + '</span><button class="btn ghost sm" data-rename="1">✏️ 改名</button></div>' +
         petAgeHTML(p) + (petFlash ? '<div class="petstatus ' + petFlash.cls + '">' + petFlash.text + "</div>" : petStatusLine(p)) +
         petStoryHTML(ch.name, p) +
-        '<div class="petstage"><div class="petart">' + petSVG(petWho, { size: 220, expr: petExpr }) + "</div></div>" +
-        needsHTML(p) + care +
       "</section>" +
+      '<div class="petstage"><div class="petart">' + petSVG(petWho, { size: 220, expr: petExpr }) + "</div></div>" +
+      '<section class="block">' + needsHTML(p) + care + "</section>" +
       '<section class="block"><div class="wallet ' + (bal < 0 ? "neg" : "") + '">👛 ' + ch.name + " 的 3C 錢包：<b>" + walletStr + "</b></div>" +
         '<h2 style="margin-top:12px">🛍️ 衣櫥 / 商店</h2>' + slotTabs + wardrobeHTML(petWho, petSlot) +
         '<p class="hint">「🐾寵物」分頁可領養新寵物（每隻從幼年養大、分開計算）；基本免費，標價用 3C 兌換；🔒限定款連睡飽解鎖或用 3C。</p></section>';
