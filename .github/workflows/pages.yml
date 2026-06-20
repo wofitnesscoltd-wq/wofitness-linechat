@@ -1,0 +1,43 @@
+name: Deploy 3C panel to GitHub Pages
+
+# Publishes the offline kids' panel (public/3c.html) as a free static
+# site so it can be opened on the girls' iPhones and "Add to Home Screen".
+# The Cloudflare Worker (chat at /) is untouched; this only mirrors the
+# static panel to GitHub Pages.
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Assemble site (panel is the landing page)
+        run: |
+          mkdir -p _site
+          cp public/3c.html _site/index.html
+          cp public/3c.html _site/3c.html
+          cp public/apple-touch-icon.png _site/apple-touch-icon.png
+      - uses: actions/configure-pages@v5
+        with:
+          enablement: true
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+      - id: deployment
+        uses: actions/deploy-pages@v4
