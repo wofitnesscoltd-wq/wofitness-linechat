@@ -229,6 +229,8 @@
   .modebar { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-top: 12px; font-size: .86rem; color: var(--muted); }
   .modebar select { width: auto; padding: 7px 10px; font-weight: 700; }
   .modebar .mb-hint { font-size: .78rem; }
+  .modebar .mb-tip { flex-basis: 100%; font-size: .78rem; color: var(--muted); background: #f1f0fb; border-radius: 10px; padding: 7px 11px; line-height: 1.5; }
+  .modebar .mb-tip b { color: var(--brand); }
   .cards.one { grid-template-columns: 1fr; }
 
   /* ===== wide / ultrawide (e.g. 49" Samsung) ===== */
@@ -254,7 +256,7 @@
 <div class="wrap">
 
   <header class="top">
-    <h1><i class="emo">⭐</i> Mia &amp; Tia 的 3C 時間銀行</h1>
+    <h1 id="appTitle"><i class="emo">⭐</i> Mia &amp; Tia 的 3C 時間銀行</h1>
     <div class="rules" id="rulesLine"></div>
   </header>
 
@@ -272,6 +274,7 @@
       <option value="self">👑 速隨（無限）</option>
     </select>
     <span class="mb-hint" id="modeHint"></span>
+    <span class="mb-tip">想讓 Mia、Tia <b>各用各的裝置</b>：每台選一位小孩 → 再到下方設定「家長密碼鎖」，孩子就只看得到自己的睡眠與寵物，切不到另一位。</span>
   </div>
 
   <div id="views">
@@ -1310,6 +1313,17 @@
     var s = state.settings;
     rulesLineEl.innerHTML = "睡滿 <b>" + fmtMin(s.baseline) + "</b> 後，每多睡 <b>" + s.step + " 分鐘</b> → 兌換 <b>" + s.reward + " 分鐘</b> 3C 時間。";
   }
+  // 專屬機：標題、主題色、瀏覽器分頁名稱都跟著這台裝置的小孩
+  function renderHeader() {
+    var lc = lockedChild(), h = $("appTitle"), hd = document.querySelector("header.top");
+    var T = {
+      mia: ["🌸", "Mia", "linear-gradient(135deg,#c45fd6 0%,#ff8fc2 100%)"],
+      tia: ["🐬", "Tia", "linear-gradient(135deg,#2f93ec 0%,#5fd0ff 100%)"],
+      self: ["👑", "速隨", "linear-gradient(135deg,#e0930f 0%,#ffd24a 100%)"]
+    };
+    if (lc && T[lc]) { h.innerHTML = '<i class="emo">' + T[lc][0] + '</i> ' + T[lc][1] + " 的 3C 時間銀行"; hd.style.background = T[lc][2]; document.title = T[lc][1] + " 的 3C 時間銀行"; }
+    else { h.innerHTML = '<i class="emo">⭐</i> Mia &amp; Tia 的 3C 時間銀行'; hd.style.background = ""; document.title = "Mia & Tia 的 3C 時間銀行"; }
+  }
   function renderMonth() { monthLabelEl.textContent = monthLabel(viewMonth); }
   function renderCards() {
     var act = activeChildren();
@@ -1519,11 +1533,13 @@
     if (lc) {
       recChild.value = lc; recChild.disabled = true;
       uc.value = lc; uc.disabled = true;
-      $("modeHint").textContent = "（只顯示 " + childOf(lc).name + "，碰不到另一位）";
+      var hasLock = !!(state.lock && state.lock.on);
+      $("modeHint").textContent = "（這台＝" + childOf(lc).name + " 專屬機）" + (hasLock ? "" : " ← 建議到下方設定家長密碼鎖");
     } else {
       recChild.disabled = false; uc.disabled = false;
-      $("modeHint").textContent = "（兩人都顯示，輪流玩）";
+      $("modeHint").textContent = "（共用機：兩人都顯示，輪流玩）";
     }
+    renderHeader();
   }
   $("profileSel").addEventListener("change", function () {
     state.profile = this.value; save();
@@ -1543,7 +1559,8 @@
     var locked = !!(state.lock && state.lock.on && !unlocked);
     $("lock-gate").style.display = locked ? "" : "none";
     $("sleep-content").style.display = locked ? "none" : "";
-    $("profileSel").disabled = locked;
+    // 鎖起來時整列「這台裝置給誰」也藏起來，孩子才切不到另一位或家長視圖
+    document.querySelector(".modebar").style.display = locked ? "none" : "";
     if (!locked) refreshLockSection();
   }
   function tryUnlock() {
