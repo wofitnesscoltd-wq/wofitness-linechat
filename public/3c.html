@@ -1098,12 +1098,6 @@
     applyStoryDrop(p, s);
     return true;
   }
-  function rerollStory(p) {
-    var lo = lowestNeed(p).key || "happy";
-    var pool = STORIES.filter(function (s) { return s.need === lo; });
-    if (!pool.length) pool = STORIES;
-    p.storyIdx = STORIES.indexOf(pool[Math.floor(Math.random() * pool.length)]);
-  }
 
   // ---------- 互動動畫場景（每個互動都有專屬畫面，數張圖輪播 ~5 秒，結束超開心） ----------
   function sceneBg(c1, c2) { var g = "sg" + (++svgSeq); return '<linearGradient id="' + g + '" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="' + c1 + '"/><stop offset="1" stop-color="' + c2 + '"/></linearGradient><rect width="100" height="100" fill="url(#' + g + ')"/>'; }
@@ -1411,7 +1405,7 @@
   function speciesName(id) { var it = findItem("species", id); return it ? it.name : "寵物"; }
   function petStoryHTML(childName, p) {
     var s = STORIES[p.storyIdx]; if (!s) return "";
-    return '<div class="petstory"><span class="se">' + s.e + '</span><span class="st"><span class="stt">📖 今天的故事</span>' + escapeHtml(s.t.replace(/\{n\}/g, childName)) + '</span><button class="btn ghost sm" data-story="1" title="換一個故事">🔄</button></div>';
+    return '<div class="petstory"><span class="se">' + s.e + '</span><span class="st"><span class="stt">📖 今天的故事</span>' + escapeHtml(s.t.replace(/\{n\}/g, childName)) + '</span></div>';
   }
   function renderPet() {
     if (sceneRunning) return;
@@ -1486,7 +1480,6 @@
     if (sceneRunning) return;   // 互動播放中，先別切換
     if ((t = e.target.closest("[data-petwho]"))) { petWho = t.getAttribute("data-petwho"); petExpr = "auto"; clearTimeout(exprTimer); renderPet(); return; }
     if ((t = e.target.closest("[data-rename]"))) { renamePet(); return; }
-    if ((t = e.target.closest("[data-story]"))) { rerollStory(activePet(petWho)); save(); renderPet(); return; }
     if ((t = e.target.closest("[data-slottab]"))) { petSlot = t.getAttribute("data-slottab"); renderPet(); return; }
     if ((t = e.target.closest("[data-witem]"))) { chooseItem(petWho, t.getAttribute("data-wslot"), t.getAttribute("data-witem")); return; }
   });
