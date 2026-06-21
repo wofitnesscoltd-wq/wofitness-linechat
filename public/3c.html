@@ -532,7 +532,7 @@
 (function () {
   "use strict";
 
-  var APP_VER = "v2.4 · 八級配件版 · 2026-06-21";
+  var APP_VER = "v2.5 · 盲盒限定色 · 成長造型 · 2026-06-21";
   var STORAGE_KEY = "mt-3c-panel-v1";
   var HISTORY_KEY = "mt-3c-history-v1";
   var HISTORY_MAX = 30;
@@ -890,7 +890,12 @@
     mint: { fur: "#7fe0c0", dark: "#2bb38d", inner: "#d4f7ec", belly: "#f1fffb", cheek: "#34c79f" },
     peach: { fur: "#ffb38a", dark: "#e07e4f", inner: "#ffe2cf", belly: "#fff6ef", cheek: "#ff8f5e" },
     cream: { fur: "#ffe39a", dark: "#d9ad3f", inner: "#fff3cf", belly: "#fffbe9", cheek: "#f0b73f" },
-    grey: { fur: "#c4c9d6", dark: "#8a90a3", inner: "#e7eaf1", belly: "#f7f8fb", cheek: "#aab0c0" }
+    grey: { fur: "#c4c9d6", dark: "#8a90a3", inner: "#e7eaf1", belly: "#f7f8fb", cheek: "#aab0c0" },
+    // ===== 盲盒限定色（Labubu「Exciting Macaron」等熱門盲盒的限量／隱藏款配色）=====
+    toffee: { fur: "#e0a96b", dark: "#b07a3e", inner: "#f6e0c2", belly: "#fdf5e9", cheek: "#cf8f4f" },   // 太妃糖 Toffee
+    seasalt: { fur: "#a7d8da", dark: "#5fa1a6", inner: "#ddf2f3", belly: "#f4fbfb", cheek: "#6fb6ba" },   // 海鹽椰子 Sea Salt Coconut
+    grape: { fur: "#c3da6b", dark: "#8da838", inner: "#ecf6c4", belly: "#fbfdec", cheek: "#a4c545" },     // 青葡萄 Green Grape
+    cocoa: { fur: "#8a5a3c", dark: "#5e3a26", inner: "#d6ad8c", belly: "#f1e2d3", cheek: "#774729" }      // 可可栗 Chestnut Cocoa（Macaron 隱藏款）
   };
   function hexToRgb(h) { h = String(h).replace("#", ""); if (h.length === 3) h = h.charAt(0) + h.charAt(0) + h.charAt(1) + h.charAt(1) + h.charAt(2) + h.charAt(2); var n = parseInt(h, 16); return [(n >> 16) & 255, (n >> 8) & 255, n & 255]; }
   function mix(hex, t, f) { var a = hexToRgb(hex); return "#" + [Math.round(a[0] + (t[0] - a[0]) * f), Math.round(a[1] + (t[1] - a[1]) * f), Math.round(a[2] + (t[2] - a[2]) * f)].map(function (x) { return ("0" + x.toString(16)).slice(-2); }).join(""); }
@@ -899,6 +904,10 @@
   function resolveColor(childKey, colorKey) {
     if (colorKey === "rainbow") { var g = "pf" + (++svgSeq); return { furFill: "url(#" + g + ")", strokeC: "#ef9bb0", inner: "rgba(255,255,255,.6)", belly: "rgba(255,255,255,.45)", cheek: "#ff7eb6", grad: '<linearGradient id="' + g + '" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ff9ec0"/><stop offset=".45" stop-color="#ffd98a"/><stop offset="1" stop-color="#8be3b0"/></linearGradient>', special: true }; }
     if (colorKey === "galaxy") { var g2 = "pf" + (++svgSeq); return { furFill: "url(#" + g2 + ")", strokeC: "#8a6bf0", inner: "rgba(255,255,255,.6)", belly: "rgba(255,255,255,.45)", cheek: "#c79bff", grad: '<linearGradient id="' + g2 + '" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#6a5cff"/><stop offset=".5" stop-color="#b15cff"/><stop offset="1" stop-color="#ff7ad9"/></linearGradient>', special: true }; }
+    // 能量虹：Labubu「Big into Energy」隱藏款＝灰底＋彩虹珠光（1:72 抽中款）
+    if (colorKey === "energy") { var ge = "pf" + (++svgSeq); return { furFill: "url(#" + ge + ")", strokeC: "#9aa0b8", inner: "rgba(255,255,255,.62)", belly: "rgba(255,255,255,.5)", cheek: "#c9b6e0", grad: '<linearGradient id="' + ge + '" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#d7d9e3"/><stop offset=".3" stop-color="#bfe6d6"/><stop offset=".55" stop-color="#cdd6f2"/><stop offset=".8" stop-color="#f1cfe6"/><stop offset="1" stop-color="#dcd3c4"/></linearGradient>', special: true }; }
+    // 夜光森：Labubu「Have a Seat」夜光隱藏款＝會發光的螢光橄欖綠
+    if (colorKey === "nightglow") { var gn = "pf" + (++svgSeq); return { furFill: "url(#" + gn + ")", strokeC: "#4f8a4a", inner: "#e9ffce", belly: "#f3ffe6", cheek: "#9bd86a", grad: '<linearGradient id="' + gn + '" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#caf36b"/><stop offset=".5" stop-color="#8fd95a"/><stop offset="1" stop-color="#5a9e6a"/></linearGradient>', special: true }; }
     var p = (colorKey === "theme" || !COLORS[colorKey]) ? (PALETTE[childKey] || PALETTE.mia) : COLORS[colorKey];
     var gid = "pf" + (++svgSeq);
     var grad = '<linearGradient id="' + gid + '" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="' + lighten(p.fur, 0.34) + '"/><stop offset=".55" stop-color="' + p.fur + '"/><stop offset="1" stop-color="' + darken(p.fur, 0.12) + '"/></linearGradient>';
@@ -1057,6 +1066,17 @@
       ears = '<ellipse cx="35" cy="24" rx="11.5" ry="21" transform="rotate(-14 35 24)" fill="' + F + '"/><ellipse cx="65" cy="24" rx="11.5" ry="21" transform="rotate(14 65 24)" fill="' + F + '"/><ellipse cx="35" cy="27" rx="5.5" ry="12.5" transform="rotate(-14 35 27)" fill="' + I + '" stroke="none"/><ellipse cx="65" cy="27" rx="5.5" ry="12.5" transform="rotate(14 65 27)" fill="' + I + '" stroke="none"/>';
     }
     return '<g stroke="' + K + '" stroke-width="2.2" stroke-linejoin="round"><ellipse cx="50" cy="95" rx="22" ry="3.6" fill="#3a2a4a" opacity=".08" stroke="none"/>' + ears + bodyCore(R) + behind + faceCore(R, expr, lv) + front + "</g>";
+  }
+  // 成長造型：依年齡階段加上對應髮型（沿用寵物本身毛色與描邊，看起來像「同一隻、只是把毛梳成不同樣子」，不破壞原形象）
+  // 幼年＝一撮呆毛、小童＝短瀏海、少年＝側分長瀏海、成年＝豐盈側分。髮型只落在額頭(y≈31–46)，避開各物種的耳朵／角／背刺
+  function stageHair(R, st, species) {
+    if (species === "unicorn") return "";   // 獨角獸本身已有彩虹鬃毛＋獨角，不再另加髮型
+    var F = R.furFill, K = R.strokeC;
+    if (st <= 0) return '<path d="M49 41 Q46.5 34 51 32.5 Q56.5 31 54.5 36.5 Q53.3 40 50 38" fill="none" stroke="' + K + '" stroke-width="2.7" stroke-linecap="round"/>';
+    if (st === 1) return '<path d="M39 42 Q40 34 45 38 Q47.5 31.5 50 37 Q52.5 31.5 55 38 Q60 34 61 42 Q50 45 39 42 Z" fill="' + F + '" stroke="' + K + '" stroke-width="1.5" stroke-linejoin="round"/>';
+    if (st === 2) return '<path d="M33 45 Q29 30 45 31 Q55 28 63 33 Q69 36 64 44 Q56 38 48 40 L56 46 Q48 43 45 40 L40 45 Q38 41 35 44 Q33 45 33 45 Z" fill="' + F + '" stroke="' + K + '" stroke-width="1.6" stroke-linejoin="round"/>';
+    return '<path d="M30 46 Q25 29 44 28 Q53 25 64 29 Q73 32 71 45 Q62 38 53 40 Q60 47 50 46 Q53 41 45 42 Q48 48 39 46 Q33 46 30 46 Z" fill="' + F + '" stroke="' + K + '" stroke-width="1.7" stroke-linejoin="round"/>' +
+      '<path d="M44 32 Q52 28.5 61 32" fill="none" stroke="' + K + '" stroke-width="1" opacity=".4"/>';
   }
   function petalShape(x, y, rot) { return '<ellipse cx="' + x + '" cy="' + y + '" rx="3.1" ry="1.8" fill="#ffc1e0" stroke="#ff9ad0" stroke-width="0.6" transform="rotate(' + rot + ' ' + x + ' ' + y + ')"/>'; }
   function bubbleShape(x, y, r) { return '<circle cx="' + x + '" cy="' + y + '" r="' + r + '" fill="#bfe9ff" fill-opacity=".4" stroke="#9fd8f5" stroke-width="0.7"/><circle cx="' + (x - r * 0.3).toFixed(1) + '" cy="' + (y - r * 0.3).toFixed(1) + '" r="' + (r * 0.25).toFixed(1) + '" fill="#fff" opacity=".7"/>'; }
@@ -1276,19 +1296,31 @@
       '<circle cx="80" cy="42" r="8" fill="#b15cff" stroke="#7d3fd0" stroke-width="1.6"/><circle cx="77.4" cy="39.4" r="2.6" fill="#fff" opacity=".7"/>' +
       star5(80, 42, 4.4, "#fff", "#e0b0ff") + orbitStars(80, 42, 14, 6, 1.8, "#ecd6ff") +
       sparkle(91, 34, 2.6) + sparkle(69, 48, 2.2) + sparkle(86, 52, 1.8) + sparkle(73, 36, 1.8);
+    if (id === "blindbox") return '<rect x="72.5" y="62" width="17" height="15.5" rx="2.2" fill="#b79bff" stroke="#6f4fc9" stroke-width="1.4" stroke-linejoin="round"/>' +
+      '<rect x="70.3" y="56.3" width="21.4" height="8" rx="2.2" fill="#cdb8ff" stroke="#6f4fc9" stroke-width="1.4" stroke-linejoin="round"/>' +
+      '<text x="81" y="74.2" font-size="10" fill="#fff" font-weight="900" text-anchor="middle" font-family="system-ui,sans-serif">?</text>' +
+      '<path d="M81 56.3 L74.5 52 Q71.5 54 73.6 57.6 Q77 59.2 81 56.3 Z" fill="#ff8fc2" stroke="#e25f9b" stroke-width="1" stroke-linejoin="round"/>' +
+      '<path d="M81 56.3 L87.5 52 Q90.5 54 88.4 57.6 Q85 59.2 81 56.3 Z" fill="#ff8fc2" stroke="#e25f9b" stroke-width="1" stroke-linejoin="round"/>' +
+      '<circle cx="81" cy="56.3" r="1.8" fill="#ffd36e" stroke="#e25f9b" stroke-width="0.8"/>' +
+      sparkle(69, 58, 2.2) + sparkle(93, 64, 2);
     return "";
   }
   // ----- shared body builder (creature + worn items) -----
   function galaxyAura() { var ag = "ag" + (++svgSeq); return '<radialGradient id="' + ag + '" cx="50%" cy="52%" r="58%"><stop offset="0" stop-color="#c89bff" stop-opacity=".55"/><stop offset=".6" stop-color="#b15cff" stop-opacity=".18"/><stop offset="1" stop-color="#b15cff" stop-opacity="0"/></radialGradient><ellipse cx="50" cy="58" rx="54" ry="54" fill="url(#' + ag + ')"/>'; }
+  function glowAura(c) { var ng = "ng" + (++svgSeq); return '<radialGradient id="' + ng + '" cx="50%" cy="54%" r="60%"><stop offset="0" stop-color="' + c + '" stop-opacity=".5"/><stop offset=".55" stop-color="' + c + '" stop-opacity=".14"/><stop offset="1" stop-color="' + c + '" stop-opacity="0"/></radialGradient><ellipse cx="50" cy="58" rx="56" ry="56" fill="url(#' + ng + ')"/>'; }
   function colorSparkles(color) {
     if (color === "galaxy") return sparkle(15, 38, 3.6) + sparkle(86, 44, 4) + sparkle(74, 18, 3) + sparkle(24, 74, 3) + sparkle(50, 13, 2.6) + sparkle(91, 70, 2.8) + sparkle(9, 60, 2.4) + sparkle(62, 88, 2.4);
     if (color === "rainbow") return sparkle(16, 40, 2.8) + sparkle(85, 46, 3) + sparkle(72, 19, 2.4) + sparkle(26, 76, 2.2);
+    if (color === "energy") return sparkle(15, 40, 3.2) + sparkle(85, 45, 3.4) + sparkle(73, 19, 2.6) + sparkle(25, 74, 2.4) + sparkle(90, 68, 2.4);
+    if (color === "nightglow") return sparkle(18, 42, 2.8) + sparkle(83, 47, 3) + sparkle(70, 20, 2.4) + sparkle(28, 73, 2.2);
     return "";
   }
   function petBody(childKey, p, species, expr, omit, lv) {
     omit = omit || {};
     var R = resolveColor(childKey, p.color || "theme"), wear = p.wear || {}, inner = "";
     if (p.color === "galaxy") inner += galaxyAura();
+    else if (p.color === "nightglow") inner += glowAura("#b6f06a");
+    else if (p.color === "energy") inner += glowAura("#e7d6ff");
     var thT = itemTier("hat", wear.hat), toT = itemTier("outfit", wear.outfit), tbT = itemTier("back", wear.back), tnT = itemTier("hand", wear.hand);
     // 1) 背光層（柔光暈＋放射光）畫在角色後方、半透明，不擋臉
     var aura = "";
@@ -1301,6 +1333,7 @@
     if (wear.back && !omit.back) inner += drawBack(wear.back);
     if (wear.outfit && !omit.outfit) inner += drawOutfitBehind(wear.outfit);
     inner += drawCreature(species, R, expr, lv);
+    inner += stageHair(R, petStage(p.growth || 0), species);
     if (wear.outfit && !omit.outfit) inner += tierScale(drawOutfit(wear.outfit, R), 50, 74, toT);
     if (wear.eyes && !omit.eyes) inner += drawEyes(wear.eyes);
     if (wear.hat && !omit.hat) inner += tierScale(drawHat(wear.hat, R), 50, 16, thT);
@@ -1437,7 +1470,14 @@
       { id: "cream", name: "奶油", emoji: "💛", tier: 5 },
       { id: "grey", name: "灰色", emoji: "🌫️", tier: 5 },
       { id: "rainbow", name: "彩虹", emoji: "🌈", tier: 6 },
-      { id: "galaxy", name: "星空", emoji: "✨", tier: 8, limited: true, unlockStreak: 7 }
+      { id: "galaxy", name: "星空", emoji: "✨", tier: 8, limited: true, unlockStreak: 7 },
+      // 盲盒限定色（Labubu／POP MART 限量・隱藏款）：都上鎖🔒，連續睡飽 N 晚免費解鎖，或用 3C 兌換（至少 1 小時起）
+      { id: "toffee", name: "太妃糖", emoji: "🍮", limited: true, unlockStreak: 5, price: 60 },
+      { id: "seasalt", name: "海鹽椰子", emoji: "🥥", limited: true, unlockStreak: 5, price: 70 },
+      { id: "grape", name: "青葡萄", emoji: "🍇", limited: true, unlockStreak: 7, price: 75 },
+      { id: "cocoa", name: "可可栗", emoji: "🌰", limited: true, unlockStreak: 10, price: 100 },
+      { id: "nightglow", name: "夜光森", emoji: "🌙", limited: true, unlockStreak: 12, price: 120 },
+      { id: "energy", name: "能量虹", emoji: "🌈", limited: true, unlockStreak: 14, price: 150 }
     ],
     hat: [
       { id: "bow", name: "蝴蝶結", emoji: "🎀", tier: 1 },
@@ -1485,7 +1525,8 @@
       { id: "wand", name: "魔法棒", emoji: "🪄", tier: 5 },
       { id: "sword", name: "寶劍", emoji: "⚔️", tier: 5 },
       { id: "scepter", name: "權杖", emoji: "🔮", tier: 7 },
-      { id: "genesis", name: "創世法杖", emoji: "🪄", tier: 8, limited: true, unlockStreak: 14 }
+      { id: "genesis", name: "創世法杖", emoji: "🪄", tier: 8, limited: true, unlockStreak: 14 },
+      { id: "blindbox", name: "神秘盲盒", emoji: "🎁", limited: true, unlockStreak: 10, price: 60 }
     ],
     bg: [
       { id: "plain", name: "簡約", emoji: "⬜", tier: 1 },
