@@ -304,6 +304,7 @@
   .witem .price { font-size: .68rem; font-weight: 800; color: var(--brand); background: #eceaff; border-radius: 999px; padding: 1px 6px; }
   .witem .price.lim { color: #fff; background: var(--warn); }
   .witem.sel { border-color: var(--brand); box-shadow: 0 0 0 3px #eceaff; }
+  .witem.pv { border-color: #ff5d73; box-shadow: 0 0 0 3px #ffe3ee; }
   .witem.locked .wemoji { filter: grayscale(.35); opacity: .85; }
 
   /* 限時折扣 */
@@ -341,6 +342,20 @@
   #dealmodal .dm-price { font-size: .78rem; color: var(--brand); font-weight: 800; }
   #dealmodal .dm-price s { color: var(--muted); font-weight: 600; margin-right: 5px; }
   #dealmodal .dm-off { flex: 0 0 auto; color: #fff; background: linear-gradient(135deg,#ff6fae,#ff4d6d); font-weight: 800; font-size: .78rem; border-radius: 999px; padding: 3px 9px; }
+
+  /* 試穿預覽：底部購買列 */
+  .petart.previewing { animation: pvBob 1.8s ease-in-out infinite; }
+  @keyframes pvBob { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-5px); } }
+  @media (prefers-reduced-motion: reduce) { .petart.previewing { animation: none; } }
+  #previewBar { position: fixed; left: 50%; bottom: 0; transform: translateX(-50%); z-index: 40; width: 100%; max-width: 460px; display: flex; align-items: center; gap: 8px; padding: 8px 10px calc(8px + env(safe-area-inset-bottom)); background: rgba(255,255,255,.97); box-shadow: 0 -6px 18px rgba(0,0,0,.16); border-radius: 16px 16px 0 0; -webkit-backdrop-filter: blur(4px); backdrop-filter: blur(4px); }
+  #previewBar .pv-ic { width: 38px; height: 38px; flex: 0 0 38px; display: grid; place-items: center; }
+  #previewBar .pv-ic svg { width: 38px; height: 38px; display: block; }
+  #previewBar .pv-txt { flex: 1 1 auto; min-width: 0; font-size: .82rem; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  #previewBar .pv-txt b { color: #2b2540; margin-left: 3px; }
+  #previewBar .pv-cancel { flex: 0 0 auto; border: none; background: #f0eef7; color: var(--muted); width: 32px; height: 32px; border-radius: 999px; font-size: 1rem; cursor: pointer; }
+  #previewBar .pv-buy { flex: 0 0 auto; border: none; background: linear-gradient(135deg,#ff6fae,#ff4d6d); color: #fff; font-weight: 800; font-size: .86rem; padding: 9px 14px; border-radius: 999px; cursor: pointer; display: inline-flex; align-items: center; gap: 5px; box-shadow: 0 4px 10px rgba(255,77,109,.3); }
+  #previewBar .pv-buy s { opacity: .8; font-weight: 600; }
+  #previewBar .pv-buy .pv-off { font-style: normal; font-size: .66rem; background: rgba(255,255,255,.28); border-radius: 999px; padding: 0 5px; }
 
   /* mode bar */
   .modebar { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-top: 12px; font-size: .86rem; color: var(--muted); }
@@ -562,7 +577,7 @@
 (function () {
   "use strict";
 
-  var APP_VER = "v2.9 · 2026-06-21";   // 內部完整版本；UI 只在右下角小角落顯示版本號（APP_VER 第一段）
+  var APP_VER = "v3.0 · 2026-06-21";   // 內部完整版本；UI 只在右下角小角落顯示版本號（APP_VER 第一段）
   var STORAGE_KEY = "mt-3c-panel-v1";
   var HISTORY_KEY = "mt-3c-history-v1";
   var HISTORY_MAX = 30;
@@ -2115,7 +2130,7 @@
   function render() { renderRules(); renderMonth(); renderCards(); renderPending(); renderRecords(); renderUsages(); if (isWide()) renderPet(); }
 
   // ================= render: 寵物 =================
-  var petWho = "mia", petSlot = "species";
+  var petWho = "mia", petSlot = "species", petPreview = null;
   function needsHTML(p) {
     return '<div class="stats">' + NEEDS.map(function (n) {
       var v = Math.round(p.needs[n.key] == null ? 80 : p.needs[n.key]); var lv = needTier(v);
@@ -2151,7 +2166,8 @@
     if (!none && !owned) tag = priceTagHTML(childKey, slotKey, it);
     else if (!none && it.limited) tag = '<span class="price lim">限定</span>';
     var icon = none ? '<span class="wemoji">🚫</span>' : '<span class="wpv">' + itemPreviewSVG(childKey, slotKey, it.id) + '</span>';
-    return '<button class="witem' + (sel ? " sel" : "") + (owned ? "" : " locked") + '" data-wslot="' + slotKey + '" data-witem="' + (none ? "" : it.id) + '">' +
+    var pv = !none && petPreview && petPreview.slot === slotKey && petPreview.id === it.id;
+    return '<button class="witem' + (sel ? " sel" : "") + (pv ? " pv" : "") + (owned ? "" : " locked") + '" data-wslot="' + slotKey + '" data-witem="' + (none ? "" : it.id) + '">' +
       icon + '<span class="wname">' + it.name + "</span>" + tag + "</button>";
   }
   function speciesWardrobe(childKey) {
@@ -2160,7 +2176,8 @@
       var inRoster = !!(cp.roster && cp.roster[it.id]), sel = cp.active === it.id, owned = inRoster || isOwned(childKey, it);
       var tag = (!inRoster && !owned) ? priceTagHTML(childKey, "species", it) : (it.limited ? '<span class="price lim">限定</span>' : "");
       var sub = inRoster ? (STAGE_NAME[petStage(cp.roster[it.id].growth)] + (cp.roster[it.id].name ? " · " + escapeHtml(cp.roster[it.id].name) : "")) : "未領養";
-      out += '<button class="witem petcard' + (sel ? " sel" : "") + (inRoster || owned ? "" : " locked") + '" data-wslot="species" data-witem="' + it.id + '">' +
+      var pv = petPreview && petPreview.slot === "species" && petPreview.id === it.id;
+      out += '<button class="witem petcard' + (sel ? " sel" : "") + (pv ? " pv" : "") + (inRoster || owned ? "" : " locked") + '" data-wslot="species" data-witem="' + it.id + '">' +
         petSVG(childKey, { species: it.id, pet: (cp.roster && cp.roster[it.id]) || defaultPet(), size: 50, showBg: false, mood: false }) +
         '<span class="wname">' + it.name + '</span><span class="wsub">' + sub + "</span>" + tag + "</button>";
     });
@@ -2210,6 +2227,13 @@
     if (lc) petWho = lc;
     else if (activeChildren().indexOf(petWho) < 0) petWho = activeChildren()[0];
     var ch = childOf(petWho), p = activePet(petWho), bal = balanceOf(petWho);
+    var rp = p, rpSpecies = state.pets[petWho].active;   // 試穿預覽：只改外觀、不動存檔
+    if (petPreview) {
+      rp = previewClone(p);
+      if (petPreview.slot === "species") rpSpecies = petPreview.id;
+      else if (petPreview.slot === "color") rp.color = petPreview.id;
+      else rp.wear[petPreview.slot] = petPreview.id;
+    }
     if (maybeDailyStory(p)) save();
     var nm = p.name || (ch.name + "的" + speciesName(state.pets[petWho].active));
     var walletStr = petWho === "self" ? "♾️ 無限" : fmtMin(bal);
@@ -2225,12 +2249,12 @@
     $("view-pet").innerHTML =
       swRow +
       '<div class="petstage ' + ch.cls + '">' +
-        '<div class="scenebg">' + sceneRoomSVG(p) + "</div>" +
+        '<div class="scenebg">' + sceneRoomSVG(rp) + "</div>" +
         '<div class="scene-hud">' + levelBadge(p) + coinPill(petWho, bal) + "</div>" +
         dealStageBadgeHTML(petWho) +
         (petFlash ? '<div class="scene-flash ' + petFlash.cls + '">' + petFlash.text + "</div>" : "") +
         bubble +
-        '<div class="petfloor"><div class="petart' + artCls + '">' + petSVG(petWho, { size: 220, expr: petExpr, showBg: false }) + "</div></div>" +
+        '<div class="petfloor"><div class="petart' + artCls + (petPreview ? " previewing" : "") + '">' + petSVG(petWho, { pet: rp, species: rpSpecies, size: 220, expr: petExpr, showBg: false }) + "</div></div>" +
         careRound(p) +
       "</div>" +
       '<section class="block petbox ' + ch.cls + '">' +
@@ -2241,7 +2265,8 @@
       "</section>" +
       '<section class="block"><div class="wallet ' + (bal < 0 ? "neg" : "") + '">👛 ' + ch.name + " 的 3C 存摺：<b>" + walletStr + "</b></div>" +
         '<h2 style="margin-top:12px">🛍️ 換裝小舖</h2>' + slotTabs + wardrobeHTML(petWho, petSlot) +
-        '<p class="hint">到「🐾夥伴」可以領養新朋友（每一隻都要從小養大、分開計算）；基本款免費，有標價的用 3C 點數換；🔒限定款要連續睡飽才解鎖，或用 3C 換。</p></section>';
+        '<p class="hint">點還沒擁有的款式可以先<b>試穿預覽</b>看樣子，喜歡再按「購買」。到「🐾夥伴」可以領養新朋友（每一隻都要從小養大、分開計算）；🔒限定款要連續睡飽才解鎖，或用 3C 換。</p></section>' +
+      previewBarHTML(petWho);
     liveSig = petLiveSig(p);
   }
   // 寵物會「自己」隨時間變化：每隔一段時間就讓需求下降，狀態有變才重畫畫面
@@ -2283,8 +2308,42 @@
     afterPurchase(childKey);
     return true;
   }
+  // 預覽模式：未購買的款式先「暫時穿上」看樣子，不動到存檔；按「購買」才真的買。
+  function previewClone(p) {
+    var c = {}; for (var k in p) c[k] = p[k];
+    c.wear = {}; var w = p.wear || {}; for (var s in w) c.wear[s] = w[s];
+    return c;
+  }
+  function previewBarHTML(childKey) {
+    if (!petPreview) return "";
+    var it = findItem(petPreview.slot, petPreview.id); if (!it) return "";
+    var pct = discountFor(childKey, petPreview.slot, petPreview.id), base = itemPrice(it), price = pct ? dealPrice(base, pct) : base;
+    var priceStr = pct ? ("<s>" + fmtMin(base) + "</s> " + fmtMin(price)) : fmtMin(price);
+    return '<div id="previewBar">' +
+      '<span class="pv-ic">' + dealItemPreview(childKey, petPreview.slot, petPreview.id) + "</span>" +
+      '<span class="pv-txt">👀 試穿中<b>' + escapeHtml(it.name) + "</b></span>" +
+      '<button class="pv-cancel" data-pvcancel="1" aria-label="取消試穿">✕</button>' +
+      '<button class="pv-buy" data-pvbuy="1">購買 ' + priceStr + " 3C" + (pct ? ' <i class="pv-off">-' + pct + "%</i>" : "") + "</button>" +
+      "</div>";
+  }
+  function buyPreview() {
+    if (!petPreview) return;
+    var slot = petPreview.slot, id = petPreview.id, it = findItem(slot, id); if (!it) return;
+    if (!tryBuy(petWho, slot, it)) return;     // 確認＋扣 3C；取消或不夠就維持試穿
+    petPreview = null;
+    chooseItem(petWho, slot, id);              // 已擁有 → 直接穿上＋存檔＋重畫
+  }
   function chooseItem(childKey, slotKey, itemId) {
     var cp = state.pets[childKey];
+    // 點「還沒擁有的付費款」→ 先試穿預覽（再點同一件＝取消）；按購買鈕才真的買
+    if (itemId !== "") {
+      var pit = findItem(slotKey, itemId);
+      if (pit && !isOwned(childKey, pit)) {
+        petPreview = (petPreview && petPreview.slot === slotKey && petPreview.id === itemId) ? null : { slot: slotKey, id: itemId };
+        renderPet(); return;
+      }
+    }
+    petPreview = null;
     if (slotKey === "species") {
       if (!cp.roster[itemId]) {
         var sit = findItem("species", itemId); if (!sit) return;
@@ -2312,9 +2371,11 @@
   $("view-pet").addEventListener("click", function (e) {
     var t;
     if ((t = e.target.closest("[data-act]"))) { doAction(petWho, t.getAttribute("data-act")); return; }
+    if (e.target.closest("[data-pvbuy]")) { buyPreview(); return; }
+    if (e.target.closest("[data-pvcancel]")) { petPreview = null; renderPet(); return; }
     if (sceneRunning) return;   // 互動播放中，先別切換
     if ((t = e.target.closest(".petart"))) { petTap(); return; }   // 點兔兔本人 → 開心反應
-    if ((t = e.target.closest("[data-petwho]"))) { petWho = t.getAttribute("data-petwho"); petExpr = "auto"; clearTimeout(exprTimer); renderPet(); return; }
+    if ((t = e.target.closest("[data-petwho]"))) { petWho = t.getAttribute("data-petwho"); petExpr = "auto"; petPreview = null; clearTimeout(exprTimer); renderPet(); return; }
     if ((t = e.target.closest("[data-rename]"))) { renamePet(); return; }
     if ((t = e.target.closest("[data-dealslot]"))) { petSlot = t.getAttribute("data-dealslot"); renderPet(); var w = $("view-pet").querySelector(".wardrobe"); if (w && w.scrollIntoView) w.scrollIntoView({ behavior: "smooth", block: "center" }); return; }
     if ((t = e.target.closest("[data-slottab]"))) { petSlot = t.getAttribute("data-slottab"); renderPet(); return; }
@@ -2323,6 +2384,7 @@
 
   // ---------- tabs ----------
   function showTab(t) {
+    petPreview = null;
     $("view-sleep").style.display = t === "sleep" ? "block" : "none";
     $("view-pet").style.display = t === "pet" ? "block" : "none";
     var tabs = document.querySelectorAll(".tab");
