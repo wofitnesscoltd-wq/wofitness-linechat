@@ -205,6 +205,7 @@
   .moodbubble.t2 { border-color: #ff9a3d; color: #a8410a; }
   .moodbubble.t3 { border-color: var(--bad); color: var(--bad); }
   .moodbubble.happy { border-color: #ff8fc2; color: #d84f8f; }
+  .scene-on .moodbubble { display: none; }   /* 互動播放中不顯示需求泡泡 */
   @keyframes bubblepop { 0% { transform: translateX(-50%) scale(.5); opacity: 0; } 60% { transform: translateX(-50%) scale(1.06); } 100% { transform: translateX(-50%) scale(1); opacity: 1; } }
   .carebtns.busy { opacity: .3; pointer-events: none; }
   #view-pet > .petstage { position: sticky; top: 6px; z-index: 30; }
@@ -519,7 +520,7 @@
 (function () {
   "use strict";
 
-  var APP_VER = "v1.7 · 同步穩定版 · 2026-06-20";
+  var APP_VER = "v1.8 · 微調修正版 · 2026-06-20";
   var STORAGE_KEY = "mt-3c-panel-v1";
   var HISTORY_KEY = "mt-3c-history-v1";
   var HISTORY_MAX = 30;
@@ -1153,7 +1154,7 @@
   // 所有偏低的需求，依嚴重程度排序（最急的在前）→ 可同時呈現複數狀態，並各自帶嚴重等級 lv
   function lowNeeds(p) {
     var arr = [];
-    for (var i = 0; i < NEEDS.length; i++) { var k = NEEDS[i].key, v = (p.needs[k] == null) ? 80 : p.needs[k]; if (v < 67) arr.push({ key: k, v: v, lv: needTier(v) }); }
+    for (var i = 0; i < NEEDS.length; i++) { var k = NEEDS[i].key, v = Math.round((p.needs[k] == null) ? 80 : p.needs[k]); if (v < 67) arr.push({ key: k, v: v, lv: needTier(v) }); }
     arr.sort(function (a, b) { return a.v - b.v; });
     return arr;
   }
@@ -1753,7 +1754,7 @@
   var ACT_COLOR = { feed: "#ff8a3d", drink: "#3db4ef", bath: "#46c7e0", toilet: "#9b8cff", play: "#ff6fae", sleep: "#7c6cff", pat: "#ff5f8f" };
   function careRound(p) {
     return '<div class="carebtns">' + ACTION_ORDER.map(function (k) {
-      var a = ACTIONS[k], v = (p.needs[a.need] == null) ? 80 : p.needs[a.need], lv = needTier(v);
+      var a = ACTIONS[k], v = Math.round((p.needs[a.need] == null) ? 80 : p.needs[a.need]), lv = needTier(v);
       return '<button class="carebtn" data-act="' + k + '" style="--c:' + ACT_COLOR[k] + '" aria-label="' + a.label + '" title="' + a.label + '">' +
         a.emoji + (lv ? '<span class="urgent l' + lv + '">' + (lv >= 3 ? "!!" : "!") + "</span>" : "") + '<span class="cl">' + a.label + "</span></button>";
     }).join("") + "</div>";
@@ -1796,7 +1797,7 @@
     liveSig = petLiveSig(p);
   }
   // 寵物會「自己」隨時間變化：每隔一段時間就讓需求下降，狀態有變才重畫畫面
-  function petLiveSig(p) { var s = ""; for (var i = 0; i < NEEDS.length; i++) s += needTier(p.needs[NEEDS[i].key] == null ? 80 : p.needs[NEEDS[i].key]); return s + (petThriving(p) ? "T" : ""); }
+  function petLiveSig(p) { var s = ""; for (var i = 0; i < NEEDS.length; i++) s += needTier(Math.round(p.needs[NEEDS[i].key] == null ? 80 : p.needs[NEEDS[i].key])); return s + (petThriving(p) ? "T" : ""); }
   var liveSig = null;
   function liveTick(force) {
     if (sceneRunning) return;
