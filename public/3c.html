@@ -519,7 +519,7 @@
 (function () {
   "use strict";
 
-  var APP_VER = "v1.6 · 沉浸場景版 · 2026-06-20";
+  var APP_VER = "v1.7 · 同步穩定版 · 2026-06-20";
   var STORAGE_KEY = "mt-3c-panel-v1";
   var HISTORY_KEY = "mt-3c-history-v1";
   var HISTORY_MAX = 30;
@@ -663,11 +663,40 @@
   function cloudShared(st) {
     return { settings: st.settings, records: st.records, usages: st.usages, pets: st.pets, inventory: st.inventory };
   }
+  // 寵物的「即時狀態」（需求值、計時、今日故事）屬於各裝置自己、依時間即時演算，
+  // 不該被雲端拉下來的版本覆蓋，否則會和本機的即時衰減打架、畫面忽高忽低。
+  // → 同步時只接受雲端的「持久資料」（成長、外觀、名字、roster、庫存），需求保留本機的。
+  function capturePetLive(st) {
+    var m = {};
+    ["mia", "tia", "self"].forEach(function (c) {
+      var cp = st.pets && st.pets[c]; if (!cp || !cp.roster) return;
+      m[c] = {};
+      Object.keys(cp.roster).forEach(function (sp) {
+        var p = cp.roster[sp] || {};
+        m[c][sp] = { needs: p.needs, lastTick: p.lastTick, storyDay: p.storyDay, storyIdx: p.storyIdx };
+      });
+    });
+    return m;
+  }
+  function restorePetLive(st, m) {
+    if (!m) return;
+    ["mia", "tia", "self"].forEach(function (c) {
+      if (!m[c] || !st.pets[c] || !st.pets[c].roster) return;
+      Object.keys(st.pets[c].roster).forEach(function (sp) {
+        var saved = m[c][sp]; if (!saved || !saved.needs) return;
+        var p = st.pets[c].roster[sp];
+        p.needs = saved.needs; p.lastTick = saved.lastTick;
+        p.storyDay = saved.storyDay; p.storyIdx = saved.storyIdx;
+      });
+    });
+  }
   function applyCloudState(d) {
     try {
       var keepProfile = state.profile, keepLock = state.lock;   // 保留本機的「專屬機 / 家長鎖」設定
+      var keepLive = capturePetLive(state);                     // 保留本機寵物的即時需求/計時
       state = fromData(d);
       state.profile = keepProfile; state.lock = keepLock;
+      restorePetLive(state, keepLive);
       lastSig = null;
       try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); } catch (e) { }
       fillSettings(); $("profileSel").value = state.profile; applyProfile();
