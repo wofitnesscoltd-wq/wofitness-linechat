@@ -520,7 +520,7 @@
 (function () {
   "use strict";
 
-  var APP_VER = "v1.8 · 微調修正版 · 2026-06-20";
+  var APP_VER = "v1.9 · 圖示狀態版 · 2026-06-21";
   var STORAGE_KEY = "mt-3c-panel-v1";
   var HISTORY_KEY = "mt-3c-history-v1";
   var HISTORY_MAX = 30;
@@ -1687,14 +1687,13 @@
   function needsHTML(p) {
     return '<div class="stats">' + NEEDS.map(function (n) {
       var v = Math.round(p.needs[n.key] == null ? 80 : p.needs[n.key]); var lv = needTier(v);
-      var tag = lv ? ' <b class="ntag t' + lv + '">' + n.low + "</b>" : "";
-      return '<div class="stat"><span class="sl">' + n.emoji + " " + n.name + tag + '</span><div class="bar"><i class="bl' + lv + '" style="width:' + v + '%"></i></div></div>';
+      return '<div class="stat"><span class="sl">' + n.emoji + " " + n.name + '</span><div class="bar"><i class="bl' + lv + '" style="width:' + v + '%"></i></div></div>';
     }).join("") + "</div>";
   }
   function petStatusLine(p) {
     var lows = lowNeeds(p);
-    if (!lows.length) return '<div class="petstatus ok">😊 心情很好，跟你玩得開心～</div>';
-    return '<div class="petstatus need' + (lows[0].lv >= 3 ? " urgent" : "") + '">💬 ' + lows.map(function (n) { return NEED_MAP[n.key].low; }).join("、") + "！</div>";
+    if (!lows.length) return '<div class="petstatus ok">😊</div>';
+    return '<div class="petstatus need' + (lows[0].lv >= 3 ? " urgent" : "") + '">💬 ' + lows.map(function (n) { return NEED_MAP[n.key].emoji; }).join(" ") + "</div>";
   }
   function petAgeHTML(p) {
     var g = p.growth || 0, st = petStage(g), nx = nextStageAt(g), prev = [0, 15, 40, 80][st];
@@ -1773,8 +1772,8 @@
     var moodNow = (petExpr === "auto") ? petMood(p) : null;
     var artCls = (moodNow && moodNow.lv >= 3) ? " distress" : "";
     var bubble = "";
-    if (moodNow) { var nbb = NEED_MAP[moodNow.key]; bubble = '<div class="moodbubble t' + moodNow.lv + '">' + nbb.emoji + " " + nbb.low + "！</div>"; }
-    else if (petExpr === "auto" && petThriving(p)) bubble = '<div class="moodbubble happy">🥰 好幸福～</div>';
+    if (moodNow) { var nbb = NEED_MAP[moodNow.key]; bubble = '<div class="moodbubble t' + moodNow.lv + '">' + nbb.emoji + "❗</div>"; }
+    else if (petExpr === "auto" && petThriving(p)) bubble = '<div class="moodbubble happy">🥰</div>';
     $("view-pet").innerHTML =
       swRow +
       '<div class="petstage ' + ch.cls + '">' +
@@ -2130,10 +2129,10 @@
     if (!host) { host = document.createElement("div"); host.id = "stategallery"; document.body.appendChild(host); }
     var TIERS = [58, 38, 14];
     var h = '<div class="gwrap"><button class="gclose">✕ 關閉</button>' +
-      "<h1>🎭 寵物狀態圖鑑</h1><p class=\"ghint\">目前版本：" + APP_VER + "。掉到剩約 2/3 就開始有表情；同一隻兔兔，肚子餓／口渴／想睡／髒了／想尿尿／寂寞時會有不同表情，越低變化越明顯。</p>";
+      "<h1>🎭 寵物狀態圖鑑</h1><p class=\"ghint\">目前版本：" + APP_VER + "。需求掉到剩約 2/3 就開始有表情，越低變化越明顯。</p>";
     h += '<div class="ggrid">' + galleryCard("😊 健康", "", null) + "</div>";
     NEEDS.forEach(function (n) {
-      h += "<h3>" + n.emoji + " " + n.name + "（" + n.low + "）</h3><div class=\"ggrid\">";
+      h += "<h3>" + n.emoji + " " + n.name + "</h3><div class=\"ggrid\">";
       TIERS.forEach(function (v) { var nd = {}; nd[n.key] = v; h += galleryCard("剩 " + v + "%", "", nd); });
       h += "</div>";
     });
