@@ -173,7 +173,7 @@
   .petstage { position: relative; border-radius: 22px; overflow: hidden; height: clamp(330px, 54vh, 470px); margin: 6px 0; box-shadow: var(--shadow); background: #bfe6f5; }
   .petstage .scenebg { position: absolute; inset: 0; z-index: 0; }
   .petstage .scenebg svg { width: 100%; height: 100%; display: block; }
-  .petstage .petfloor { position: absolute; left: 0; right: 0; bottom: 17%; display: flex; justify-content: center; z-index: 2; }
+  .petstage .petfloor { position: absolute; left: 0; right: 0; bottom: 20%; display: flex; justify-content: center; z-index: 2; }
   .petstage .petart { animation: idle 6s ease-in-out infinite; transform-origin: center bottom; will-change: transform; cursor: pointer; }
   .petstage.act .petart { animation: pop .5s ease; }
   .petart svg { display: block; filter: drop-shadow(0 12px 9px rgba(0,0,0,.22)); width: clamp(180px, 44vmin, 300px); height: auto; }
@@ -185,7 +185,7 @@
   .coinpill .coin { font-size: 1.15rem; line-height: 1; }
   .scene-flash { position: absolute; top: 66px; left: 50%; transform: translateX(-50%); z-index: 6; background: rgba(255,255,255,.96); border-radius: 14px; padding: 7px 14px; font-weight: 800; font-size: .9rem; box-shadow: 0 4px 10px rgba(0,0,0,.2); max-width: 90%; text-align: center; }
   .scene-flash.grow { color: #e0930f; } .scene-flash.info { color: var(--muted); } .scene-flash.need { color: var(--warn); } .scene-flash.ok { color: var(--good); }
-  .carebtns { position: absolute; left: 0; right: 0; bottom: 0; z-index: 6; display: flex; gap: 9px; justify-content: center; align-items: center; padding: 12px 10px calc(12px + env(safe-area-inset-bottom)); overflow-x: auto; -webkit-overflow-scrolling: touch; background: linear-gradient(to top, rgba(20,20,50,.22), rgba(20,20,50,0)); }
+  .carebtns { position: absolute; left: 0; right: 0; bottom: 0; z-index: 6; display: flex; gap: 9px; justify-content: center; align-items: center; padding: 9px 10px 11px; overflow-x: auto; -webkit-overflow-scrolling: touch; background: linear-gradient(to top, rgba(20,20,50,.26), rgba(20,20,50,0)); }
   .carebtns::-webkit-scrollbar { display: none; }
   .carebtn { flex: 0 0 auto; width: 58px; height: 58px; border-radius: 50%; border: 3px solid rgba(255,255,255,.95); background: var(--c, #7c5cff); color: #fff; cursor: pointer; font-size: 1.7rem; display: grid; place-items: center; box-shadow: 0 5px 12px rgba(0,0,0,.3); position: relative; padding: 0; }
   .carebtn:active { transform: translateY(2px) scale(.95); }
@@ -195,6 +195,8 @@
   .carebtn .urgent.l2 { background: #ff7a1a; animation: urgentpulse 1.2s ease-in-out infinite; }
   .carebtn .urgent.l3 { background: var(--bad); animation: urgentpulse .7s ease-in-out infinite; }
   @keyframes urgentpulse { 0%,100% { transform: scale(1); } 50% { transform: scale(1.18); } }
+  .carebtn.doctor { box-shadow: 0 0 0 3px rgba(255,77,109,.35), 0 5px 12px rgba(0,0,0,.3); animation: docpulse 1s ease-in-out infinite; }
+  @keyframes docpulse { 0%,100% { box-shadow: 0 0 0 3px rgba(255,77,109,.35), 0 5px 12px rgba(0,0,0,.3); } 50% { box-shadow: 0 0 0 7px rgba(255,77,109,.18), 0 5px 12px rgba(0,0,0,.3); } }
   .petstage .petart.distress { animation: distresswob .55s ease-in-out infinite; }
   @keyframes distresswob { 0%,100% { transform: translateX(0) rotate(0); } 25% { transform: translateX(-2px) rotate(-1.6deg); } 75% { transform: translateX(2px) rotate(1.6deg); } }
   .petstage .petart.tapped { animation: tapwiggle .55s ease; }
@@ -205,7 +207,8 @@
   .moodbubble.t2 { border-color: #ff9a3d; color: #a8410a; }
   .moodbubble.t3 { border-color: var(--bad); color: var(--bad); }
   .moodbubble.happy { border-color: #ff8fc2; color: #d84f8f; }
-  .scene-on .moodbubble { display: none; }   /* 互動播放中不顯示需求泡泡 */
+  .moodbubble.sick { border-color: #ff5277; color: #c81e4a; }
+  .scene-on .moodbubble, .scene-on .scene-flash { display: none; }   /* 互動播放中不顯示需求泡泡／舊提示，避免和場景字卡重疊 */
   @keyframes bubblepop { 0% { transform: translateX(-50%) scale(.5); opacity: 0; } 60% { transform: translateX(-50%) scale(1.06); } 100% { transform: translateX(-50%) scale(1); opacity: 1; } }
   .carebtns.busy { opacity: .3; pointer-events: none; }
   #view-pet > .petstage { position: sticky; top: 6px; z-index: 30; }
@@ -269,8 +272,9 @@
   .witem.petcard .wsub { display: block; font-size: .66rem; color: var(--muted); }
   .stats { display: grid; grid-template-columns: 1fr 1fr; gap: 8px 14px; margin: 10px 4px 2px; }
   .stat .sl { font-size: .78rem; color: var(--muted); font-weight: 700; }
-  .stat .bar { height: 10px; background: #eee; border-radius: 999px; overflow: hidden; }
+  .stat .bar { position: relative; height: 10px; background: #eee; border-radius: 999px; overflow: hidden; }
   .stat .bar i { display: block; height: 100%; background: linear-gradient(90deg,#7c5cff,#ff5fa2); border-radius: 999px; transition: width .45s ease; }
+  .stat .bar .caremark { position: absolute; top: 0; bottom: 0; width: 2px; margin-left: -1px; background: #4a2f5e; opacity: .5; z-index: 1; }
   .scene-on .petart { animation: none !important; }
   .scene-on .petart svg { filter: drop-shadow(0 8px 12px rgba(0,0,0,.14)); }
   .scenebar { text-align: center; font-weight: 800; font-size: .92rem; color: var(--brand); margin: 6px 0 2px; padding: 7px 10px; border-radius: 12px; background: #efeaff; }
@@ -523,7 +527,7 @@
 (function () {
   "use strict";
 
-  var APP_VER = "v2.1 · 配件升級版 · 2026-06-21";
+  var APP_VER = "v2.2 · 看醫生版 · 2026-06-21";
   var STORAGE_KEY = "mt-3c-panel-v1";
   var HISTORY_KEY = "mt-3c-history-v1";
   var HISTORY_MAX = 30;
@@ -585,7 +589,7 @@
       wear: { hat: null, eyes: null, outfit: null, back: null, hand: null, bg: null, fx: null },
       growth: 0, growthDay: "", growthToday: 0,
       needs: { hunger: 80, thirst: 80, energy: 80, clean: 80, bladder: 80, happy: 80 },
-      storyDay: "", storyIdx: -1,
+      storyDay: "", storyIdx: -1, sick: false, sickDay: "",
       lastTick: Date.now() };
   }
   function defaultChildPets() { return { active: "bunny", roster: { bunny: defaultPet() } }; }
@@ -600,6 +604,7 @@
     if (typeof o.growthToday === "number" && o.growthToday >= 0) dp.growthToday = o.growthToday;
     if (typeof o.storyDay === "string") dp.storyDay = o.storyDay;
     if (typeof o.storyIdx === "number") dp.storyIdx = o.storyIdx;
+    dp.sick = !!o.sick; if (typeof o.sickDay === "string") dp.sickDay = o.sickDay;
     if (o.needs && typeof o.needs === "object") Object.keys(dp.needs).forEach(function (k) { var v = +o.needs[k]; dp.needs[k] = isNaN(v) ? 80 : clamp(v); });
     else if (o.stats && typeof o.stats === "object") { dp.needs.happy = isNaN(+o.stats.happy) ? 80 : clamp(+o.stats.happy); dp.needs.hunger = isNaN(+o.stats.full) ? 80 : clamp(+o.stats.full); dp.needs.clean = isNaN(+o.stats.clean) ? 80 : clamp(+o.stats.clean); dp.needs.energy = isNaN(+o.stats.energy) ? 80 : clamp(+o.stats.energy); }
     dp.lastTick = +o.lastTick || Date.now();
@@ -1264,8 +1269,10 @@
     var p = opts.pet || (cp && cp.roster && cp.roster[species]) || defaultPet();
     var mood = null, moodLv = 0, sick = false, thriving = false;
     if (expr === "auto") {
-      if (opts.mood !== false) { mood = petMood(p); if (mood) sick = severeCount(p) >= 3; else thriving = petThriving(p); }
-      expr = mood ? MOOD_EXPR[mood.key] : "normal"; moodLv = mood ? mood.lv : 0;
+      if (opts.mood !== false) {
+        if (p.sick) { sick = true; expr = "tired"; }
+        else { mood = petMood(p); if (!mood) thriving = petThriving(p); expr = mood ? MOOD_EXPR[mood.key] : "normal"; moodLv = mood ? mood.lv : 0; }
+      } else expr = "normal";
     }
     var wear = p.wear || {};
     var body = petBody(childKey, p, species, expr, opts.omit, moodLv);
@@ -1274,7 +1281,8 @@
     s += body.grad;
     if (showBg && wear.bg) s += drawBg(wear.bg);
     var inner = body.inner;
-    if (mood) inner += moodOverlay(p, body.R) + (sick ? sickMarks() : "");
+    if (sick) inner += sickMarks();
+    else if (mood) inner += moodOverlay(p, body.R);
     else if (thriving) inner += thrivingMarks();
     if (k !== 1) s += '<g transform="translate(50 93) scale(' + k.toFixed(3) + ') translate(-50 -93)">' + inner + "</g>";
     else s += inner;
@@ -1395,7 +1403,8 @@
     toilet: { emoji: "🚽", label: "如廁", need: "bladder", fx: "toilet", parts: ["💨", "😌", "✨"], n: 4, side: { clean: -7, happy: 3 }, note: "上完廁所～手手要洗乾淨喔 🧼" },
     play: { emoji: "🎈", label: "玩耍", need: "happy", fx: "play", parts: ["🎈", "⭐", "🎉", "😆"], n: 7, side: { clean: -16, hunger: -12, thirst: -12, energy: -10 }, note: "玩得超開心！但流汗弄髒了，肚子也餓、口也渴了 💦" },
     sleep: { emoji: "😴", label: "哄睡", need: "energy", fx: "sleep", parts: ["💤", "💤", "✨"], n: 5, side: { hunger: -10, bladder: -12, thirst: -5, happy: 5 }, note: "睡飽飽～醒來肚子餓、也想尿尿 🌅" },
-    pat: { emoji: "🫶", label: "摸摸", need: "happy", fx: "pat", parts: ["❤️", "💕", "✨"], n: 6, note: "秀秀～心情變好了 💕" }
+    pat: { emoji: "🫶", label: "摸摸", need: "happy", fx: "pat", parts: ["❤️", "💕", "✨"], n: 6, note: "秀秀～心情變好了 💕" },
+    doctor: { emoji: "💊", label: "看醫生", need: "happy", fx: "doctor", parts: ["💊", "💖", "✨", "🩹"], n: 5, note: "看完醫生～病好了，活力滿滿！" }
   };
   var ACTION_ORDER = ["feed", "drink", "bath", "toilet", "play", "sleep", "pat"];
   function tickPet(p) {
@@ -1403,12 +1412,20 @@
     if (hrs <= 0) return;
     // 不取整，零頭也會累積，這樣即使每幾秒 tick 一次也會慢慢下降（顯示時才四捨五入）
     NEEDS.forEach(function (n) { var v = (p.needs[n.key] == null) ? 80 : p.needs[n.key]; p.needs[n.key] = Math.max(8, v - n.rate * hrs); });
+    maybeFallSick(p);
+  }
+  // 太久沒顧（3 項以上很虛弱）會生病；偶爾也會感冒。生病後要「看醫生」才會好。
+  function maybeFallSick(p) {
+    if (p.sick) return;
+    if (severeCount(p) >= 3) { p.sick = true; return; }
+    var day = todayStr();
+    if (p.sickDay !== day) { p.sickDay = day; if (Math.random() < 0.05) p.sick = true; }
   }
   var petExpr = "auto", exprTimer = null, petFlash = null;
-  var GROWTH_PER_CARE = 2, DAILY_GROWTH_CAP = 12, NEED_LOW = 90;
+  var GROWTH_PER_CARE = 2, DAILY_GROWTH_CAP = 12, NEED_LOW = 90, CARE_MARK = 60;
   var sceneRunning = false, sceneTimer = null, sceneBefore = 80;
   var SCENE = { steps: 13, ms: 380, happyFrom: 10 };
-  var SCENE_VERB = { feed: "餵食中…大口吃！", drink: "喝水中…咕嚕咕嚕", bath: "洗香香…搓搓搓", toilet: "上廁所…噓～", play: "玩耍中…接球！", sleep: "哄睡中…晚安", pat: "摸摸頭…秀秀" };
+  var SCENE_VERB = { feed: "餵食中…大口吃！", drink: "喝水中…咕嚕咕嚕", bath: "洗香香…搓搓搓", toilet: "上廁所…噓～", play: "玩耍中…接球！", sleep: "哄睡中…晚安", pat: "摸摸頭…秀秀", doctor: "看醫生中…乖乖打針" };
 
   // ---------- 今日故事（十幾種，解釋寵物為什麼餓了 / 髒了…） ----------
   var STORIES = [
@@ -1494,6 +1511,11 @@
       var st = [[14, 16], [30, 28], [22, 46], [60, 14], [88, 34], [12, 64], [46, 22], [84, 58]];
       for (var i = 0; i < st.length; i++) inner += sparkle(st[i][0], st[i][1], 1.7);
       inner += '<rect x="0" y="78" width="100" height="22" fill="#37306a"/><rect x="0" y="78" width="100" height="2" fill="#2a2552"/>';
+    } else if (key === "doctor") {
+      inner = sceneBg("#eafff7", "#d4f3ea") +
+        '<rect x="0" y="77" width="100" height="23" fill="#cfe9e0"/><rect x="0" y="77" width="100" height="2.4" fill="#a9d6c8"/>' +
+        '<g fill="#ff5277"><rect x="62" y="27" width="16" height="6" rx="1.4"/><rect x="67" y="22" width="6" height="16" rx="1.4"/></g>' +
+        '<rect x="16" y="30" width="20" height="14" rx="2" fill="#fff" stroke="#bfe0d6" stroke-width="1.4"/><path d="M16 37 H36 M26 30 V44" stroke="#bfe0d6" stroke-width="1.2"/>';
     } else {
       inner = sceneBg("#fff0f6", "#ffd9ea") + '<rect x="0" y="77" width="100" height="23" fill="#ffd0e4"/><rect x="0" y="77" width="100" height="2" fill="#f3b8d2"/>' +
         '<g fill="#ffc1e0" opacity=".5"><circle cx="22" cy="30" r="3"/><circle cx="78" cy="26" r="3"/><circle cx="50" cy="20" r="2.6"/></g>';
@@ -1558,6 +1580,15 @@
       else { s += fxHeart(28, 42, 3.4) + fxHeart(72, 40, 3.6) + fxHeart(50, 30, 4) + sparkle(40, 52, 2.4) + sparkle(62, 54, 2.4) + sceneText(22, "#e25f9b", "最喜歡你了！"); }
       return s;
     }
+    if (key === "doctor") {
+      if (!ending) {
+        // 體溫計＋膠囊藥，偶爾冒「＋」
+        s += '<g transform="rotate(' + (18 + sw * 4).toFixed(1) + ' 60 74)"><rect x="52" y="72" width="16" height="3.2" rx="1.6" fill="#fff" stroke="#b9bccb" stroke-width="0.7"/><rect x="52.6" y="72.4" width="6" height="2.4" rx="1.2" fill="#ff5277"/><circle cx="68" cy="73.6" r="2.4" fill="#fff" stroke="#b9bccb" stroke-width="0.7"/><circle cx="68" cy="73.6" r="1.2" fill="#ff5277"/></g>';
+        s += '<g transform="rotate(-18 30 80)"><rect x="23" y="77" width="15" height="6.4" rx="3.2" fill="#fff" stroke="#e0a0b0" stroke-width="1"/><rect x="23" y="77" width="7.5" height="6.4" rx="3.2" fill="#ff7a98" stroke="#e0699a" stroke-width="1"/></g>';
+        if (fi % 2) s += '<text x="24" y="42" font-size="9" fill="#ff5277" font-weight="800">＋</text>';
+      } else { s += fxHeart(32, 42, 3.2) + fxHeart(68, 40, 3.4) + sparkle(50, 28, 2.8) + sparkle(22, 54, 2.2) + sparkle(78, 54, 2.2) + sceneText(22, "#13b187", "病好了！"); }
+      return s;
+    }
     return s;
   }
   function sceneSVG(childKey, key, fi, p, species) {
@@ -1570,6 +1601,7 @@
     else if (key === "play") expr = "happy";
     else if (key === "sleep") { expr = fi < 2 ? "tired" : ending ? "happy" : "sleep"; omit.back = true; }
     else if (key === "pat") expr = "happy";
+    else if (key === "doctor") expr = ending ? "happy" : "tired";
     if (key === "play" && !ending) petTf = "translate(0," + (-Math.abs(Math.sin(fi * 1.1)) * 15).toFixed(1) + ")";
     else if (key === "pat" && !ending) petTf = "translate(50 93) scale(1," + ((fi % 2) ? 0.94 : 1) + ") translate(-50 -93)";
     else if (key === "bath") petTf = "translate(" + (sw * 1.4).toFixed(1) + ",0)";
@@ -1615,10 +1647,11 @@
     var a = ACTIONS[key], p = activePet(childKey), before = sceneBefore;
     p.needs[a.need] = 100;
     if (key === "sleep") p.needs.energy = 100;
+    if (key === "doctor") { p.sick = false; p.needs.energy = Math.min(100, (p.needs.energy == null ? 80 : p.needs.energy) + 40); p.needs.happy = 100; }   // 看醫生 → 病好了＋恢復活力
     // 真實連鎖反應：玩完會髒會餓會渴、洗完澡想睡、吃喝完想上廁所…
     if (a.side) Object.keys(a.side).forEach(function (k) { p.needs[k] = Math.max(8, Math.min(100, (p.needs[k] == null ? 80 : p.needs[k]) + a.side[k])); });
     petFlash = null;
-    if (before < NEED_LOW) {
+    if (key !== "doctor" && before < CARE_MARK) {
       var day = todayStr();
       if (p.growthDay !== day) { p.growthDay = day; p.growthToday = 0; }
       if ((p.growthToday || 0) < DAILY_GROWTH_CAP) {
@@ -1734,7 +1767,7 @@
   function needsHTML(p) {
     return '<div class="stats">' + NEEDS.map(function (n) {
       var v = Math.round(p.needs[n.key] == null ? 80 : p.needs[n.key]); var lv = needTier(v);
-      return '<div class="stat"><span class="sl">' + n.emoji + " " + n.name + '</span><div class="bar"><i class="bl' + lv + '" style="width:' + v + '%"></i></div></div>';
+      return '<div class="stat"><span class="sl">' + n.emoji + " " + n.name + '</span><div class="bar"><i class="bl' + lv + '" style="width:' + v + '%"></i><span class="caremark" style="left:' + CARE_MARK + '%" title="低於這條線時照顧，會長大一次"></span></div></div>';
     }).join("") + "</div>";
   }
   function petStatusLine(p) {
@@ -1805,9 +1838,10 @@
     var txt = childKey === "self" ? "♾️" : fmtMin(bal);
     return '<div class="coinpill"><span class="coin">🪙</span>' + txt + "</div>";
   }
-  var ACT_COLOR = { feed: "#ff8a3d", drink: "#3db4ef", bath: "#46c7e0", toilet: "#9b8cff", play: "#ff6fae", sleep: "#7c6cff", pat: "#ff5f8f" };
+  var ACT_COLOR = { feed: "#ff8a3d", drink: "#3db4ef", bath: "#46c7e0", toilet: "#9b8cff", play: "#ff6fae", sleep: "#7c6cff", pat: "#ff5f8f", doctor: "#ff4d6d" };
   function careRound(p) {
-    return '<div class="carebtns">' + ACTION_ORDER.map(function (k) {
+    var doc = p.sick ? '<button class="carebtn doctor" data-act="doctor" style="--c:' + ACT_COLOR.doctor + '" aria-label="看醫生" title="看醫生">💊<span class="urgent l3">!</span><span class="cl">看醫生</span></button>' : "";
+    return '<div class="carebtns">' + doc + ACTION_ORDER.map(function (k) {
       var a = ACTIONS[k], v = Math.round((p.needs[a.need] == null) ? 80 : p.needs[a.need]), lv = needTier(v);
       return '<button class="carebtn" data-act="' + k + '" style="--c:' + ACT_COLOR[k] + '" aria-label="' + a.label + '" title="' + a.label + '">' +
         a.emoji + (lv ? '<span class="urgent l' + lv + '">' + (lv >= 3 ? "!!" : "!") + "</span>" : "") + '<span class="cl">' + a.label + "</span></button>";
@@ -1824,11 +1858,13 @@
     var walletStr = petWho === "self" ? "♾️ 無限" : fmtMin(bal);
     var swRow = lc ? "" : ('<div class="petsw-row">' + activeChildren().map(function (ck) { var c = childOf(ck); return '<button class="petsw ' + c.cls + (c.key === petWho ? " on" : "") + '" data-petwho="' + c.key + '">' + c.emoji + " " + c.name + "</button>"; }).join("") + "</div>");
     var slotTabs = '<div class="slottabs">' + SLOTS.map(function (sl) { return '<button class="slottab' + (sl.key === petSlot ? " on" : "") + '" data-slottab="' + sl.key + '">' + sl.name + "</button>"; }).join("") + "</div>";
-    var moodNow = (petExpr === "auto") ? petMood(p) : null;
-    var artCls = (moodNow && moodNow.lv >= 3) ? " distress" : "";
+    var auto = (petExpr === "auto"), sickNow = auto && p.sick;
+    var moodNow = (auto && !p.sick) ? petMood(p) : null;
+    var artCls = (sickNow || (moodNow && moodNow.lv >= 3)) ? " distress" : "";
     var bubble = "";
-    if (moodNow) { var nbb = NEED_MAP[moodNow.key]; bubble = '<div class="moodbubble t' + moodNow.lv + '">' + nbb.emoji + "❗</div>"; }
-    else if (petExpr === "auto" && petThriving(p)) bubble = '<div class="moodbubble happy">🥰</div>';
+    if (sickNow) bubble = '<div class="moodbubble sick">🤒</div>';
+    else if (moodNow) { var nbb = NEED_MAP[moodNow.key]; bubble = '<div class="moodbubble t' + moodNow.lv + '">' + nbb.emoji + "❗</div>"; }
+    else if (auto && petThriving(p)) bubble = '<div class="moodbubble happy">🥰</div>';
     $("view-pet").innerHTML =
       swRow +
       '<div class="petstage ' + ch.cls + '">' +
@@ -2172,9 +2208,10 @@
   });
 
   // ---------- 狀態圖鑑（家長預覽：把各種狀態 × 等級一次看完，網址加 #states 開啟） ----------
-  function galleryCard(label, sub, needs) {
+  function galleryCard(label, sub, needs, sick) {
     var p = defaultPet(); p.growth = 34;
     if (needs) Object.keys(needs).forEach(function (k) { p.needs[k] = needs[k]; });
+    if (sick) p.sick = true;
     return '<figure class="gcard"><div class="gart">' + petSVG("mia", { pet: p, species: "bunny", size: 116, showBg: false, expr: "auto" }) +
       '</div><figcaption>' + label + (sub ? "<small>" + sub + "</small>" : "") + "</figcaption></figure>";
   }
@@ -2197,7 +2234,7 @@
     h += galleryCard("全部都很低", "", { hunger: 12, thirst: 12, energy: 12, clean: 12, bladder: 12, happy: 12 });
     h += '</div><h2>✨ 特別狀態</h2><div class="ggrid">';
     h += galleryCard("🥰 幸福", "照顧滿分", { hunger: 95, thirst: 95, energy: 95, clean: 95, bladder: 95, happy: 95 });
-    h += galleryCard("🤒 生病", "太久沒顧", { hunger: 10, thirst: 10, clean: 10 });
+    h += galleryCard("🤒 生病", "要看醫生", null, true);
     h += "</div><p class=\"ghint\">這頁是給家長預覽用的。要回到 App，按右上「關閉」或把網址的 #states 去掉重新整理。</p></div>";
     host.innerHTML = h;
     var cb = host.querySelector(".gclose"); if (cb) cb.onclick = function () { location.hash = ""; };
