@@ -1,0 +1,9 @@
+# Dependencies (installed locally only, e.g. for rendering/test tooling)
+node_modules/
+
+# Logs
+npm-debug.log*
+*.log
+
+# OS / editor cruft
+.DS_Store
