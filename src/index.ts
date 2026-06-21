@@ -30,7 +30,20 @@ export default {
 
     // Handle static assets (frontend)
     if (url.pathname === "/" || !url.pathname.startsWith("/api/")) {
-      return env.ASSETS.fetch(request);
+      const res = await env.ASSETS.fetch(request);
+      // Always revalidate HTML so app updates show up immediately after a deploy
+      // (otherwise the browser / iOS home-screen webclip keeps serving a stale page).
+      const ct = res.headers.get("content-type") || "";
+      if (ct.includes("text/html")) {
+        const headers = new Headers(res.headers);
+        headers.set("Cache-Control", "no-cache, no-store, must-revalidate");
+        return new Response(res.body, {
+          status: res.status,
+          statusText: res.statusText,
+          headers,
+        });
+      }
+      return res;
     }
 
     // Cross-device sync for the Mia & Tia 3C panel (stored in a Durable Object).
