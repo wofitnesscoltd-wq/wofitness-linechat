@@ -520,7 +520,7 @@
 (function () {
   "use strict";
 
-  var APP_VER = "v1.9 · 圖示狀態版 · 2026-06-21";
+  var APP_VER = "v2.0 · 紀錄修復版 · 2026-06-21";
   var STORAGE_KEY = "mt-3c-panel-v1";
   var HISTORY_KEY = "mt-3c-history-v1";
   var HISTORY_MAX = 30;
@@ -691,17 +691,40 @@
       });
     });
   }
+  // 使用者輸入的資料（睡眠紀錄、使用紀錄、已購買裝扮）以 id 聯集合併，
+  // 雲端拉下來時「不覆蓋、不遺失」本機剛加但還沒推上去的紀錄。
+  function mergeById(local, remote) {
+    var byId = {}, order = [], addedLocal = false;
+    (remote || []).forEach(function (r) { if (r && r.id != null && !(r.id in byId)) { byId[r.id] = r; order.push(r.id); } });
+    (local || []).forEach(function (r) { if (r && r.id != null) { if (!(r.id in byId)) { order.push(r.id); addedLocal = true; } byId[r.id] = r; } });
+    return { arr: order.map(function (id) { return byId[id]; }), addedLocal: addedLocal };
+  }
+  function mergeInventory(local, remote) {
+    var out = {}, addedLocal = false;
+    ["mia", "tia", "self"].forEach(function (c) {
+      out[c] = {};
+      var rc = (remote && remote[c]) || {}, lc = (local && local[c]) || {};
+      Object.keys(rc).forEach(function (k) { if (rc[k]) out[c][k] = true; });
+      Object.keys(lc).forEach(function (k) { if (lc[k] && !out[c][k]) { out[c][k] = true; addedLocal = true; } });
+    });
+    return { inv: out, addedLocal: addedLocal };
+  }
   function applyCloudState(d) {
     try {
       var keepProfile = state.profile, keepLock = state.lock;   // 保留本機的「專屬機 / 家長鎖」設定
       var keepLive = capturePetLive(state);                     // 保留本機寵物的即時需求/計時
+      var locRecords = state.records, locUsages = state.usages, locInv = state.inventory;
       state = fromData(d);
       state.profile = keepProfile; state.lock = keepLock;
       restorePetLive(state, keepLive);
+      var rm = mergeById(locRecords, state.records); state.records = rm.arr;
+      var um = mergeById(locUsages, state.usages); state.usages = um.arr;
+      var im = mergeInventory(locInv, state.inventory); state.inventory = im.inv;
       lastSig = null;
       try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); } catch (e) { }
       fillSettings(); $("profileSel").value = state.profile; applyProfile();
       render(); updateForm(); renderPet(); refreshLockSection(); applyLock();
+      if (rm.addedLocal || um.addedLocal || im.addedLocal) syncPush();   // 本機有雲端沒有的紀錄 → 補推回雲端
     } catch (e) { }
   }
   function syncPull(mode) {
