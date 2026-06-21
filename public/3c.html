@@ -306,6 +306,37 @@
   .witem.sel { border-color: var(--brand); box-shadow: 0 0 0 3px #eceaff; }
   .witem.locked .wemoji { filter: grayscale(.35); opacity: .85; }
 
+  /* 限時折扣 */
+  .witem .price.deal { color: #fff; background: linear-gradient(135deg,#ff6fae,#ff4d6d); display: inline-flex; align-items: center; gap: 3px; }
+  .witem .price.deal s { opacity: .85; font-weight: 700; }
+  .witem .price .off { font-style: normal; font-size: .58rem; background: rgba(255,255,255,.3); border-radius: 999px; padding: 0 4px; }
+  .dealbanner { width: 100%; display: flex; align-items: center; gap: 10px; margin: 10px 0 2px; padding: 9px 12px; border: none; border-radius: 14px; cursor: pointer; text-align: left; color: #fff; background: linear-gradient(120deg,#ff7eb3,#ff5d73 58%,#ff8a5c); box-shadow: 0 6px 16px rgba(255,93,115,.28); }
+  .dealbanner .db-ic { width: 40px; height: 40px; flex: 0 0 40px; background: rgba(255,255,255,.22); border-radius: 10px; display: grid; place-items: center; }
+  .dealbanner .db-ic svg { width: 36px; height: 36px; }
+  .dealbanner .db-main { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; line-height: 1.28; }
+  .dealbanner .db-main b { font-size: .82rem; }
+  .dealbanner .db-name { font-size: .73rem; opacity: .96; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .dealbanner .db-time { flex: 0 0 auto; font-weight: 800; font-variant-numeric: tabular-nums; background: rgba(0,0,0,.18); border-radius: 999px; padding: 3px 9px; font-size: .8rem; }
+  #dealmodal { position: fixed; inset: 0; z-index: 60; display: none; }
+  #dealmodal .dm-back { position: absolute; inset: 0; background: rgba(20,16,40,.5); }
+  #dealmodal .dm-card { position: absolute; left: 50%; bottom: 0; transform: translateX(-50%); width: 100%; max-width: 460px; background: #fff; border-radius: 20px 20px 0 0; padding: 18px 16px calc(16px + env(safe-area-inset-bottom)); box-shadow: 0 -10px 30px rgba(0,0,0,.2); animation: dmUp .22s ease; }
+  @keyframes dmUp { from { transform: translate(-50%,30px); opacity: .5; } to { transform: translate(-50%,0); opacity: 1; } }
+  #dealmodal .dm-x { position: absolute; right: 12px; top: 12px; border: none; background: #f0eef7; color: var(--muted); width: 30px; height: 30px; border-radius: 999px; font-size: 1rem; cursor: pointer; }
+  #dealmodal .dm-h { font-size: 1.15rem; font-weight: 900; color: #2b2540; }
+  #dealmodal .dm-sub { font-size: .84rem; color: var(--muted); margin: 4px 0 12px; line-height: 1.55; }
+  #dealmodal .dm-sub s { color: #b9b4c9; }
+  #dealmodal .dm-bigpv { display: grid; place-items: center; margin: 4px 0 6px; }
+  #dealmodal .dm-bigpv svg { width: 96px; height: 96px; }
+  #dealmodal .dm-list { display: flex; flex-direction: column; gap: 8px; }
+  #dealmodal .dm-item { display: flex; align-items: center; gap: 10px; padding: 8px 10px; border: 2px solid var(--line); border-radius: 14px; background: #fff; cursor: pointer; text-align: left; }
+  #dealmodal .dm-item .dm-pv { width: 44px; height: 44px; flex: 0 0 44px; display: grid; place-items: center; }
+  #dealmodal .dm-item .dm-pv svg { width: 44px; height: 44px; }
+  #dealmodal .dm-item .dm-info { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; }
+  #dealmodal .dm-item .dm-info b { font-size: .9rem; }
+  #dealmodal .dm-price { font-size: .78rem; color: var(--brand); font-weight: 800; }
+  #dealmodal .dm-price s { color: var(--muted); font-weight: 600; margin-right: 5px; }
+  #dealmodal .dm-off { flex: 0 0 auto; color: #fff; background: linear-gradient(135deg,#ff6fae,#ff4d6d); font-weight: 800; font-size: .78rem; border-radius: 999px; padding: 3px 9px; }
+
   /* mode bar */
   .modebar { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-top: 12px; font-size: .86rem; color: var(--muted); }
   .modebar select { width: auto; padding: 7px 10px; font-weight: 700; }
@@ -519,10 +550,6 @@
   <!-- ========== 寵物樂園 ========== -->
   <div id="view-pet"></div>
   </div>
-
-  <footer>
-    睡飽飽，換 3C ⭐ · 24 小時制 · 睡好賺 3C，3C 可看螢幕、也能幫小怪獸買裝扮 🐾
-  </footer>
 </div>
 <div id="verTag"></div>
 
@@ -530,7 +557,7 @@
 (function () {
   "use strict";
 
-  var APP_VER = "v2.7 · 2026-06-21";   // 內部完整版本；UI 只在右下角小角落顯示版本號（APP_VER 第一段）
+  var APP_VER = "v2.8 · 2026-06-21";   // 內部完整版本；UI 只在右下角小角落顯示版本號（APP_VER 第一段）
   var STORAGE_KEY = "mt-3c-panel-v1";
   var HISTORY_KEY = "mt-3c-history-v1";
   var HISTORY_MAX = 30;
@@ -1560,6 +1587,145 @@
     return false;
   }
 
+  // ---------- 限時折扣（排程限時特價 + 購買後加碼快閃）----------
+  // 折扣只是「促銷狀態」，存在本機自己的 key、不進雲端同步；真正花掉的 3C 仍照折後價記在 state.usages。
+  var DEALS_KEY = "mt-3c-deals-v1", DAY_MS = 86400000, HOUR_MS = 3600000, DEAL_PCTS = [20, 25, 30, 35, 40, 45, 50];
+  var deals = (function () {
+    try { var r = localStorage.getItem(DEALS_KEY), d = r ? JSON.parse(r) : null; return (d && typeof d === "object") ? d : {}; } catch (e) { return {}; }
+  })();
+  var dealTimer = null;
+  function saveDeals() { try { localStorage.setItem(DEALS_KEY, JSON.stringify(deals)); } catch (e) { } }
+  function randPct() { return DEAL_PCTS[Math.floor(Math.random() * DEAL_PCTS.length)]; }
+  function dealPrice(base, pct) { return Math.max(1, Math.round(base * (100 - pct) / 100)); }
+  function pricedItems() {
+    var out = [];
+    Object.keys(ITEMS).forEach(function (slot) { ITEMS[slot].forEach(function (it) { if (itemPrice(it) > 0) out.push({ slot: slot, id: it.id }); }); });
+    return out;
+  }
+  function saleActive() { var s = deals.sale; return (s && s.endAt > Date.now()) ? s : null; }
+  function flashActive(childKey) { var f = deals.flash; return (f && f.child === childKey && f.endAt > Date.now()) ? f : null; }
+  // 某童某件物品目前的折扣 %（特價與快閃取較大者），沒折扣回 0
+  function discountFor(childKey, slot, id) {
+    if (childKey === "self") return 0;
+    var pct = 0, s = saleActive();
+    if (s && s.slot === slot && s.id === id) pct = Math.max(pct, s.pct);
+    var f = flashActive(childKey);
+    if (f) f.items.forEach(function (x) { if (x.slot === slot && x.id === id) pct = Math.max(pct, x.pct); });
+    return pct;
+  }
+  function effPrice(childKey, slot, it) { var pct = discountFor(childKey, slot, it.id); return pct ? dealPrice(itemPrice(it), pct) : itemPrice(it); }
+  function priceTagHTML(childKey, slot, it) {
+    var pct = discountFor(childKey, slot, it.id);
+    if (pct) { var base = itemPrice(it); return '<span class="price deal">' + (it.limited ? "🔒" : "") + "<s>" + fmtMin(base) + "</s> " + fmtMin(dealPrice(base, pct)) + '<i class="off">-' + pct + '%</i></span>'; }
+    return '<span class="price">' + (it.limited ? "🔒 " : "") + fmtMin(itemPrice(it)) + "</span>";
+  }
+  function fmtCountdown(ms) {
+    if (ms < 0) ms = 0;
+    var s = Math.floor(ms / 1000), h = Math.floor(s / 3600), m = Math.floor((s % 3600) / 60);
+    return h + ":" + pad2(m) + ":" + pad2(s % 60);
+  }
+  function dealItemPreview(childKey, slot, id) {
+    if (slot === "species") return petSVG(childKey, { species: id, pet: defaultPet(), size: 48, showBg: false, mood: false });
+    return itemPreviewSVG(childKey, slot, id);
+  }
+  function rollSale() {
+    var pool = pricedItems(); if (!pool.length) return;
+    var pick = pool[Math.floor(Math.random() * pool.length)], now = Date.now();
+    deals.sale = { slot: pick.slot, id: pick.id, pct: randPct(), startAt: now, endAt: now + DAY_MS, seen: false };
+    deals.nextSaleAt = now + Math.round((3 + Math.random() * 2) * DAY_MS);   // 下一檔 3～5 天後
+    saveDeals();
+  }
+  function markSaleSeen() { if (deals.sale) { deals.sale.seen = true; saveDeals(); } }
+  // 主動付費購買後，挑「現在剩餘 3C 折扣後買得起、且還沒擁有」的物品，最多 3 件，限時 3 小時
+  function triggerFlash(childKey) {
+    if (childKey === "self" || flashActive(childKey)) return null;
+    var bal = balanceOf(childKey), now = Date.now(), cands = [];
+    pricedItems().forEach(function (x) {
+      var it = findItem(x.slot, x.id); if (!it || isOwned(childKey, it)) return;
+      var pct = randPct(); if (dealPrice(itemPrice(it), pct) <= bal) cands.push({ slot: x.slot, id: x.id, pct: pct });
+    });
+    if (!cands.length) return null;
+    for (var i = cands.length - 1; i > 0; i--) { var j = Math.floor(Math.random() * (i + 1)), t = cands[i]; cands[i] = cands[j]; cands[j] = t; }
+    deals.flash = { child: childKey, items: cands.slice(0, 3), startAt: now, endAt: now + 3 * HOUR_MS };
+    saveDeals();
+    return deals.flash;
+  }
+  function petTabVisible() { var v = $("view-pet"); return !!v && v.style.display !== "none"; }
+  function dealBannerHTML(childKey) {
+    if (childKey === "self") return "";
+    var s = saleActive(); if (!s) return "";
+    var it = findItem(s.slot, s.id); if (!it || isOwned(childKey, it)) return "";
+    var base = itemPrice(it);
+    return '<button class="dealbanner" data-dealslot="' + s.slot + '">' +
+      '<span class="db-ic">' + dealItemPreview(childKey, s.slot, s.id) + "</span>" +
+      '<span class="db-main"><b>⏰ 限時特價 -' + s.pct + "%</b>" +
+        '<span class="db-name">' + escapeHtml(it.name) + " " + fmtMin(base) + " → " + fmtMin(dealPrice(base, s.pct)) + " 3C</span></span>" +
+      '<span class="db-time" data-countdown="' + s.endAt + '">' + fmtCountdown(s.endAt - Date.now()) + "</span>" +
+      "</button>";
+  }
+  function dealModal(html) {
+    var host = document.getElementById("dealmodal");
+    if (!host) { host = document.createElement("div"); host.id = "dealmodal"; document.body.appendChild(host); }
+    host.innerHTML = '<div class="dm-back" data-dmclose="1"></div><div class="dm-card">' + html + "</div>";
+    host.style.display = "block";
+    return host;
+  }
+  function closeDealModal() { var h = document.getElementById("dealmodal"); if (h) { h.style.display = "none"; h.innerHTML = ""; } }
+  function showSalePopup(s) {
+    if (!s) return; var it = findItem(s.slot, s.id); if (!it) return;
+    var base = itemPrice(it);
+    var host = dealModal('<button class="dm-x" data-dmclose="1">✕</button>' +
+      '<div class="dm-h">⏰ 新的限時特價！</div>' +
+      '<div class="dm-bigpv">' + dealItemPreview(petWho, s.slot, s.id) + "</div>" +
+      '<div class="dm-sub"><b>' + escapeHtml(it.name) + "</b> 現在 <b>-" + s.pct + "%</b>：<s>" + fmtMin(base) + "</s> → <b>" + fmtMin(dealPrice(base, s.pct)) + ' 3C</b><br>倒數 <b id="flashCountdown" data-end="' + s.endAt + '">' + fmtCountdown(s.endAt - Date.now()) + "</b>（24 小時內買最划算）</div>" +
+      '<button class="btn" data-dealgo="' + s.slot + '" style="width:100%">去小舖看看 🛍️</button>' +
+      '<button class="btn ghost" data-dmclose="1" style="width:100%;margin-top:8px">知道了</button>');
+    host.onclick = function (e) {
+      if (e.target.closest("[data-dealgo]")) { petSlot = e.target.closest("[data-dealgo]").getAttribute("data-dealgo"); closeDealModal(); showTab("pet"); renderPet(); return; }
+      if (e.target.closest("[data-dmclose]")) closeDealModal();
+    };
+  }
+  function showFlashPopup(f) {
+    if (!f || !f.items.length) return;
+    var ck = f.child, ch = childOf(ck);
+    var rows = f.items.map(function (x) {
+      var it = findItem(x.slot, x.id); if (!it) return "";
+      var base = itemPrice(it);
+      return '<button class="dm-item" data-buyslot="' + x.slot + '" data-buyid="' + x.id + '">' +
+        '<span class="dm-pv">' + dealItemPreview(ck, x.slot, x.id) + "</span>" +
+        '<span class="dm-info"><b>' + escapeHtml(it.name) + '</b><span class="dm-price"><s>' + fmtMin(base) + "</s>" + fmtMin(dealPrice(base, x.pct)) + " 3C</span></span>" +
+        '<span class="dm-off">-' + x.pct + "%</span></button>";
+    }).join("");
+    var host = dealModal('<button class="dm-x" data-dmclose="1">✕</button>' +
+      '<div class="dm-h">🔥 限時加碼 3 小時！</div>' +
+      '<div class="dm-sub">' + escapeHtml(ch.name) + ' 剩下的 3C 還能折扣帶走這些～倒數 <b id="flashCountdown" data-end="' + f.endAt + '">' + fmtCountdown(f.endAt - Date.now()) + "</b></div>" +
+      '<div class="dm-list">' + rows + "</div>" +
+      '<button class="btn ghost" data-dmclose="1" style="width:100%;margin-top:12px">下次再說</button>');
+    host.onclick = function (e) {
+      var b = e.target.closest("[data-buyslot]");
+      if (b) { petWho = ck; closeDealModal(); chooseItem(ck, b.getAttribute("data-buyslot"), b.getAttribute("data-buyid")); return; }
+      if (e.target.closest("[data-dmclose]")) closeDealModal();
+    };
+  }
+  function afterPurchase(childKey) { var f = triggerFlash(childKey); if (f) showFlashPopup(f); }
+  function dealsTick() {
+    var now = Date.now();
+    if (deals.nextSaleAt && now >= deals.nextSaleAt) { rollSale(); if (petTabVisible()) renderPet(); showSalePopup(deals.sale); markSaleSeen(); }
+    var bEl = document.querySelector(".dealbanner .db-time[data-countdown]");
+    if (bEl) { var end = +bEl.getAttribute("data-countdown"); if (end <= now) { if (petTabVisible()) renderPet(); } else bEl.textContent = fmtCountdown(end - now); }
+    var fEl = document.getElementById("flashCountdown");
+    if (fEl) { var fend = +fEl.getAttribute("data-end"); if (fend <= now) closeDealModal(); else fEl.textContent = fmtCountdown(fend - now); }
+  }
+  function initDeals() {
+    if (!deals.nextSaleAt || deals.nextSaleAt <= Date.now()) rollSale();
+    if (saleActive() && deals.sale && !deals.sale.seen) { showSalePopup(deals.sale); markSaleSeen(); }
+    if (dealTimer) clearInterval(dealTimer);
+    dealTimer = setInterval(dealsTick, 1000);
+    window.addEventListener("focus", function () {
+      if (deals.nextSaleAt && Date.now() >= deals.nextSaleAt) { rollSale(); if (petTabVisible()) renderPet(); showSalePopup(deals.sale); markSaleSeen(); }
+    });
+  }
+
   // ---------- pet care ----------
   // side：真實連鎖反應（照顧完會牽動其他需求，模擬生理現實）；note：完成後的小提示
   var ACTIONS = {
@@ -1975,7 +2141,7 @@
   }
   function itemBtn(childKey, slotKey, it, sel) {
     var none = it.id === null, owned = none ? true : isOwned(childKey, it), tag = "";
-    if (!none && !owned) tag = '<span class="price">' + (it.limited ? "🔒 " : "") + fmtMin(itemPrice(it)) + "</span>";
+    if (!none && !owned) tag = priceTagHTML(childKey, slotKey, it);
     else if (!none && it.limited) tag = '<span class="price lim">限定</span>';
     var icon = none ? '<span class="wemoji">🚫</span>' : '<span class="wpv">' + itemPreviewSVG(childKey, slotKey, it.id) + '</span>';
     return '<button class="witem' + (sel ? " sel" : "") + (owned ? "" : " locked") + '" data-wslot="' + slotKey + '" data-witem="' + (none ? "" : it.id) + '">' +
@@ -1985,7 +2151,7 @@
     var cp = state.pets[childKey], out = "";
     (ITEMS.species || []).forEach(function (it) {
       var inRoster = !!(cp.roster && cp.roster[it.id]), sel = cp.active === it.id, owned = inRoster || isOwned(childKey, it);
-      var tag = (!inRoster && !owned) ? '<span class="price">' + (it.limited ? "🔒 " : "") + fmtMin(itemPrice(it)) + "</span>" : (it.limited ? '<span class="price lim">限定</span>' : "");
+      var tag = (!inRoster && !owned) ? priceTagHTML(childKey, "species", it) : (it.limited ? '<span class="price lim">限定</span>' : "");
       var sub = inRoster ? (STAGE_NAME[petStage(cp.roster[it.id].growth)] + (cp.roster[it.id].name ? " · " + escapeHtml(cp.roster[it.id].name) : "")) : "未領養";
       out += '<button class="witem petcard' + (sel ? " sel" : "") + (inRoster || owned ? "" : " locked") + '" data-wslot="species" data-witem="' + it.id + '">' +
         petSVG(childKey, { species: it.id, pet: (cp.roster && cp.roster[it.id]) || defaultPet(), size: 50, showBg: false, mood: false }) +
@@ -2066,6 +2232,7 @@
         needsHTML(p) +
       "</section>" +
       '<section class="block"><div class="wallet ' + (bal < 0 ? "neg" : "") + '">👛 ' + ch.name + " 的 3C 存摺：<b>" + walletStr + "</b></div>" +
+        dealBannerHTML(petWho) +
         '<h2 style="margin-top:12px">🛍️ 換裝小舖</h2>' + slotTabs + wardrobeHTML(petWho, petSlot) +
         '<p class="hint">到「🐾夥伴」可以領養新朋友（每一隻都要從小養大、分開計算）；基本款免費，有標價的用 3C 點數換；🔒限定款要連續睡飽才解鎖，或用 3C 換。</p></section>';
     liveSig = petLiveSig(p);
@@ -2097,14 +2264,16 @@
     if (art) { art.classList.add("tapped"); setTimeout(function () { if (art) art.classList.remove("tapped"); }, 600); }
     if (stage) for (var i = 0; i < 4; i++) spawnParticle(stage, TAP_FX[i % TAP_FX.length], i);
   }
-  function tryBuy(childKey, it) {
-    if (it.unlockStreak && sleepStreak(childKey) >= it.unlockStreak) { state.inventory[childKey][it.id] = true; return true; }
-    var bal = balanceOf(childKey), pr = itemPrice(it);
+  function tryBuy(childKey, slot, it) {
+    if (it.unlockStreak && sleepStreak(childKey) >= it.unlockStreak) { if (!state.inventory[childKey]) state.inventory[childKey] = {}; state.inventory[childKey][it.id] = true; return true; }
+    var bal = balanceOf(childKey), base = itemPrice(it), pct = discountFor(childKey, slot, it.id), pr = pct ? dealPrice(base, pct) : base;
     if (bal < pr) { alert("3C 不夠喔！還差 " + fmtMin(pr - bal) + "。" + (it.unlockStreak ? "（或連續睡飽 " + it.unlockStreak + " 晚免費解鎖）" : "")); return false; }
-    if (!confirm("用 " + fmtMin(pr) + " 3C 兌換「" + it.name + "」嗎？")) return false;
-    state.usages.push({ id: uid(), child: childKey, date: todayStr(), minutes: pr, note: "🛍️ 換購 " + it.name });
+    var ask = pct ? ("🔥 限時特價 -" + pct + "%！用 " + fmtMin(pr) + " 3C（原價 " + fmtMin(base) + "）兌換「" + it.name + "」嗎？") : ("用 " + fmtMin(pr) + " 3C 兌換「" + it.name + "」嗎？");
+    if (!confirm(ask)) return false;
+    state.usages.push({ id: uid(), child: childKey, date: todayStr(), minutes: pr, note: "🛍️ 換購 " + it.name + (pct ? "（限時-" + pct + "%）" : "") });
     if (!state.inventory[childKey]) state.inventory[childKey] = {};
     state.inventory[childKey][it.id] = true;
+    afterPurchase(childKey);
     return true;
   }
   function chooseItem(childKey, slotKey, itemId) {
@@ -2112,7 +2281,7 @@
     if (slotKey === "species") {
       if (!cp.roster[itemId]) {
         var sit = findItem("species", itemId); if (!sit) return;
-        if (!isOwned(childKey, sit) && !tryBuy(childKey, sit)) return;
+        if (!isOwned(childKey, sit) && !tryBuy(childKey, "species", sit)) return;
         cp.roster[itemId] = defaultPet();
         if (childKey !== "self") { if (!state.inventory[childKey]) state.inventory[childKey] = {}; state.inventory[childKey][itemId] = true; }
       }
@@ -2122,13 +2291,13 @@
     var p = activePet(childKey);
     if (slotKey === "color") {
       var b = findItem("color", itemId); if (!b) return;
-      if (!isOwned(childKey, b) && !tryBuy(childKey, b)) return;
+      if (!isOwned(childKey, b) && !tryBuy(childKey, "color", b)) return;
       p.color = itemId;
     } else if (itemId === "") {
       p.wear[slotKey] = null;
     } else {
       var it = findItem(slotKey, itemId); if (!it) return;
-      if (!isOwned(childKey, it) && !tryBuy(childKey, it)) return;
+      if (!isOwned(childKey, it) && !tryBuy(childKey, slotKey, it)) return;
       p.wear[slotKey] = (p.wear[slotKey] === itemId) ? null : itemId;
     }
     save(); renderPet(); renderCards();
@@ -2140,6 +2309,7 @@
     if ((t = e.target.closest(".petart"))) { petTap(); return; }   // 點兔兔本人 → 開心反應
     if ((t = e.target.closest("[data-petwho]"))) { petWho = t.getAttribute("data-petwho"); petExpr = "auto"; clearTimeout(exprTimer); renderPet(); return; }
     if ((t = e.target.closest("[data-rename]"))) { renamePet(); return; }
+    if ((t = e.target.closest("[data-dealslot]"))) { petSlot = t.getAttribute("data-dealslot"); renderPet(); return; }
     if ((t = e.target.closest("[data-slottab]"))) { petSlot = t.getAttribute("data-slottab"); renderPet(); return; }
     if ((t = e.target.closest("[data-witem]"))) { chooseItem(petWho, t.getAttribute("data-wslot"), t.getAttribute("data-witem")); return; }
   });
@@ -2439,6 +2609,7 @@
   refreshLockSection(); applyLock(); renderHistory();
   if (window.matchMedia) { try { window.matchMedia("(min-width:1024px)").addEventListener("change", function () { render(); }); } catch (e) {} }
   startSync();
+  initDeals();
   renderStateGallery();
   setInterval(liveTick, 12000);
   document.addEventListener("visibilitychange", function () { if (!document.hidden) liveTick(true); });
