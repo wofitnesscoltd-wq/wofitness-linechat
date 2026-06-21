@@ -207,7 +207,7 @@
   .moodbubble.t3 { border-color: var(--bad); color: var(--bad); }
   .moodbubble.happy { border-color: #ff8fc2; color: #d84f8f; }
   .moodbubble.sick { border-color: #ff5277; color: #c81e4a; }
-  .scene-on .moodbubble, .scene-on .scene-flash { display: none; }   /* 互動播放中不顯示需求泡泡／舊提示，避免和場景字卡重疊 */
+  .scene-on .moodbubble, .scene-on .scene-flash, .scene-on .dealalert { display: none; }   /* 互動播放中不顯示需求泡泡／舊提示，避免和場景字卡重疊 */
   @keyframes bubblepop { 0% { transform: translateX(-50%) scale(.5); opacity: 0; } 60% { transform: translateX(-50%) scale(1.06); } 100% { transform: translateX(-50%) scale(1); opacity: 1; } }
   .carebtns.busy { opacity: .3; pointer-events: none; }
   #view-pet > .petstage { position: sticky; top: 6px; z-index: 30; }
@@ -310,13 +310,18 @@
   .witem .price.deal { color: #fff; background: linear-gradient(135deg,#ff6fae,#ff4d6d); display: inline-flex; align-items: center; gap: 3px; }
   .witem .price.deal s { opacity: .85; font-weight: 700; }
   .witem .price .off { font-style: normal; font-size: .58rem; background: rgba(255,255,255,.3); border-radius: 999px; padding: 0 4px; }
-  .dealbanner { width: 100%; display: flex; align-items: center; gap: 10px; margin: 10px 0 2px; padding: 9px 12px; border: none; border-radius: 14px; cursor: pointer; text-align: left; color: #fff; background: linear-gradient(120deg,#ff7eb3,#ff5d73 58%,#ff8a5c); box-shadow: 0 6px 16px rgba(255,93,115,.28); }
-  .dealbanner .db-ic { width: 40px; height: 40px; flex: 0 0 40px; background: rgba(255,255,255,.22); border-radius: 10px; display: grid; place-items: center; }
-  .dealbanner .db-ic svg { width: 36px; height: 36px; }
-  .dealbanner .db-main { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; line-height: 1.28; }
-  .dealbanner .db-main b { font-size: .82rem; }
-  .dealbanner .db-name { font-size: .73rem; opacity: .96; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  .dealbanner .db-time { flex: 0 0 auto; font-weight: 800; font-variant-numeric: tabular-nums; background: rgba(0,0,0,.18); border-radius: 999px; padding: 3px 9px; font-size: .8rem; }
+  /* 限時特價：浮在角色左上角的小徽章 */
+  .dealalert { position: absolute; top: 64px; left: 10px; z-index: 7; display: flex; flex-direction: column; align-items: center; gap: 3px; padding: 5px 6px 4px; border: none; border-radius: 13px; cursor: pointer; background: rgba(255,255,255,.93); box-shadow: 0 4px 11px rgba(0,0,0,.22); }
+  .dealalert .da-ic { position: relative; width: 40px; height: 40px; display: grid; place-items: center; transform-origin: 50% 9px; animation: dealRing 1.6s ease-in-out infinite; }
+  .dealalert .da-ic svg { width: 40px; height: 40px; display: block; }
+  .dealalert .da-off { position: absolute; top: -7px; right: -9px; font-style: normal; font-size: .56rem; font-weight: 800; color: #fff; background: linear-gradient(135deg,#ff6fae,#ff4d6d); border-radius: 999px; padding: 1px 4px; box-shadow: 0 2px 4px rgba(0,0,0,.22); }
+  .dealalert .da-time { font-size: .64rem; font-weight: 800; font-variant-numeric: tabular-nums; color: #d6336c; background: #ffe3ee; border-radius: 999px; padding: 1px 6px; }
+  @keyframes dealRing {
+    0%, 66%, 100% { transform: rotate(0deg); }
+    4%, 12%, 20%, 28%, 36%, 44%, 52%, 60% { transform: rotate(14deg); }
+    8%, 16%, 24%, 32%, 40%, 48%, 56%, 64% { transform: rotate(-14deg); }
+  }
+  @media (prefers-reduced-motion: reduce) { .dealalert .da-ic { animation: none; } }
   #dealmodal { position: fixed; inset: 0; z-index: 60; display: none; }
   #dealmodal .dm-back { position: absolute; inset: 0; background: rgba(20,16,40,.5); }
   #dealmodal .dm-card { position: absolute; left: 50%; bottom: 0; transform: translateX(-50%); width: 100%; max-width: 460px; background: #fff; border-radius: 20px 20px 0 0; padding: 18px 16px calc(16px + env(safe-area-inset-bottom)); box-shadow: 0 -10px 30px rgba(0,0,0,.2); animation: dmUp .22s ease; }
@@ -557,7 +562,7 @@
 (function () {
   "use strict";
 
-  var APP_VER = "v2.8 · 2026-06-21";   // 內部完整版本；UI 只在右下角小角落顯示版本號（APP_VER 第一段）
+  var APP_VER = "v2.9 · 2026-06-21";   // 內部完整版本；UI 只在右下角小角落顯示版本號（APP_VER 第一段）
   var STORAGE_KEY = "mt-3c-panel-v1";
   var HISTORY_KEY = "mt-3c-history-v1";
   var HISTORY_MAX = 30;
@@ -1651,16 +1656,14 @@
     return deals.flash;
   }
   function petTabVisible() { var v = $("view-pet"); return !!v && v.style.display !== "none"; }
-  function dealBannerHTML(childKey) {
+  // 限時特價提示：浮在角色左上角的小徽章（商品 icon ＋ 倒數），icon 像鬧鐘一樣抖動
+  function dealStageBadgeHTML(childKey) {
     if (childKey === "self") return "";
     var s = saleActive(); if (!s) return "";
     var it = findItem(s.slot, s.id); if (!it || isOwned(childKey, it)) return "";
-    var base = itemPrice(it);
-    return '<button class="dealbanner" data-dealslot="' + s.slot + '">' +
-      '<span class="db-ic">' + dealItemPreview(childKey, s.slot, s.id) + "</span>" +
-      '<span class="db-main"><b>⏰ 限時特價 -' + s.pct + "%</b>" +
-        '<span class="db-name">' + escapeHtml(it.name) + " " + fmtMin(base) + " → " + fmtMin(dealPrice(base, s.pct)) + " 3C</span></span>" +
-      '<span class="db-time" data-countdown="' + s.endAt + '">' + fmtCountdown(s.endAt - Date.now()) + "</span>" +
+    return '<button class="dealalert" data-dealslot="' + s.slot + '" aria-label="限時特價" title="限時特價 -' + s.pct + "%「" + escapeHtml(it.name) + '」">' +
+      '<span class="da-ic">' + dealItemPreview(childKey, s.slot, s.id) + '<i class="da-off">-' + s.pct + "%</i></span>" +
+      '<span class="da-time" data-countdown="' + s.endAt + '">' + fmtCountdown(s.endAt - Date.now()) + "</span>" +
       "</button>";
   }
   function dealModal(html) {
@@ -1711,8 +1714,12 @@
   function dealsTick() {
     var now = Date.now();
     if (deals.nextSaleAt && now >= deals.nextSaleAt) { rollSale(); if (petTabVisible()) renderPet(); showSalePopup(deals.sale); markSaleSeen(); }
-    var bEl = document.querySelector(".dealbanner .db-time[data-countdown]");
-    if (bEl) { var end = +bEl.getAttribute("data-countdown"); if (end <= now) { if (petTabVisible()) renderPet(); } else bEl.textContent = fmtCountdown(end - now); }
+    var expired = false;
+    document.querySelectorAll("[data-countdown]").forEach(function (el) {
+      var end = +el.getAttribute("data-countdown");
+      if (end <= now) expired = true; else el.textContent = fmtCountdown(end - now);
+    });
+    if (expired && petTabVisible()) renderPet();
     var fEl = document.getElementById("flashCountdown");
     if (fEl) { var fend = +fEl.getAttribute("data-end"); if (fend <= now) closeDealModal(); else fEl.textContent = fmtCountdown(fend - now); }
   }
@@ -2220,6 +2227,7 @@
       '<div class="petstage ' + ch.cls + '">' +
         '<div class="scenebg">' + sceneRoomSVG(p) + "</div>" +
         '<div class="scene-hud">' + levelBadge(p) + coinPill(petWho, bal) + "</div>" +
+        dealStageBadgeHTML(petWho) +
         (petFlash ? '<div class="scene-flash ' + petFlash.cls + '">' + petFlash.text + "</div>" : "") +
         bubble +
         '<div class="petfloor"><div class="petart' + artCls + '">' + petSVG(petWho, { size: 220, expr: petExpr, showBg: false }) + "</div></div>" +
@@ -2232,7 +2240,6 @@
         needsHTML(p) +
       "</section>" +
       '<section class="block"><div class="wallet ' + (bal < 0 ? "neg" : "") + '">👛 ' + ch.name + " 的 3C 存摺：<b>" + walletStr + "</b></div>" +
-        dealBannerHTML(petWho) +
         '<h2 style="margin-top:12px">🛍️ 換裝小舖</h2>' + slotTabs + wardrobeHTML(petWho, petSlot) +
         '<p class="hint">到「🐾夥伴」可以領養新朋友（每一隻都要從小養大、分開計算）；基本款免費，有標價的用 3C 點數換；🔒限定款要連續睡飽才解鎖，或用 3C 換。</p></section>';
     liveSig = petLiveSig(p);
@@ -2309,7 +2316,7 @@
     if ((t = e.target.closest(".petart"))) { petTap(); return; }   // 點兔兔本人 → 開心反應
     if ((t = e.target.closest("[data-petwho]"))) { petWho = t.getAttribute("data-petwho"); petExpr = "auto"; clearTimeout(exprTimer); renderPet(); return; }
     if ((t = e.target.closest("[data-rename]"))) { renamePet(); return; }
-    if ((t = e.target.closest("[data-dealslot]"))) { petSlot = t.getAttribute("data-dealslot"); renderPet(); return; }
+    if ((t = e.target.closest("[data-dealslot]"))) { petSlot = t.getAttribute("data-dealslot"); renderPet(); var w = $("view-pet").querySelector(".wardrobe"); if (w && w.scrollIntoView) w.scrollIntoView({ behavior: "smooth", block: "center" }); return; }
     if ((t = e.target.closest("[data-slottab]"))) { petSlot = t.getAttribute("data-slottab"); renderPet(); return; }
     if ((t = e.target.closest("[data-witem]"))) { chooseItem(petWho, t.getAttribute("data-wslot"), t.getAttribute("data-witem")); return; }
   });
